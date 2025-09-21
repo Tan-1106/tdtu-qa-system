@@ -1,0 +1,14 @@
+fastapi
+uvicorn[standard]
+pymongo
+chromadb
+chromadb-client
+pdfplumber
+sentence-transformers
+transformers
+accelerate
+torch
+numpy
+python-dotenv
+motor
+pydantic[email]
