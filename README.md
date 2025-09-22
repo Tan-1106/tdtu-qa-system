@@ -101,28 +101,11 @@ docker exec -it tdtu_qa_mongodb mongosh
 mongodb://localhost:27018
 ```
 
-## 🏗️ Cấu trúc Project
-
+# 5. Ẩn bớt các file không cần thiết hiện lên folder project
+```bash
+Ctrl + ,
+Tìm files:exclude
+Chọn Add Pattern và thêm 2 pattern sau:
+**/__init__.py
+**/__pycache__
 ```
-tdtu-qa-system/
-├── backend/
-│   ├── app/
-│   │   ├── database/     # DB connection (MongoDB, ChromaDB)
-│   │   ├── models/       # Pydantic models
-│   │   ├── routes/       # API endpoints
-│   │   ├── utils/        # Helper functions
-│   │   └── main.py       # FastAPI app
-│   ├── requirements.txt  # All python library needed
-│   └── Dockerfile
-├── docker-compose.yml
-├── .env
-└── README.md
-```
-
-## 👥 Team Members
-
-Thêm thông tin team members và phân công công việc ở đây.
-
----
-
-**Happy Coding! 🎉**
