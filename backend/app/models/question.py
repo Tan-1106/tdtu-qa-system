@@ -3,13 +3,12 @@ from pydantic import BaseModel, Field
 from datetime import datetime, timezone
 
 class Question(BaseModel):
-    id: Optional[str] = Field(default=None, alias="_id")
-    user_id: str
-    question: str
-    normalized_question: str
+    user_id: str = Field(...)
+    question: str = Field(...)
+    normalized_question: str = Field(...)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    status: str
-    answer_id: Optional[str] = None
+    status: str = Field(...)
+    answer_id: Optional[str] = Field(default=None)
     
     class Config:
         populate_by_name = True
