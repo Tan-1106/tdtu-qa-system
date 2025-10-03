@@ -1,26 +1,36 @@
+from bson import ObjectId
+from datetime import datetime
 from typing import List, Optional
-from pydantic import BaseModel, Field, field_validator, model_validator
-from datetime import datetime, timezone
+from pydantic import BaseModel, Field, HttpUrl
 
+# Create Answer Schema
 class AnswerCreate(BaseModel):
-    question_id: str
-    content: str
-    source_docs: List[str]
+    question_id: str = Field(..., description="Question ID associated with the answer")
+    answer: str = Field(..., description="The answer content")
+    source_docs: List[str] = Field(..., description="List of source document IDs")
 
-class AnswerUpdate(BaseModel):
-    question_id: Optional[str] = None
-    content: Optional[str] = None
-    source_docs: Optional[List[str]] = None
-    feedback: Optional[str] = None
+    class Config:
+        orm_mode = True
+        extra = "forbid"
+        
+# Update feedback of Answer Schema
+class AnswerFeedbackUpdate(BaseModel):
+    feedback: Optional[str] = Field(default=None, description="Feedback on the answer (Like/Dislike)")
 
+    class Config:
+        orm_mode = True
+        extra = "forbid"
+        
+# Answer Response Schema
 class AnswerResponse(BaseModel):
-    id: str = Field(default=None, alias="_id")
+    id: str = Field(alias="_id")
     question_id: str
-    content: str
+    answer: str
     source_docs: List[str]
     feedback: Optional[str] = None
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime
 
     class Config:
         orm_mode = True
         populate_by_name = True
+        json_encoders = { ObjectId: str }

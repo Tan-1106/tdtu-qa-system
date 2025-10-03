@@ -1,42 +1,51 @@
+from bson import ObjectId
 from datetime import datetime
 from typing import List, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, HttpUrl
 
+# Create Document Schema
 class DocumentCreate(BaseModel):
-    title: str
-    content: str
-    chunks: List[str]
-    embedding_ids: List[str]
-    doc_type: Optional[str] = None
-    tags: Optional[List[str]] = Field(default_factory=list)
-    language: Optional[str] = "vi"
-    file_url: Optional[str] = None
-    uploaded_by: Optional[str] = None
+    title: str = Field(..., description="Title of the document")
+    chunks: List[str] = Field(..., description="Content chunks of the document")
+    doc_type: str = Field(default="", description="Type of the document")
+    tags: List[str] = Field(default_factory=list, description="Tags associated with the document")
+    language: List[str] = Field(default_factory=lambda: ["vi"], description="Language of the document (default: vi)")
+    file_url: HttpUrl = Field(..., description="File URL of the document")
+    uploaded_by: str = Field(..., description="User ID who uploaded the document")
     
-class DocumentUpdate(BaseModel):
-    title: Optional[str] = None
-    content: Optional[str] = None
-    chunks: Optional[List[str]] = None
-    embedding_ids: Optional[List[str]] = None
-    doc_type: Optional[str] = None
-    tags: Optional[List[str]] = None
-    language: Optional[str] = None
-    file_url: Optional[str] = None
-    uploaded_by: Optional[str] = None
+    class Config:
+        orm_mode = True
+        extra = "forbid"
 
+# Update Document Schema
+class DocumentUpdate(BaseModel):
+    title: Optional[str] = Field(default=None, description="Title of the document")
+    chunks: Optional[List[str]] = Field(default=None, description="Content chunks of the document")
+    doc_type: Optional[str] = Field(default=None, description="Type of the document")
+    tags: Optional[List[str]] = Field(default=None, description="Tags associated with the document")
+    language: Optional[List[str]] = Field(default=None, description="Language of the document")
+    file_url: Optional[HttpUrl] = Field(default=None, description="File URL of the document")
+    edited_by: str = Field(..., description="User ID who last edited the document")
+
+    class Config:
+        orm_mode = True
+        extra = "forbid"
+
+# Document Response Schema
 class DocumentResponse(BaseModel):
-    id: str = Field(default=None, alias="_id")
+    id: str = Field(alias="_id")
     title: str
-    content: str
     chunks: List[str]
-    embedding_ids: List[str]
-    doc_type: Optional[str] = None
-    tags: Optional[List[str]] = Field(default_factory=list)
-    language: Optional[str] = "vi"
-    file_url: Optional[str] = None
-    uploaded_by: Optional[str] = None
+    doc_type: str
+    tags: List[str]
+    language: List[str]
+    file_url: HttpUrl
+    uploaded_by: str
+    edited_by: Optional[str] = None
     created_at: datetime
+    updated_at: Optional[datetime] = None
 
     class Config:
         orm_mode = True
         populate_by_name = True
+        json_encoders = { ObjectId: str }

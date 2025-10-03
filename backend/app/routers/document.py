@@ -3,7 +3,7 @@ from fastapi import APIRouter
 from fastapi.encoders import jsonable_encoder
 from app.utils.api_response import success_response, error_response
 
-from app.database.crud import documents
+from app.database.crud import document
 from app.schemas.document import DocumentCreate, DocumentUpdate
 
 router = APIRouter(prefix="/documents", tags=["Documents"])
@@ -13,23 +13,26 @@ router = APIRouter(prefix="/documents", tags=["Documents"])
 @router.get("/")
 async def get_documents():
     try:
-        docs = await documents.get_documents()
+        docs = await document.get_documents()
         return success_response(
-            data=docs,
             message="Documents retrieved successfully.",
-            status_code=200
+            status_code=200,
+            data=docs
         )
     except Exception as e:
-        return error_response(message=str(e))
-     
+        return error_response(
+            message=str(e),
+            status_code=500
+        ) 
+
 # Get a document by ID
 @router.get("/{doc_id}")
 async def get_document(doc_id: str):
     try:
-        document = await documents.get_document_by_id(doc_id)
-        if document:
+        doc = await document.get_document_by_id(doc_id)
+        if doc:
             return success_response(
-                data=document,
+                data=doc,
                 message="Document retrieved successfully.",
                 status_code=200
             )
@@ -43,7 +46,7 @@ async def get_document(doc_id: str):
 async def create_document(doc: DocumentCreate):
     try:
         doc = jsonable_encoder(doc)
-        created_doc = await documents.create_document(doc)
+        created_doc = await document.create_document(doc)
         return success_response(
             data=created_doc,
             message="Document created successfully.",
@@ -56,8 +59,13 @@ async def create_document(doc: DocumentCreate):
 @router.patch("/{doc_id}")
 async def update_document(doc_id: str, doc_update: DocumentUpdate):
     try:
-        doc_update = jsonable_encoder(doc_update)
-        updated_doc = await documents.update_document(doc_id, doc_update)
+        update_data = doc_update.model_dump(exclude_none=True)
+        update_data = jsonable_encoder(update_data)
+
+        if len(update_data) == 1 and "edited_by" in update_data:
+            return error_response(message="No fields to update.", status_code=400)
+
+        updated_doc = await document.update_document(doc_id, update_data)
         if updated_doc:
             return success_response(
                 data=updated_doc,
@@ -73,7 +81,7 @@ async def update_document(doc_id: str, doc_update: DocumentUpdate):
 @router.delete("/{doc_id}")
 async def delete_document(doc_id: str):
     try:
-        deleted = await documents.delete_document(doc_id)
+        deleted = await document.delete_document(doc_id)
         if deleted:
             return success_response(
                 data=None,

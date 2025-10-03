@@ -1,24 +1,37 @@
+from bson import ObjectId
+from datetime import datetime
 from typing import List, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, HttpUrl
 
+# Create Popular Question Schema
 class PopularQuestionCreate(BaseModel):
-    question: str
-    answer: str
-    source_docs: List[str]
-
-class PopularQuestionUpdate(BaseModel):
-    question: Optional[str] = None
-    answer: Optional[str] = None
-    source_docs: Optional[List[str]] = None
-    asked_count: Optional[int] = None
-
+    question: str = Field(..., description="The popular question content")
+    answer: str = Field(..., description="The answer content")
+    source_docs: List[str] = Field(..., description="List of source document IDs")
+    ask_count: int = Field(..., description="Number of times the question has been asked")
+    
+    class Config:
+        orm_mode = True
+        extra = "forbid"
+        
+# Update Answer Schema
+class PopularQuestionAnswerUpdate(BaseModel):
+    answer: str = Field(..., description="The updated answer content")
+    source_docs: Optional[List[str]] = Field(default=None, description="Updated list of source document IDs")
+    
+    class Config:
+        orm_mode = True
+        extra = "forbid"
+        
+# Popular Question Response Schema
 class PopularQuestionResponse(BaseModel):
-    id: str = Field(default=None, alias="_id")
+    id: str = Field(alias="_id")
     question: str
     answer: str
     source_docs: List[str]
-    asked_count: int = Field(default=0)
+    ask_count: int
 
     class Config:
         orm_mode = True
         populate_by_name = True
+        json_encoders = { ObjectId: str }
