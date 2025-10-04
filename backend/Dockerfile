@@ -1,5 +1,15 @@
 FROM python:3.11-slim
 
+RUN apt-get update && apt-get install -y \
+    tesseract-ocr \
+    tesseract-ocr-eng \
+    tesseract-ocr-vie \
+    libtesseract-dev \
+    poppler-utils \
+    git \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
 # Set work directory
 WORKDIR /app
 

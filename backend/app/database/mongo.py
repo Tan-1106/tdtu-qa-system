@@ -1,7 +1,7 @@
-import logging
 import os
-from motor.motor_asyncio import AsyncIOMotorClient
+import logging
 from pymongo.errors import ConnectionFailure
+from motor.motor_asyncio import AsyncIOMotorClient
 
 # Cấu hình logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -32,10 +32,20 @@ async def close_mongo_connection():
         client.close()
         logging.info("LOG: MongoDB connection closed.")
 
-# Lấy các collection
+# COLLECTIONS
+# Users collection
+
+# Documents collection
 def get_documents_collection():
     global db
     if db is None:
         raise RuntimeError("Database is not initialized. Did you call connect_to_mongo()?")
     logging.info(f"LOG: Accessing collection: documents in database: {DB_NAME}")
     return db.get_collection(os.getenv("MONGO_DOCUMENTS_COLLECTION", "documents"))
+
+# Questions collection
+
+# Answers collection
+
+# Popular questions collection
+

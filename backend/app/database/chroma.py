@@ -1,19 +1,25 @@
 import os
 import chromadb
+from chromadb.config import Settings
 
-def get_chroma_collection(name: str = "tdtu_docs"):
-    chroma_host = os.getenv("CHROMA_HOST")
-    chroma_port = os.getenv("CHROMA_PORT", "8000")
-    chroma_path = os.getenv("CHROMA_PATH", "/data/chroma")
+chroma_host = os.getenv("CHROMA_HOST", "tdtu_qa_chromadb")
+chroma_port = os.getenv("CHROMA_PORT", "8000")
 
-    if chroma_host:
-        # Kết nối qua HTTP
-        client = chromadb.HttpClient(host=chroma_host, port=chroma_port)
-        try:
-            return client.get_collection(name)
-        except Exception:
-            return client.create_collection(name)
-    else:
-        # Kết nối local persistent
-        client = chromadb.PersistentClient(path=chroma_path)
-        return client.get_or_create_collection(name)
+client = chromadb.HttpClient(
+    host=chroma_host,
+    port=chroma_port,
+    settings=Settings(allow_reset=True)
+)
+
+# COLLECTIONS
+# Question embeddings collection
+question_embeddings_collection = client.get_or_create_collection(
+    name="question_embeddings",
+    metadata={"hnsw:space": "cosine"}
+)
+
+# Prototype collection
+prototypes_collection = client.get_or_create_collection(
+    name="prototypes",
+    metadata={"hnsw:space": "cosine"}
+)

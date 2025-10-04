@@ -6,7 +6,6 @@ from app.utils.serializer import document_serialize
 from app.database.mongo import get_documents_collection
 from app.schemas.document import DocumentCreate, DocumentUpdate, DocumentResponse
 
-# CRUD Operations
 # Read all documents
 async def get_documents() -> List[DocumentResponse]:
     docs = []

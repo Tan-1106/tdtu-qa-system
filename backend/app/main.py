@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.routers import document
+from app.routers import document, question_embedding
 from app.utils.api_response import error_response
 from app.database.mongo import connect_to_mongo, close_mongo_connection
 
@@ -52,3 +52,4 @@ async def home():
 
 # Thiết lập router
 app.include_router(document.router)
+app.include_router(question_embedding.router)

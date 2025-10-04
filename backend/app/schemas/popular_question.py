@@ -1,7 +1,6 @@
 from bson import ObjectId
-from datetime import datetime
 from typing import List, Optional
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, Field
 
 # Create Popular Question Schema
 class PopularQuestionCreate(BaseModel):

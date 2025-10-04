@@ -1,7 +1,7 @@
 from bson import ObjectId
+from typing import Optional
 from datetime import datetime
-from typing import List, Optional
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, Field
 
 # Create User Schema
 class UserCreate(BaseModel):

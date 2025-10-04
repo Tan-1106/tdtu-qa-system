@@ -45,8 +45,8 @@ MONGO_DB_NAME=tdtu_qa_db
 CHROMA_HOST=tdtu_qa_chromadb
 CHROMA_PORT=8000
 # Models
-EMBEDDING_MODEL=BAAI/bge-m3
-LLM_MODEL=meta-llama/Llama-3.1-8B
+# EMBEDDING_MODEL=BAAI/bge-m3
+# LLM_MODEL=meta-llama/Llama-3.1-8B
 ```
 
 #   3. Chạy ứng dụng
