@@ -24,3 +24,16 @@ def normalize_cell(cell: str) -> str:
     text = text.replace("\\", "")
     text = re.sub(r'\s+', ' ', text)
     return text.strip()
+
+# Split text into chunks
+def split_text_into_chunks(text: str, words_per_chunk: int = 800, overlap: int = 300) -> list[str]:
+    text = text.strip()
+    chunks = []
+    
+    words = text.split()
+    for i in range(0, len(words), words_per_chunk - overlap):
+        chunk = " ".join(words[i:i + words_per_chunk])
+        if len(chunk.split()) > 30:
+            chunks.append(chunk)
+
+    return chunks

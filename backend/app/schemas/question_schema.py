@@ -10,7 +10,7 @@ class QuestionCreate(BaseModel):
     normalized_question: List[str] = Field(..., description="Normalized version of the question")
     
     class Config:
-        orm_mode = True
+        from_attributes = True
         extra = "forbid"
 
 # Update Question Schema
@@ -19,7 +19,7 @@ class QuestionUpdate(BaseModel):
     answer_id: Optional[str] = Field(default=None, description="Answer ID associated with the question")
     
     class Config:
-        orm_mode = True
+        from_attributes = True
         extra = "forbid"
         
 # Update Normalized Question Schema
@@ -27,7 +27,7 @@ class QuestionNormalizedUpdate(BaseModel):
     normalized_question: List[str] = Field(..., description="Updated normalized version of the question")
     
     class Config:
-        orm_mode = True
+        from_attributes = True
         extra = "forbid"
 
 # Question Response Schema
@@ -41,6 +41,6 @@ class QuestionResponse(BaseModel):
     created_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
         populate_by_name = True
         json_encoders = { ObjectId: str }

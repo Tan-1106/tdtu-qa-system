@@ -9,7 +9,7 @@ class PrototypeCreate(BaseModel):
     question_embedding_ids: List[str] = Field(..., description="List of question embedding IDs clustered in this prototype")
     
     class Config:
-        orm_mode = True
+        from_attributes = True
         extra = "forbid"
         
 # Update Prototype Centroid Schema
@@ -17,7 +17,7 @@ class PrototypeCentroidUpdate(BaseModel):
     centroid_vector: List[float] = Field(..., description="The centroid embedding vector")
 
     class Config:
-        orm_mode = True
+        from_attributes = True
         extra = "forbid"
 
 # Update Prototype Question Embeddings Schema
@@ -25,7 +25,7 @@ class PrototypeQuestionEmbeddingsUpdate(BaseModel):
     question_embedding_ids: List[str] = Field(..., description="List of question embedding IDs clustered in this prototype")
 
     class Config:
-        orm_mode = True
+        from_attributes = True
         extra = "forbid"
 
 # Add/Remove Question Embedding ID Schema
@@ -33,7 +33,7 @@ class PrototypeQuestionEmbeddingIDUpdate(BaseModel):
     question_embedding_id: str = Field(..., description="ID of the question embedding")
 
     class Config:
-        orm_mode = True
+        from_attributes = True
         extra = "forbid"
         
 # Prototype Response Schema
@@ -43,6 +43,6 @@ class PrototypeResponse(BaseModel):
     question_embedding_ids: List[str]
 
     class Config:
-        orm_mode = True
+        from_attributes = True
         populate_by_name = True
         json_encoders = { ObjectId: str }

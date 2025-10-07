@@ -10,7 +10,7 @@ class PopularQuestionCreate(BaseModel):
     ask_count: int = Field(..., description="Number of times the question has been asked")
     
     class Config:
-        orm_mode = True
+        from_attributes = True
         extra = "forbid"
         
 # Update Answer Schema
@@ -19,7 +19,7 @@ class PopularQuestionAnswerUpdate(BaseModel):
     source_docs: Optional[List[str]] = Field(default=None, description="Updated list of source document IDs")
     
     class Config:
-        orm_mode = True
+        from_attributes = True
         extra = "forbid"
         
 # Popular Question Response Schema
@@ -31,6 +31,6 @@ class PopularQuestionResponse(BaseModel):
     ask_count: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
         populate_by_name = True
         json_encoders = { ObjectId: str }

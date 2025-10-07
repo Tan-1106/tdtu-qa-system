@@ -3,13 +3,21 @@ starlette
 python-multipart
 uvicorn[standard]
 
+motor
 pymongo
 chromadb
-
-motor
 pydantic
 
 pymupdf
 pdf2image
 pytesseract
 camelot-py[base]
+
+pyvi
+torch
+accelerate
+safetensors
+transformers
+bitsandbytes
+sentencepiece
+sentence_transformers

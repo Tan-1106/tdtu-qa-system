@@ -1,4 +1,5 @@
-FROM python:3.11-slim
+# FROM python:3.11-slim
+FROM pytorch/pytorch:2.8.0-cuda12.9-cudnn9-runtime
 
 RUN apt-get update && apt-get install -y \
     tesseract-ocr \
@@ -16,8 +17,10 @@ WORKDIR /app
 # Copy requirements
 COPY requirements.txt .
 
-# Install python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --upgrade pip
+COPY requirements.txt /tmp/requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
+RUN pip install --upgrade transformers accelerate
 
 # Copy source
 COPY ./app ./app

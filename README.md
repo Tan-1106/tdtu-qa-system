@@ -109,3 +109,10 @@ Chọn Add Pattern và thêm 2 pattern sau:
 **/__init__.py
 **/__pycache__
 ```
+
+# 6. Triển khai GPU cho LLM self host
+```bash
+Tải và cài đặt Cuda toolkit cho máy tùy theo phiên bản tương thích
+Trong venv, sử dụng lệnh cài đặt PyTorch tùy theo version cuda tương thích:
+pip3 install --pre torch torchvision --index-url https://download.pytorch.org/whl/nightly/cu130 (Version 13)
+```

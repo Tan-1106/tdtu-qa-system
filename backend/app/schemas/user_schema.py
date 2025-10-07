@@ -10,7 +10,7 @@ class UserCreate(BaseModel):
     password: str = Field(..., description="Password of the user")
     
     class Config:
-        orm_mode = True
+        from_attributes = True
         extra = "forbid"
 
 # Update User Information Schema
@@ -19,7 +19,7 @@ class UserInformationUpdate(BaseModel):
     email: Optional[str] = Field(default=None, description="Email address of the user")
     
     class Config:
-        orm_mode = True
+        from_attributes = True
         extra = "forbid"
         
 # Update User Password Schema
@@ -28,7 +28,7 @@ class UserPasswordUpdate(BaseModel):
     new_password: str = Field(..., description="New password of the user")
     
     class Config:
-        orm_mode = True
+        from_attributes = True
         extra = "forbid" 
         
 # User Response Schema
@@ -40,6 +40,6 @@ class UserResponse(BaseModel):
     updated_at: Optional[datetime] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
         populate_by_name = True
         json_encoders = { ObjectId: str }

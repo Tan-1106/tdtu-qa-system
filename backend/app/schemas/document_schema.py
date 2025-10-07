@@ -6,13 +6,15 @@ from pydantic import BaseModel, Field, HttpUrl
 # Create Document Schema
 class DocumentCreate(BaseModel):
     title: str = Field(..., description="Title of the document")
+    chunks: List[str] = Field(..., description="Text chunks of the document")
     doc_type: str = Field(default="", description="Type of the document")
     tags: List[str] = Field(default_factory=list, description="Tags associated with the document")
     language: List[str] = Field(default_factory=lambda: ["vi"], description="Language of the document (default: vi)")
     file_url: HttpUrl = Field(..., description="File URL of the document")
+    uploaded_by: str = Field(..., description="User ID of the uploader")
     
     class Config:
-        orm_mode = True
+        from_attributes = True
         extra = "forbid"
 
 # Update Document Schema
@@ -24,7 +26,7 @@ class DocumentUpdate(BaseModel):
     file_url: Optional[HttpUrl] = Field(default=None, description="File URL of the document")
 
     class Config:
-        orm_mode = True
+        from_attributes = True
         extra = "forbid"
 
 # Document Response Schema
@@ -42,6 +44,6 @@ class DocumentResponse(BaseModel):
     updated_at: Optional[datetime] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
         populate_by_name = True
         json_encoders = { ObjectId: str }

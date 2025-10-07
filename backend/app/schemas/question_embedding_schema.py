@@ -9,7 +9,7 @@ class QuestionEmbeddingMetadata(BaseModel):
     feedback_count: int = Field(default=0, description="Number of feedback for this question")
     
     class Config:
-        orm_mode = True
+        from_attributes = True
         extra = "forbid"
 
 # Create Document Schema
@@ -18,7 +18,7 @@ class QuestionEmbeddingCreate(BaseModel):
     metadata: QuestionEmbeddingMetadata = Field(..., description="Metadata associated with the question embedding")
 
     class Config:
-        orm_mode = True
+        from_attributes = True
         extra = "forbid"
         
 # Feedback Update Schema
@@ -27,7 +27,7 @@ class QuestionEmbeddingFeedbackUpdate(BaseModel):
     feedback_count: int = Field(..., description="Number of feedback for this question")
     
     class Config:
-        orm_mode = True
+        from_attributes = True
         extra = "forbid"
         
 # Question Embedding Response Schema
@@ -37,6 +37,6 @@ class QuestionEmbeddingResponse(BaseModel):
     metadata: QuestionEmbeddingMetadata
 
     class Config:
-        orm_mode = True
+        from_attributes = True
         populate_by_name = True
         json_encoders = { ObjectId: str }

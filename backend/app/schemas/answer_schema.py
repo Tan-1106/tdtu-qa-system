@@ -10,7 +10,7 @@ class AnswerCreate(BaseModel):
     source_docs: List[str] = Field(..., description="List of source document IDs")
 
     class Config:
-        orm_mode = True
+        from_attributes = True
         extra = "forbid"
         
 # Update feedback of Answer Schema
@@ -18,7 +18,7 @@ class AnswerFeedbackUpdate(BaseModel):
     feedback: Optional[str] = Field(default=None, description="Feedback on the answer (Like/Dislike)")
 
     class Config:
-        orm_mode = True
+        from_attributes = True
         extra = "forbid"
         
 # Answer Response Schema
@@ -31,6 +31,6 @@ class AnswerResponse(BaseModel):
     created_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
         populate_by_name = True
         json_encoders = { ObjectId: str }
