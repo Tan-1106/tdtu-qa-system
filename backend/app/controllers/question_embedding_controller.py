@@ -1,6 +1,6 @@
+from fastapi.encoders import jsonable_encoder
 from app.schemas import question_embedding_schema
 from app.services import question_embedding_service
-from fastapi.encoders import jsonable_encoder
 
 # Get all question embeddings
 async def get_question_embeddings():
@@ -24,11 +24,11 @@ async def update_question_embedding_feedback(embedding_id: str, score: int):
     return response
 
 # Delete a question embedding by ID
-async def delete_question_embedding(embedding_id: str) -> bool:
+async def delete_question_embedding(embedding_id: str):
     response = await question_embedding_service.delete_question_embedding(embedding_id)
     return response
 
-# Delete all question embeddings
-async def delete_all_question_embeddings() -> bool:
-    response = await question_embedding_service.delete_all_question_embeddings()
+# Reset (Delete) question embeddings collection
+async def reset_question_embeddings_collection():
+    response = await question_embedding_service.reset_question_embeddings_collection()
     return response

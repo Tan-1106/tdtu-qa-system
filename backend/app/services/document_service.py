@@ -1,17 +1,14 @@
 import re
 import fitz
 import shutil
-import camelot
 import tempfile
 import pytesseract
-from typing import Optional
 from fastapi import UploadFile
 from pdf2image import convert_from_path
 from app.daos import document_dao
-from app.services.model_service import create_questions, get_embedding
-from app.daos import question_embedding_dao as question_embedding_crud
-from app.utils.document_process import is_text_based_pdf, split_text_into_chunks
-from app.schemas.question_embedding_schema import QuestionEmbeddingCreate, QuestionEmbeddingMetadata
+from app.utils import text_process
+from app.services import model_service
+from app.services import question_embedding_service
 
 # Get all documents
 async def get_documents():
@@ -34,93 +31,69 @@ async def update_document(doc_id: str, doc_update: dict):
     return updated_doc
 
 # Delete a document by ID
-async def delete_document(doc_id: str) -> bool:
+async def delete_document(doc_id: str):
     deleted = await document_dao.delete_document(doc_id)
     return deleted
 
-# Extract text content from a PDF document (both text-based and scanned)
-# async def extract_pdf_document_content(file: UploadFile):
-#     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
-#         shutil.copyfileobj(file.file, tmp)
-#         tmp_path = tmp.name
+# Extract text content from a PDF document (both text-based and scanned, not appendix)
+def extract_pdf_document_content(file: UploadFile):
+    document_content = ""
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+        shutil.copyfileobj(file.file, tmp)
+        tmp_path = tmp.name
         
-#     text = ""
-#     # Scanned
-#     if not is_text_based_pdf(tmp_path):
-#         try:
-#             images = convert_from_path(tmp_path)
-#             for img in images:
-#                 page_text = pytesseract.image_to_string(img, lang='vie+eng')
-#                 clean_text = re.sub(r'\s+', ' ', page_text)
-#                 text += clean_text
-#         except Exception as e:
-#             raise RuntimeError("Failed to convert scanned PDF to text.") from e
+    # Scanned
+    if not text_process.is_text_based_pdf(tmp_path):
+        try:
+            images = convert_from_path(tmp_path)
+            for img in images:
+                page_text = pytesseract.image_to_string(img, lang='vie+eng')
+                clean_text = re.sub(r'\s+', ' ', page_text)
+                document_content += clean_text
+        except Exception as e:
+            raise RuntimeError("Failed to convert scanned PDF to text.") from e
         
-#     # Text-based
-#     else:
-#         try:
-#             doc = fitz.open(tmp_path)
-#             for page in doc:
-#                 page_text = page.get_text().strip()
-#                 clean_text = re.sub(r'\s+', ' ', page_text)
-#                 text += clean_text
-#             doc.close()
-#         except Exception as e:
-#             raise RuntimeError("Failed to extract text from PDF.") from e
-#     return text
+    # Text-based
+    else:
+        try:
+            doc = fitz.open(tmp_path)
+            for page in doc:
+                page_text = page.get_text().strip()
+                clean_text = re.sub(r'\s+', ' ', page_text)
+                document_content += clean_text
+            doc.close()
+        except Exception as e:
+            raise RuntimeError("Failed to extract text from PDF.") from e
+        
+    return document_content
 
-# # Process document
-# async def process_document(
-#     file_content: str,
-#     title: str,
-#     doc_type: str,
-#     tags: Optional[str],
-#     language: Optional[str],
-#     file_url: str
-# ) -> DocumentResponse:
-#     # Split text into chunks
-#     chunks = split_text_into_chunks(file_content, words_per_chunk=300, overlap=100)
+# Generate potential questions for a text chunk
+async def create_potential_questions(doc_id: str, chunk_idx: int, chunk: str):
+    generated_questions_list = await model_service.create_questions(chunk)
+    return {
+        "doc_id": doc_id,
+        "chunk_index": chunk_idx,
+        "questions_list": generated_questions_list
+    }
     
-#     # Upload document to database
-#     doc_data = {
-#         "title": title,
-#         "chunks": chunks,
-#         "doc_type": doc_type,
-#         "tags": eval(tags) if tags else [],
-#         "language": eval(language) if language else [],
-#         "file_url": file_url,
-#         "uploaded_by": "temp_user_id",
-#     }
-
-#     # Save document metadata to database
-#     doc = await document_dao.create_document(doc_data)
-#     if not doc:
-#         raise RuntimeError("Failed to save document to database.")
-    
-#     # Generate potential questions for each chunk and their embeddings
-#     chunk_idx = 0
-#     print("="*100)
-#     print(f"Creating questions...({chunk_idx+1}/{len(chunks)})")
-#     for chunk in chunks:
-#         questions = create_questions(chunk)
-        
-#         for q in questions:
-#             emb = get_embedding(q)
+    question: [
+        {
+            "doc_id": doc_id,
+            "chunk_index": chunk_idx,
+            "questions": [
+                "Câu hỏi 1", "Câu hỏi 2", "Câu hỏi 3", "Câu hỏi 4", "Câu hỏi 5",
+                "Câu hỏi 6", "Câu hỏi 7", "Câu hỏi 8", "Câu hỏi 9", "Câu hỏi 10"
+            ]
+        },
+        {
             
-#             print("Converting question to embedding and saving to DB...")
-#             qe = {
-#                 "vector": emb,
-#                 "metadata": {
-#                     "doc_id": str(doc.id),
-#                     "chunk_index": chunk_idx
-#                 }
-#             }
-#             await question_embedding_crud.create_question_embedding(qe)
-            
-#         chunk_idx += 1
+        }
+    ]
 
-#     return DocumentResponse(**doc.model_dump())
-    
+
+        # embedding = model_service.get_embedding(question)
+        # 
+
 # Extract text and tables from a text-based PDF appendix (LATER)
 # async def extract_pdf_appendix_content(file: UploadFile):
 #     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:

@@ -1,4 +1,3 @@
-# FROM python:3.11-slim
 FROM pytorch/pytorch:2.8.0-cuda12.9-cudnn9-runtime
 
 RUN apt-get update && apt-get install -y \
@@ -11,22 +10,15 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Set work directory
 WORKDIR /app
 
-# Copy requirements
-COPY requirements.txt .
+COPY requirements.txt ./
+RUN pip install --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt && \
+    pip install --upgrade transformers accelerate && \
+    pip install -U pypdf cryptography
 
-RUN pip install --upgrade pip
-COPY requirements.txt /tmp/requirements.txt
-RUN pip install --no-cache-dir -r /tmp/requirements.txt
-RUN pip install --upgrade transformers accelerate
-
-# Copy source
 COPY ./app ./app
 
-# Expose FastAPI
 EXPOSE 8000
-
-# Command to run
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

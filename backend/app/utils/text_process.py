@@ -1,4 +1,5 @@
 import re
+import json
 import fitz
 
 # Utility functions for document upload and processing
@@ -17,13 +18,34 @@ def is_text_based_pdf(file_path: str) -> bool:
         raise RuntimeError("Failed to process PDF file.") from e
 
 # Normalize table cell content
-def normalize_cell(cell: str) -> str:
-    if not isinstance(cell, str):
-        return cell
-    text = cell.replace("\n", "")
-    text = text.replace("\\", "")
-    text = re.sub(r'\s+', ' ', text)
-    return text.strip()
+def normalize_text(text: str):
+    if isinstance(text, str):
+        try:
+            data = json.loads(text)
+        except json.JSONDecodeError:
+            try:
+                import ast
+                data = ast.literal_eval(text)
+            except Exception:
+                data = [text]
+    else:
+        data = text
+
+    if isinstance(data, list):
+        cleaned = []
+        for item in data:
+            if isinstance(item, str):
+                s = item.replace("\n", " ")
+                s = re.sub(r"\s+", " ", s).strip()
+                cleaned.append(s)
+        return cleaned
+
+    if isinstance(data, str):
+        text = text.replace("\n", " ")
+        text = re.sub(r"\s+", " ", text).strip()
+        return text
+
+    return data
 
 # Split text into chunks
 def split_text_into_chunks(text: str, words_per_chunk: int = 800, overlap: int = 300) -> list[str]:

@@ -1,10 +1,10 @@
-from fastapi import APIRouter, UploadFile
+from typing import Optional
+from fastapi import APIRouter, UploadFile, Form
 from app.utils.api_response import api_response
 from app.controllers import document_controller
 
 router = APIRouter(prefix="/documents", tags=["Documents"])
 
-# CRUD Endpoints
 # Get all documents
 @router.get("/")
 async def get_documents():
@@ -96,37 +96,32 @@ async def delete_document(doc_id: str):
 
 # API Endpoints
 # Upload a document
-# @router.post("/upload")
-# async def upload_document(
-#     file: UploadFile,
-#     title: str = Form(...),
-#     doc_type: str = Form(""),
-#     tags: Optional[str] = Form(None),
-#     language: Optional[str] = Form('["vi"]'),
-#     file_url: str = Form(...),
-# ):
-#     try:
-#         # Extract text and tables from the PDF
-#         file_content = await extract_pdf_document_content(file)
-        
-#         # Upload document
-#         result = await process_document(
-#             file_content=file_content,
-#             title=title,
-#             doc_type=doc_type,
-#             tags=tags,
-#             language=language,
-#             file_url=file_url
-#         )
-        
-#         return api_response(
-#             status_code=200,
-#             message="Document uploaded and processed successfully.",
-#             details=result,
-#         )
-        
-#     except Exception as e:
-#         return api_response(status_code=500, message=str(e))
-
-# API Endpoints
-# Upload a document
+# (PDF -> Extract text -> Chunk text -> Generate questions -> Get embeddings -> Store in DB)
+@router.post("/upload")
+async def upload_document(
+    file: UploadFile,
+    title: str = Form(...),
+    doc_type: str = Form(...),
+    tags: Optional[str] = Form(None),
+    language: Optional[str] = Form('["vi"]'),
+    file_url: str = Form(...)
+):
+    try:
+        result = await document_controller.upload_document(
+            file=file,
+            title=title,
+            doc_type=doc_type,
+            tags=tags,
+            language=language,
+            file_url=file_url
+        )
+        return api_response(
+            status_code=200,
+            message="Document uploaded successfully.",
+            details=result
+        )
+    except Exception as e:
+        return api_response(
+            status_code=500,
+            message=str(e)
+        )

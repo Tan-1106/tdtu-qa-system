@@ -2,8 +2,6 @@ from fastapi import FastAPI, Request
 from contextlib import asynccontextmanager
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
-
-
 from app.routes import document_route
 from app.routes import question_embedding_route
 from app.utils.api_response import api_response

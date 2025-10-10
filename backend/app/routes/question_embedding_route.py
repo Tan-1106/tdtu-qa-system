@@ -4,7 +4,6 @@ from app.controllers import question_embedding_controller
 
 router = APIRouter(prefix="/question-embeddings", tags=["Question Embeddings"])
 
-# CRUD Endpoints
 # Get all question embeddings
 @router.get("/")
 async def get_question_embeddings():
@@ -23,7 +22,7 @@ async def get_question_embeddings():
         
 # Get a question embedding by ID
 @router.get("/{embedding_id}")
-async def get_question_embedding(embedding_id):
+async def get_question_embedding(embedding_id: str):
     try:
         embedding = await question_embedding_controller.get_question_embedding_by_id(embedding_id)
         if embedding:
@@ -45,9 +44,9 @@ async def get_question_embedding(embedding_id):
 
 # Create a new question embedding
 @router.post("/")
-async def create_question_embedding(question_embedding_data):
+async def create_question_embedding(data: dict):
     try:
-        created_question_embedding = await question_embedding_controller.create_question_embedding(question_embedding_data)
+        created_question_embedding = await question_embedding_controller.create_question_embedding(data)
         return api_response(
             status_code=201,
             message="Question embedding created successfully.",
@@ -61,7 +60,7 @@ async def create_question_embedding(question_embedding_data):
         
 # Update feedback for a question embedding
 @router.patch("/{embedding_id}/feedback")
-async def update_question_embedding_feedback(embedding_id, score):
+async def update_question_embedding_feedback(embedding_id: str, score: int):
     try:
         updated_embedding = await question_embedding_controller.update_question_embedding_feedback(embedding_id, score)
         if updated_embedding:
@@ -83,7 +82,7 @@ async def update_question_embedding_feedback(embedding_id, score):
     
 # Delete a question embedding by ID
 @router.delete("/{embedding_id}")
-async def delete_question_embedding(embedding_id):
+async def delete_question_embedding(embedding_id: str):
     try:
         success = await question_embedding_controller.delete_question_embedding(embedding_id)
         if success:
@@ -102,11 +101,11 @@ async def delete_question_embedding(embedding_id):
             message=str(e)
         )
     
-# Delete all question embeddings
+# Reset (Delete) question embeddings collection
 @router.delete("/")
-async def delete_all_question_embeddings():
+async def reset_question_embeddings_collection():
     try:
-        success = await question_embedding_controller.delete_all_question_embeddings()
+        success = await question_embedding_controller.reset_question_embeddings_collection()
         if success:
             return api_response(
                 status_code=200,

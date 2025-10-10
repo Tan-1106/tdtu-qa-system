@@ -1,5 +1,6 @@
 import uuid
 from app.databases import chroma
+from fastapi.encoders import jsonable_encoder
 from app.schemas import question_embedding_schema
 
 # Read all question embeddings
@@ -31,16 +32,17 @@ async def get_question_embedding_by_id(embedding_id: str) -> question_embedding_
 
 # Create a new question embedding
 async def create_question_embedding(embedding: question_embedding_schema.QuestionEmbeddingCreate) -> question_embedding_schema.QuestionEmbeddingResponse:
+    embedding = jsonable_encoder(embedding)
     embedding_id = str(uuid.uuid4())
     chroma.question_embeddings_collection.add(
         ids=[embedding_id],
-        embeddings=[embedding.vector],
-        metadatas=[embedding.metadata.model_dump()],
+        embeddings=[embedding["vector"]],
+        metadatas=[embedding["metadata"]],
     )
     return question_embedding_schema.QuestionEmbeddingResponse(
         id=embedding_id,
-        vector=embedding.vector,
-        metadata=embedding.metadata
+        vector=embedding["vector"],
+        metadata=embedding["metadata"]
     )
     
 # Update feedback for a question embedding
@@ -63,12 +65,11 @@ async def delete_question_embedding(embedding_id: str) -> bool:
     except Exception as e:
         raise RuntimeError(f"Error deleting question embedding with ID {embedding_id}: {e}")
     
-# Delete all question embeddings
-async def delete_all_question_embeddings() -> bool:
+# Reset (Delete) question embeddings collection
+async def reset_question_embeddings_collection() -> bool:
     try:
-        question_embeddings = await get_question_embeddings()
-        for embedding in question_embeddings:
-            await delete_question_embedding(embedding.id)
+        chroma.client.delete_collection("question_embeddings")
+        chroma.question_embeddings_collection = chroma.client.create_collection("question_embeddings")
         return True
     except Exception as e:
         raise RuntimeError(f"Error deleting all question embeddings: {e}")

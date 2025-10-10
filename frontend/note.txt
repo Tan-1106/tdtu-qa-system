@@ -1,0 +1,3 @@
+copy code của ông vào thư mục này trừ gitignore, readme, readme.md.
+gitignore của ông tui bổ sung rồi, còn readme của ông nếu cần thì viết thêm vào cái readme.md 
+của cái project này

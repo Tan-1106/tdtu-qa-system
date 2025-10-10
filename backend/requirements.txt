@@ -15,6 +15,7 @@ camelot-py[base]
 
 pyvi
 torch
+openai
 accelerate
 safetensors
 transformers

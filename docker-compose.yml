@@ -6,11 +6,9 @@ services:
       - "8000:8000"
     volumes:
       - ./backend/app:/app/app
-      - ./data:/app/data
+      - ./hf_cache:/root/.cache/huggingface
     env_file:
       - .env
-
-    # runtime: nvidia
     deploy:
       resources:
         reservations:
@@ -21,7 +19,6 @@ services:
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility
-
     depends_on:
       mongodb:
         condition: service_healthy
@@ -61,3 +58,4 @@ services:
 volumes:
   mongo_data:
   chroma_data:
+  hf_cache:
