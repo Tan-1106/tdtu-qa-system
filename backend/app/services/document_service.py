@@ -68,31 +68,23 @@ def extract_pdf_document_content(file: UploadFile):
     return document_content
 
 # Generate potential questions for a text chunk
-async def create_potential_questions(doc_id: str, chunk_idx: int, chunk: str):
-    generated_questions_list = await model_service.create_questions(chunk)
+async def create_question_embeddings(doc_id: str, chunk_idx: int, chunk: str):
+    generated_questions_list =  model_service.create_questions(chunk)
+    
+    print("LOG: Create embeddings for questions...")
+    for question in generated_questions_list:
+        embedding = model_service.get_embedding(question)
+        question_embedding = {
+            "vector": embedding,
+            "metadata": {"doc_id": doc_id, "chunk_index": chunk_idx}
+        }
+        await question_embedding_service.create_question_embedding(question_embedding)
+
     return {
         "doc_id": doc_id,
         "chunk_index": chunk_idx,
         "questions_list": generated_questions_list
     }
-    
-    question: [
-        {
-            "doc_id": doc_id,
-            "chunk_index": chunk_idx,
-            "questions": [
-                "Câu hỏi 1", "Câu hỏi 2", "Câu hỏi 3", "Câu hỏi 4", "Câu hỏi 5",
-                "Câu hỏi 6", "Câu hỏi 7", "Câu hỏi 8", "Câu hỏi 9", "Câu hỏi 10"
-            ]
-        },
-        {
-            
-        }
-    ]
-
-
-        # embedding = model_service.get_embedding(question)
-        # 
 
 # Extract text and tables from a text-based PDF appendix (LATER)
 # async def extract_pdf_appendix_content(file: UploadFile):

@@ -48,7 +48,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 # Root endpoint (For testing)
 @app.get("/")
-async def home():
+def home():
     return {"msg": "Welcome to the TDTU QA System API"}
 
 # Thiết lập router

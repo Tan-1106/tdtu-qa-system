@@ -16,7 +16,7 @@ gpt_client = OpenAI(api_key=GPT_KEY)
 embedding_model = SentenceTransformer(EMBEDDING_MODEL)
 
 # Generate questions from a given text chunk
-async def create_questions(context: str):
+def create_questions(context: str):
     prompt = f"""
         Bạn là một trợ lý tạo câu hỏi thông minh.
         Nhiệm vụ: tạo ra 10 câu hỏi ngắn gọn, tự nhiên mà một sinh viên có thể hỏi về các quy định hoặc quy chế của trường đại học, 
@@ -33,7 +33,7 @@ async def create_questions(context: str):
     """
 
 
-    response = await gpt_client.responses.create(
+    response = gpt_client.responses.create(
         model=GPT_MODEL,
         input=prompt,
         store=False

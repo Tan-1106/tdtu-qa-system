@@ -75,20 +75,23 @@ async def upload_document(
         "uploaded_by": "temp_user_id",
         "questions": []
     }
+    
     # Generate questions
-    print("LOG: Generating questions for each chunk...")
     for idx, chunk in enumerate(chunks):
-        questions_data = await document_service.create_potential_questions(str(doc.id), idx, chunk)
+        print("LOG: Generating questions for chunk", idx + 1, "/", len(chunks), "...")
+        questions_data = await document_service.create_question_embeddings(str(doc.id), idx, chunk)
         response["questions"].append(questions_data)
+        
+    return response
 
     # Embeddings
-    print("LOG: Generating embeddings for questions...")
-    for idx, generated_questions in enumerate(response["questions"]):
-        for question_list in generated_questions["generated_questions"]:
-            for question in question_list:
-                embedding = await model_service.get_embedding(question)
-                question_embedding = {
-                    "vector": embedding,
-                    "metadata": {"doc_id": str(doc.id), "chunk_index": idx}
-                }
+    # print("LOG: Generating embeddings for questions...")
+    # for idx, generated_questions in enumerate(response["questions"]):
+    #     for question_list in generated_questions["generated_questions"]:
+    #         for question in question_list:
+    #             embedding = await model_service.get_embedding(question)
+    #             question_embedding = {
+    #                 "vector": embedding,
+    #                 "metadata": {"doc_id": str(doc.id), "chunk_index": idx}
+    #             }
         
