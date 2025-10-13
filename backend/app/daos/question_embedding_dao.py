@@ -57,6 +57,7 @@ async def update_question_embedding_feedback(embedding_id: str, score: int) -> q
         metadatas=[existing_embedding.metadata.model_dump()]
     )
     return existing_embedding
+
 # Delete a question embedding by ID
 async def delete_question_embedding(embedding_id: str) -> bool:
     try:

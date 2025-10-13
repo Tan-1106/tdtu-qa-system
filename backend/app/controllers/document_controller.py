@@ -3,7 +3,7 @@ from fastapi import UploadFile, Form
 from fastapi.encoders import jsonable_encoder
 from app.utils import text_process
 from app.schemas import document_schema
-from app.services import document_service, model_service
+from app.services import document_service
 
 # Get all documents
 async def get_documents():
@@ -24,8 +24,11 @@ async def create_document(doc_data: document_schema.DocumentCreate):
 # Update an existing document
 async def update_document(doc_id: str, doc_update: document_schema.DocumentUpdate):
     update_data = jsonable_encoder(doc_update)
-    if len(doc_update) == 1 and "edited_by" in doc_update:
-            raise ValueError("No fields to update.")
+    update_data = {k: v for k, v in update_data.items() if v is not None}
+    
+    if not update_data or (len(update_data) == 1 and "edited_by" in update_data):
+        raise ValueError("No fields to update.")
+    
     response = await document_service.update_document(doc_id, update_data)
     return response
 
@@ -45,11 +48,11 @@ async def upload_document(
 ):
     # Extract text from PDF
     print("LOG: Extracting text from PDF...")
-    document_content = document_service.extract_pdf_document_content(file)
+    document_content = await document_service.extract_pdf_document_content(file)
     
     # Split text into chunks
     print("LOG: Splitting text into chunks...")
-    chunks = text_process.split_text_into_chunks(document_content, words_per_chunk=800, overlap=300)
+    chunks = await text_process.split_text_into_chunks(document_content, words_per_chunk=800, overlap=300)
     
     # Create document record in DB
     print("LOG: Creating document record in DB...")

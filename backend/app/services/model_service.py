@@ -1,17 +1,14 @@
 import os
-import torch
 from openai import OpenAI
 from app.utils import text_process
 from pyvi.ViTokenizer import tokenize
 from sentence_transformers import SentenceTransformer
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, AutoTokenizer
 
 # Environment variables
 GPT_KEY = os.getenv("GPT_KEY")
 GPT_MODEL = os.getenv("GPT_MODEL")
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL")
 
-device = "cuda" if torch.cuda.is_available() else "cpu"
 gpt_client = OpenAI(api_key=GPT_KEY)
 embedding_model = SentenceTransformer(EMBEDDING_MODEL)
 

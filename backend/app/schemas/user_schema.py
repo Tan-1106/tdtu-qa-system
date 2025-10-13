@@ -1,41 +1,24 @@
 from bson import ObjectId
 from typing import Optional
 from datetime import datetime
-from pydantic import BaseModel, Field
-
-# Create User Schema
-class UserCreate(BaseModel):
-    full_name: str = Field(..., description="Full name of the user")
-    email: str = Field(..., description="Email address of the user")
-    password: str = Field(..., description="Password of the user")
-    
-    class Config:
-        from_attributes = True
-        extra = "forbid"
+from pydantic import BaseModel, Field, EmailStr
 
 # Update User Information Schema
 class UserInformationUpdate(BaseModel):
     full_name: Optional[str] = Field(default=None, description="Full name of the user")
-    email: Optional[str] = Field(default=None, description="Email address of the user")
+    email: Optional[EmailStr] = Field(default=None, description="Email address of the user")
     
     class Config:
         from_attributes = True
         extra = "forbid"
-        
-# Update User Password Schema
-class UserPasswordUpdate(BaseModel):
-    old_password: str = Field(..., description="Old password of the user")
-    new_password: str = Field(..., description="New password of the user")
-    
-    class Config:
-        from_attributes = True
-        extra = "forbid" 
         
 # User Response Schema
 class UserResponse(BaseModel):
     id: str = Field(alias="_id")
     full_name: str
-    email: str
+    email: EmailStr
+    password: str
+    role: str
     created_at: datetime
     updated_at: Optional[datetime] = None
 

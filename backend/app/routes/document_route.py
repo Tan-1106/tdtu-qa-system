@@ -1,9 +1,15 @@
 from typing import Optional
-from fastapi import APIRouter, UploadFile, Form
+from fastapi import APIRouter, Depends, UploadFile, Form
 from app.utils.api_response import api_response
 from app.controllers import document_controller
+from app.schemas import document_schema
+from app.controllers import auth_controller
 
-router = APIRouter(prefix="/documents", tags=["Documents"])
+router = APIRouter(
+    prefix="/documents",
+    tags=["Documents"],
+    dependencies=[Depends(auth_controller.get_current_user)]
+)
 
 # Get all documents
 @router.get("/")
@@ -42,7 +48,7 @@ async def get_document(doc_id: str):
 
 # Create a new document
 @router.post("/")
-async def create_document(doc: dict):
+async def create_document(doc: document_schema.DocumentCreate):
     try:
         created_doc = await document_controller.create_document(doc)
         return api_response(
@@ -58,7 +64,7 @@ async def create_document(doc: dict):
     
 # Update a document by ID
 @router.patch("/{doc_id}")
-async def update_document(doc_id: str, doc_update: dict):
+async def update_document(doc_id: str, doc_update: document_schema.DocumentUpdate):
     try:
         updated_doc = await document_controller.update_document(doc_id, doc_update)
         if updated_doc:

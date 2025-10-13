@@ -2,10 +2,10 @@ from fastapi import FastAPI, Request
 from contextlib import asynccontextmanager
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
-from app.routes import document_route
-from app.routes import question_embedding_route
+from app.routes import document_route, question_embedding_route, user_route
 from app.utils.api_response import api_response
 from app.databases.mongo import connect_to_mongo, close_mongo_connection
+from app.routes import auth_route
 
 
 @asynccontextmanager
@@ -48,9 +48,11 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 # Root endpoint (For testing)
 @app.get("/")
-def home():
+async def home():
     return {"msg": "Welcome to the TDTU QA System API"}
 
 # Thiết lập router
+app.include_router(user_route.router)
+app.include_router(auth_route.router)
 app.include_router(document_route.router)
 app.include_router(question_embedding_route.router)

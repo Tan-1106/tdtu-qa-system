@@ -34,6 +34,12 @@ async def close_mongo_connection():
 
 # COLLECTIONS
 # Users collection
+def get_users_collection():
+    global db
+    if db is None:
+        raise RuntimeError("Database is not initialized. Did you call connect_to_mongo()?")
+    logging.info(f"LOG: Accessing collection: users in database: {DB_NAME}")
+    return db.get_collection("users")
 
 # Documents collection
 def get_documents_collection():
@@ -41,11 +47,28 @@ def get_documents_collection():
     if db is None:
         raise RuntimeError("Database is not initialized. Did you call connect_to_mongo()?")
     logging.info(f"LOG: Accessing collection: documents in database: {DB_NAME}")
-    return db.get_collection(os.getenv("MONGO_DOCUMENTS_COLLECTION", "documents"))
+    return db.get_collection("documents")
 
 # Questions collection
+def get_questions_collection():
+    global db
+    if db is None:
+        raise RuntimeError("Database is not initialized. Did you call connect_to_mongo()?")
+    logging.info(f"LOG: Accessing collection: questions in database: {DB_NAME}")
+    return db.get_collection("questions")
 
 # Answers collection
+def get_answers_collection():
+    global db
+    if db is None:
+        raise RuntimeError("Database is not initialized. Did you call connect_to_mongo()?")
+    logging.info(f"LOG: Accessing collection: answers in database: {DB_NAME}")
+    return db.get_collection("answers")
 
 # Popular questions collection
-
+def get_popular_questions_collection():
+    global db
+    if db is None:
+        raise RuntimeError("Database is not initialized. Did you call connect_to_mongo()?")
+    logging.info(f"LOG: Accessing collection: popular_questions in database: {DB_NAME}")
+    return db.get_collection("popular_questions")

@@ -36,7 +36,7 @@ async def delete_document(doc_id: str):
     return deleted
 
 # Extract text content from a PDF document (both text-based and scanned, not appendix)
-def extract_pdf_document_content(file: UploadFile):
+async def extract_pdf_document_content(file: UploadFile):
     document_content = ""
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
         shutil.copyfileobj(file.file, tmp)

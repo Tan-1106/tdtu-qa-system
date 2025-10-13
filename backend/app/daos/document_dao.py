@@ -14,8 +14,6 @@ async def get_documents() -> List[document_schema.DocumentResponse]:
 
 # Read a document by ID
 async def get_document_by_id(doc_id: str) -> Optional[document_schema.DocumentResponse]:
-    if not ObjectId.is_valid(doc_id):
-        return None
     doc = await mongo.get_documents_collection().find_one({"_id": ObjectId(doc_id)})
     if doc:
         return document_schema.DocumentResponse(**serializer.document_serialize(doc))

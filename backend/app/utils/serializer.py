@@ -1,3 +1,16 @@
+# User
+def user_serialize(user) -> dict:
+    return {
+        "id": str(user["_id"]),
+        "full_name": user.get("full_name"),
+        "username": user.get("username"),
+        "email": user.get("email"),
+        "password": user.get("password"),
+        "role": user.get("role"),
+        "created_at": user.get("created_at").isoformat() if user.get("created_at") else None,
+        "updated_at": user.get("updated_at").isoformat() if user.get("updated_at") else None,
+    }
+
 # Document
 def document_serialize(doc) -> dict:
     return {

@@ -48,7 +48,7 @@ def normalize_text(text: str):
     return data
 
 # Split text into chunks
-def split_text_into_chunks(text: str, words_per_chunk: int = 800, overlap: int = 300) -> list[str]:
+async def split_text_into_chunks(text: str, words_per_chunk: int = 800, overlap: int = 300) -> list[str]:
     text = text.strip()
     chunks = []
     

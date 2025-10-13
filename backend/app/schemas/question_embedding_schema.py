@@ -24,10 +24,8 @@ class QuestionEmbeddingCreate(BaseModel):
 # Feedback Update Schema
 class QuestionEmbeddingFeedbackUpdate(BaseModel):
     feedback_score: int = Field(..., description="Feedback score: +1 like, -1 dislike")
-    feedback_count: int = Field(..., description="Number of feedback for this question")
     
     class Config:
-        from_attributes = True
         extra = "forbid"
         
 # Question Embedding Response Schema

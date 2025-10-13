@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 from app.utils.api_response import api_response
 from app.controllers import question_embedding_controller
+from app.schemas import question_embedding_schema
 
 router = APIRouter(prefix="/question-embeddings", tags=["Question Embeddings"])
 
@@ -44,7 +45,7 @@ async def get_question_embedding(embedding_id: str):
 
 # Create a new question embedding
 @router.post("/")
-async def create_question_embedding(data: dict):
+async def create_question_embedding(data: question_embedding_schema.QuestionEmbeddingCreate):
     try:
         created_question_embedding = await question_embedding_controller.create_question_embedding(data)
         return api_response(
@@ -60,9 +61,9 @@ async def create_question_embedding(data: dict):
         
 # Update feedback for a question embedding
 @router.patch("/{embedding_id}/feedback")
-async def update_question_embedding_feedback(embedding_id: str, score: int):
+async def update_question_embedding_feedback(embedding_id: str, feedback: question_embedding_schema.QuestionEmbeddingFeedbackUpdate):
     try:
-        updated_embedding = await question_embedding_controller.update_question_embedding_feedback(embedding_id, score)
+        updated_embedding = await question_embedding_controller.update_question_embedding_feedback(embedding_id, feedback)
         if updated_embedding:
             return api_response(
                 status_code=200,

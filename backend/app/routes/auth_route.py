@@ -1,0 +1,49 @@
+from fastapi import APIRouter, Depends
+from app.utils.api_response import api_response
+from app.schemas import auth_schema, user_schema
+from app.controllers import auth_controller
+
+router = APIRouter(prefix="/auth", tags=["Authentication"])
+
+# Register a new user
+@router.post("/register")
+async def register(request: auth_schema.RegisterRequest):
+    try:
+        user = await auth_controller.register(request)
+        return api_response(
+            status_code=201,
+            message="User registered successfully",
+            details=user
+        )
+    except Exception as e:
+        return api_response(
+            status_code=500,
+            message="Internal Server Error",
+            details=str(e)
+        )
+        
+# Login user
+@router.post("/login")
+async def login(request: auth_schema.LoginRequest):
+    try:
+        token = await auth_controller.login(request)
+        return api_response(
+            status_code=200,
+            message="User logged in successfully",
+            details=token
+        )
+    except Exception as e:
+        return api_response(
+            status_code=500,
+            message="Internal Server Error",
+            details=str(e)
+        )
+        
+# Get current user
+@router.get("/me")
+async def get_current_user(current_user: user_schema.UserResponse = Depends(auth_controller.get_current_user)):
+    return api_response(
+        status_code=200,
+        message="Current user fetched successfully",
+        details=current_user
+    )
