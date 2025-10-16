@@ -26,3 +26,4 @@ def document_serialize(doc) -> dict:
         "created_at": doc.get("created_at").isoformat() if doc.get("created_at") else None,
         "updated_at": doc.get("updated_at").isoformat() if doc.get("updated_at") else None,
     }
+    

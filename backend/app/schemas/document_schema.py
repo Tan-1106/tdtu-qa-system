@@ -11,7 +11,6 @@ class DocumentCreate(BaseModel):
     tags: List[str] = Field(default_factory=list, description="Tags associated with the document")
     language: List[str] = Field(default_factory=lambda: ["vi"], description="Language of the document (default: vi)")
     file_url: HttpUrl = Field(..., description="File URL of the document")
-    uploaded_by: str = Field(..., description="User ID of the uploader")
     
     class Config:
         from_attributes = True

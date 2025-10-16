@@ -1,9 +1,15 @@
-from fastapi import APIRouter
-from app.utils.api_response import api_response
-from app.controllers import question_embedding_controller
-from app.schemas import question_embedding_schema
+from fastapi import APIRouter, Depends
 
-router = APIRouter(prefix="/question-embeddings", tags=["Question Embeddings"])
+from app.services import auth_service
+from app.utils.api_response import api_response
+from app.schemas import question_embedding_schema
+from app.controllers import question_embedding_controller
+
+router = APIRouter(
+    prefix="/question-embeddings",
+    tags=["Question Embeddings"],
+    dependencies=[Depends(auth_service.require_role(["Admin"]))]
+)
 
 # Get all question embeddings
 @router.get("/")
@@ -15,28 +21,32 @@ async def get_question_embeddings():
             details=embeddings,
             message="Question embeddings retrieved successfully."
         )
+    except ValueError as e:
+        return api_response(
+            status_code=400,
+            message=str(e)
+        )
     except Exception as e:
         return api_response(
             status_code=500,
             message=str(e)
         )
-        
+
 # Get a question embedding by ID
 @router.get("/{embedding_id}")
 async def get_question_embedding(embedding_id: str):
     try:
         embedding = await question_embedding_controller.get_question_embedding_by_id(embedding_id)
-        if embedding:
-            return api_response(
+        return api_response(
                 status_code=200,
                 details=embedding,
                 message="Question embedding retrieved successfully."
             )
-        else:
-            return api_response(
-                status_code=404,
-                message="Question embedding not found."
-            )
+    except ValueError as e:
+        return api_response(
+            status_code=404,
+            message=str(e)
+        )
     except Exception as e:
         return api_response(
             status_code=500,
@@ -53,6 +63,11 @@ async def create_question_embedding(data: question_embedding_schema.QuestionEmbe
             message="Question embedding created successfully.",
             details=created_question_embedding
         )
+    except ValueError as e:
+        return api_response(
+            status_code=400,
+            message=str(e)
+        )
     except Exception as e:
         return api_response(
             status_code=500,
@@ -64,17 +79,16 @@ async def create_question_embedding(data: question_embedding_schema.QuestionEmbe
 async def update_question_embedding_feedback(embedding_id: str, feedback: question_embedding_schema.QuestionEmbeddingFeedbackUpdate):
     try:
         updated_embedding = await question_embedding_controller.update_question_embedding_feedback(embedding_id, feedback)
-        if updated_embedding:
-            return api_response(
+        return api_response(
                 status_code=200,
                 message="Question embedding feedback updated successfully.",
                 details=updated_embedding
             )
-        else:
-            return api_response(
-                status_code=404,
-                message="Question embedding not found."
-            )
+    except ValueError as e:
+        return api_response(
+            status_code=404,
+            message=str(e)
+        )
     except Exception as e:
         return api_response(
             status_code=500,
@@ -85,17 +99,16 @@ async def update_question_embedding_feedback(embedding_id: str, feedback: questi
 @router.delete("/{embedding_id}")
 async def delete_question_embedding(embedding_id: str):
     try:
-        success = await question_embedding_controller.delete_question_embedding(embedding_id)
-        if success:
-            return api_response(
-                status_code=200,
-                message="Question embedding deleted successfully."
-            )
-        else:
-            return api_response(
-                status_code=500,
-                message="Failed to delete question embedding."
-            )
+        await question_embedding_controller.delete_question_embedding(embedding_id)
+        return api_response(
+            status_code=200,
+            message="Question embedding deleted successfully."
+        )
+    except ValueError as e:
+        return api_response(
+            status_code=404,
+            message=str(e)
+        )
     except Exception as e:
         return api_response(
             status_code=500,
@@ -106,19 +119,14 @@ async def delete_question_embedding(embedding_id: str):
 @router.delete("/")
 async def reset_question_embeddings_collection():
     try:
-        success = await question_embedding_controller.reset_question_embeddings_collection()
-        if success:
-            return api_response(
-                status_code=200,
-                message="All question embeddings deleted successfully."
-            )
-        else:
-            return api_response(
-                status_code=500,
-                message="Failed to delete all question embeddings."
-            )
+        await question_embedding_controller.reset_question_embeddings_collection()
+        return api_response(
+            status_code=200,
+            message="All question embeddings deleted successfully."
+        )
     except Exception as e:
         return api_response(
             status_code=500,
             message=str(e)
         )
+        

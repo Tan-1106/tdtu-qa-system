@@ -13,10 +13,10 @@ gpt_client = OpenAI(api_key=GPT_KEY)
 embedding_model = SentenceTransformer(EMBEDDING_MODEL)
 
 # Generate questions from a given text chunk
-def create_questions(context: str):
+def create_questions(context: str, num_questions: int = 5) -> list[str]:
     prompt = f"""
         Bạn là một trợ lý tạo câu hỏi thông minh.
-        Nhiệm vụ: tạo ra 10 câu hỏi ngắn gọn, tự nhiên mà một sinh viên có thể hỏi về các quy định hoặc quy chế của trường đại học, 
+        Nhiệm vụ: tạo ra {num_questions} câu hỏi ngắn gọn, tự nhiên mà một sinh viên có thể hỏi về các quy định hoặc quy chế của trường đại học, 
         dựa trên nội dung trong đoạn văn bản sau đây. 
         Chỉ tạo những câu hỏi mà thông tin trả lời có thể tìm thấy trong đoạn văn.
 
@@ -24,9 +24,9 @@ def create_questions(context: str):
         \"\"\"{context}\"\"\"
 
         Yêu cầu định dạng đầu ra:
-        Trả về đúng một danh sách Python hợp lệ chứa 10 chuỗi (string), không thêm bất kỳ nội dung nào khác.
+        Trả về đúng một danh sách Python hợp lệ chứa {num_questions} chuỗi (string), không thêm bất kỳ nội dung nào khác.
         Ví dụ:
-        ["Câu hỏi 1", "Câu hỏi 2", "Câu hỏi 3", ..., "Câu hỏi 10"]
+        ["Câu hỏi 1", "Câu hỏi 2", ..., "Câu hỏi {num_questions}"]
     """
 
 
@@ -38,6 +38,7 @@ def create_questions(context: str):
 
     output_text = response.output_text
     output_text = text_process.normalize_text(output_text)
+    print("LOG: Generated questions:", output_text)
     return output_text
 
 # Get embedding for a given text

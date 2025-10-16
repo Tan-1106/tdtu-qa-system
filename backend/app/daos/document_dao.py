@@ -1,6 +1,7 @@
 from bson import ObjectId
-from typing import List, Optional
+from typing import List
 from datetime import datetime, timezone
+
 from app.databases import mongo
 from app.utils import serializer
 from app.schemas import document_schema
@@ -13,38 +14,43 @@ async def get_documents() -> List[document_schema.DocumentResponse]:
     return docs
 
 # Read a document by ID
-async def get_document_by_id(doc_id: str) -> Optional[document_schema.DocumentResponse]:
+async def get_document_by_id(doc_id: str) -> document_schema.DocumentResponse:
     doc = await mongo.get_documents_collection().find_one({"_id": ObjectId(doc_id)})
-    if doc:
-        return document_schema.DocumentResponse(**serializer.document_serialize(doc))
-    return None
+    if not doc:
+        raise ValueError("Document not found")
+    return document_schema.DocumentResponse(**serializer.document_serialize(doc))
 
 # Create a new document
 async def create_document(doc: dict) -> document_schema.DocumentResponse:
     doc["created_at"] = datetime.now(timezone.utc)
     result = await mongo.get_documents_collection().insert_one(doc)
+    
     created_doc = await mongo.get_documents_collection().find_one({"_id": result.inserted_id})
     return document_schema.DocumentResponse(**serializer.document_serialize(created_doc))
 
 # Update an existing document
-async def update_document(doc_id: str, doc_update: dict) -> Optional[document_schema.DocumentResponse]:
+async def update_document(doc_id: str, doc_update: dict) -> document_schema.DocumentResponse:
     if not ObjectId.is_valid(doc_id):
-        return None
-    if doc_update:
-        doc_update["updated_at"] = datetime.now(timezone.utc)
-        result = await mongo.get_documents_collection().update_one(
-            {"_id": ObjectId(doc_id)},
-            {"$set": doc_update}
-        )
-        if result.modified_count == 1:
-            updated_doc = await mongo.get_documents_collection().find_one({"_id": ObjectId(doc_id)})
-            if updated_doc:
-                return document_schema.DocumentResponse(**serializer.document_serialize(updated_doc))
-    return None
+        raise ValueError("Invalid document ID")
+    
+    doc_update["updated_at"] = datetime.now(timezone.utc)
+    result = await mongo.get_documents_collection().update_one(
+        {"_id": ObjectId(doc_id)},
+        {"$set": doc_update}
+    )
+    if result.matched_count == 0:
+        raise ValueError("Document not found")
+    
+    updated_doc = await mongo.get_documents_collection().find_one({"_id": ObjectId(doc_id)})
+    return document_schema.DocumentResponse(**serializer.document_serialize(updated_doc))
 
 # Delete a document by ID
 async def delete_document(doc_id: str) -> bool:
     if not ObjectId.is_valid(doc_id):
-        return False
+        raise ValueError("Invalid document ID")
+    
     result = await mongo.get_documents_collection().delete_one({"_id": ObjectId(doc_id)})
-    return result.deleted_count == 1
+    if result.deleted_count == 0:
+        raise ValueError("Document not found")
+    
+    return True

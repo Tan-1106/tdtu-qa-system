@@ -1,9 +1,13 @@
 from fastapi import APIRouter, Depends
+
+from app.controllers import auth_controller
 from app.utils.api_response import api_response
 from app.schemas import auth_schema, user_schema
-from app.controllers import auth_controller
 
-router = APIRouter(prefix="/auth", tags=["Authentication"])
+router = APIRouter(
+    prefix="/auth",
+    tags=["Authentication"]
+)
 
 # Register a new user
 @router.post("/register")
@@ -14,6 +18,12 @@ async def register(request: auth_schema.RegisterRequest):
             status_code=201,
             message="User registered successfully",
             details=user
+        )
+    except ValueError as e:
+        return api_response(
+            status_code=400,
+            message=str(e),
+            details=None
         )
     except Exception as e:
         return api_response(
@@ -31,6 +41,12 @@ async def login(request: auth_schema.LoginRequest):
             status_code=200,
             message="User logged in successfully",
             details=token
+        )
+    except ValueError as e:
+        return api_response(
+            status_code=400,
+            message=str(e),
+            details=None
         )
     except Exception as e:
         return api_response(

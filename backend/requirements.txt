@@ -11,11 +11,13 @@ pydantic[email]
 
 pymupdf
 pdf2image
+pdfplumber
 pytesseract
 camelot-py[base]
 
 pyvi
 openai
+hdbscan
 sentence_transformers
 
 pyjwt

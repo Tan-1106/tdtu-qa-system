@@ -47,6 +47,13 @@ def normalize_text(text: str):
 
     return data
 
+# Clean individual table cell content
+def clean_cell(x):
+    x = str(x)
+    x = re.sub(r'[\n\r\t]+', '', x)
+    x = re.sub(r'\s{2,}', ' ', x)
+    return x.strip()
+
 # Split text into chunks
 async def split_text_into_chunks(text: str, words_per_chunk: int = 800, overlap: int = 300) -> list[str]:
     text = text.strip()

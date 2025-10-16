@@ -2,6 +2,7 @@ from typing import List
 from bson import ObjectId
 from pydantic import BaseModel, Field
 
+# Question Embedding Metadata Schema
 class QuestionEmbeddingMetadata(BaseModel):
     doc_id: str = Field(..., description="ID of the associated document")
     chunk_index: int = Field(..., description="Index of the chunk in the document")

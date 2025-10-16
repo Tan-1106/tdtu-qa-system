@@ -8,14 +8,16 @@ RUN apt-get update && apt-get install -y \
     poppler-utils \
     git \
     build-essential \
+    python3-dev \
+    g++ \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
 COPY requirements.txt ./
-RUN pip install --upgrade pip && \
+RUN pip install --upgrade pip setuptools wheel && \
     pip install --no-cache-dir -r requirements.txt && \
-    pip install --upgrade transformers accelerate && \
+    pip install --no-cache-dir hdbscan && \
     pip install -U pypdf cryptography
 
 COPY ./app ./app
