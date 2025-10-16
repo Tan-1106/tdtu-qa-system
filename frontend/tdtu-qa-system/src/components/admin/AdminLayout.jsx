@@ -6,8 +6,10 @@ import {
 } from '@mui/material';
 import ArticleIcon from '@mui/icons-material/Article';
 import FeedbackIcon from '@mui/icons-material/Feedback';
+import GroupIcon from '@mui/icons-material/Group'; // 1. Import icon mới
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 import tdtuLogo from '../../assets/logo_tdtu.png';
+
 
 const drawerWidth = 240;
 
@@ -106,10 +108,7 @@ const AdminLayout = () => {
               component={RouterNavLink}
               to="/admin/dashboard"
               sx={({ isActive }) => ({
-                color: 'white',
-                borderRadius: 3,
-                mx: 1,
-                my: 0.5,
+                color: 'white', borderRadius: 3, mx: 1, my: 0.5,
                 '&:hover': { background: 'rgba(255,255,255,0.10)' },
                 ...(isActive ? activeLinkStyle : {}),
               })}
@@ -123,10 +122,7 @@ const AdminLayout = () => {
               component={RouterNavLink}
               to="/admin/documents"
               sx={({ isActive }) => ({
-                color: 'white',
-                borderRadius: 3,
-                mx: 1,
-                my: 0.5,
+                color: 'white', borderRadius: 3, mx: 1, my: 0.5,
                 '&:hover': { background: 'rgba(255,255,255,0.10)' },
                 ...(isActive ? activeLinkStyle : {}),
               })}
@@ -135,6 +131,22 @@ const AdminLayout = () => {
               <ListItemText primary="Quản lý Tài liệu" sx={{ fontWeight: 600 }} />
             </ListItemButton>
           </ListItem>
+
+          <ListItem disablePadding>
+            <ListItemButton
+              component={RouterNavLink}
+              to="/admin/users"
+              sx={({ isActive }) => ({
+                color: 'white', borderRadius: 3, mx: 1, my: 0.5,
+                '&:hover': { background: 'rgba(255,255,255,0.10)' },
+                ...(isActive ? activeLinkStyle : {}),
+              })}
+            >
+              <ListItemIcon sx={{ color: 'inherit', minWidth: 38 }}><GroupIcon /></ListItemIcon>
+              <ListItemText primary="Quản lý Người dùng" sx={{ fontWeight: 600 }} />
+            </ListItemButton>
+          </ListItem>
+
         </List>
       </Drawer>
       <Box

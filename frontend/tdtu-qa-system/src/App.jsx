@@ -18,6 +18,7 @@ import RegisterPage from './components/auth/RegisterPage.jsx';
 // Admin Pages
 import DocumentManagementPage from './components/admin/DocumentManagementPage.jsx';
 import FeedbackDashboardPage from './components/admin/FeedbackDashboardPage.jsx';
+import UserManagementPage from './components/admin/UserManagementPage.jsx';
 
 function App() {
   return (
@@ -38,6 +39,7 @@ function App() {
         <Route path="/admin" element={<AdminLayout />}>
           <Route path="dashboard" element={<FeedbackDashboardPage />} />
           <Route path="documents" element={<DocumentManagementPage />} />
+          <Route path="users" element={<UserManagementPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
