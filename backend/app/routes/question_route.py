@@ -1,0 +1,97 @@
+from fastapi import APIRouter, Depends
+from fastapi.encoders import jsonable_encoder
+
+from app.services import auth_service
+from app.schemas import question_schema
+from app.controllers import question_controller
+from app.utils.api_response import api_response
+
+router = APIRouter(
+    prefix="/questions",
+    tags=["Questions"]
+)
+
+# Get all questions
+@router.get("/")
+async def get_questions(current_user = Depends(auth_service.require_role(["Admin"]))):
+    try:
+        questions = await question_controller.get_questions()
+        return api_response(
+            status_code=200,
+            details=questions,
+            message="Questions retrieved successfully."
+        )
+    except Exception as e:
+        return api_response(
+            status_code=500,
+            message=str(e)
+        )
+        
+# Get a question by ID
+@router.get("/{question_id}")
+async def get_question(question_id: str, current_user = Depends(auth_service.require_role(["Admin"]))):
+    try:
+        question = await question_controller.get_question_by_id(question_id)
+        return api_response(
+            status_code=200,
+            details=question,
+            message="Question retrieved successfully."
+        )
+    except ValueError as e:
+        return api_response(
+            status_code=404,
+            message=str(e)
+        )
+    except Exception as e:
+        return api_response(
+            status_code=500,
+            message=str(e)
+        )
+        
+# Create a new question
+@router.post("/")
+async def create_question(data: question_schema.QuestionCreate, current_user = Depends(auth_service.require_role(["Admin"]))):
+    try:
+        current_user = jsonable_encoder(current_user)
+        user_id = current_user["_id"]
+        
+        created_question = await question_controller.create_question(data, user_id)
+        return api_response(
+            status_code=201,
+            details=created_question,
+            message="Question created successfully."
+        )
+    except ValueError as e:
+        return api_response(
+            status_code=400,
+            message=str(e)
+        )
+    except Exception as e:
+        return api_response(
+            status_code=500,
+            message=str(e)
+        )
+        
+# Ask a question
+@router.post("/query")
+async def query(data: question_schema.QuestionCreate, current_user = Depends(auth_service.get_current_user)):
+    try:
+        current_user = jsonable_encoder(current_user)
+        user_id = current_user["_id"]
+
+        created_question = await question_controller.query(data, user_id)
+        return api_response(
+            status_code=201,
+            details=created_question,
+            message="Question asked successfully."
+        )
+    except ValueError as e:
+        return api_response(
+            status_code=400,
+            message=str(e)
+        )
+    except Exception as e:
+        return api_response(
+            status_code=500,
+            message=str(e)
+        )

@@ -76,6 +76,16 @@ async def delete_question_embedding(embedding_id: str) -> bool:
     except Exception as e:
         raise Exception("Error deleting question embedding: " + str(e))
     
+# Delete question embeddings by document ID
+async def delete_question_embeddings_by_doc_id(doc_id: str) -> bool:
+    try:
+        chroma.question_embeddings_collection.delete(
+            where={"doc_id": doc_id}
+        )
+        return True
+    except Exception as e:
+        raise Exception("Error deleting question embeddings for document ID " + doc_id + ": " + str(e))
+    
 # Reset (Delete) question embeddings collection
 async def reset_question_embeddings_collection() -> bool:
     try:
@@ -84,3 +94,105 @@ async def reset_question_embeddings_collection() -> bool:
         return True
     except Exception as e:
         raise Exception("Error deleting all question embeddings: " + str(e))
+    
+# Semantic search question embeddings
+# async def semantic_search_question_embeddings(
+#     query_vector: list[float],
+#     top_k: int,
+#     relevant_embedding_ids: list[str] = None
+# ) -> list[question_embedding_schema.QuestionEmbeddingResponse]:
+#     # Query rộng hơn để có đủ kết quả trước khi lọc
+#     n_results = max(top_k * 5, 50)
+
+#     results = chroma.question_embeddings_collection.query(
+#         query_embeddings=[query_vector],
+#         n_results=n_results,
+#         include=["embeddings", "metadatas"]
+#     )
+
+#     if not results or 'ids' not in results or len(results['ids']) == 0:
+#         return []
+
+#     ids = results["ids"][0]
+#     embeddings = results["embeddings"][0]
+#     metadatas = results["metadatas"][0]
+
+#     # Nếu có giới hạn danh sách ID
+#     if relevant_embedding_ids:
+#         allowed_ids = set(relevant_embedding_ids)
+#         filtered = [
+#             (i, e, m)
+#             for i, e, m in zip(ids, embeddings, metadatas)
+#             if i in allowed_ids
+#         ]
+#     else:
+#         filtered = list(zip(ids, embeddings, metadatas))
+
+#     # Sắp xếp lại theo độ tương đồng (Chroma trả sẵn theo thứ tự)
+#     filtered = filtered[:top_k]
+
+#     # Map sang schema
+#     return [
+#         question_embedding_schema.QuestionEmbeddingResponse(
+#             id=i,
+#             vector=e,
+#             metadata=m
+#         )
+#         for i, e, m in filtered
+#     ]
+
+async def semantic_search_question_embeddings(
+    query_vector: list[float],
+    top_k: int,
+    relevant_embedding_ids: list[str] = None
+) -> list[question_embedding_schema.QuestionEmbeddingResponse]:
+    
+    if relevant_embedding_ids:
+        # Tạo sub-collection tạm
+        temp_name = f"temp_search_{uuid.uuid4().hex[:8]}"
+        sub_collection = chroma.client.create_collection(name=temp_name)
+        try:
+            # Lấy các embedding cụ thể
+            data = chroma.question_embeddings_collection.get(
+                ids=relevant_embedding_ids,
+                include=["embeddings", "metadatas"]
+            )
+            if not data or 'ids' not in data or len(data['ids']) == 0:
+                return []
+
+            sub_collection.add(
+                ids=data['ids'],
+                embeddings=data['embeddings'],
+                metadatas=data['metadatas']
+            )
+
+            # Query trong sub-collection
+            results = sub_collection.query(
+                query_embeddings=[query_vector],
+                n_results=top_k,
+                include=["embeddings", "metadatas"]
+            )
+        finally:
+            chroma.client.delete_collection(temp_name)
+    else:
+        # Query trực tiếp trên collection chính
+        results = chroma.question_embeddings_collection.query(
+            query_embeddings=[query_vector],
+            n_results=top_k,
+            include=["embeddings", "metadatas"]
+        )
+
+    if not results or 'ids' not in results or len(results['ids']) == 0:
+        return []
+
+    ids = results["ids"][0]
+    embeddings = results["embeddings"][0]
+    metadatas = results["metadatas"][0]
+    return [
+        question_embedding_schema.QuestionEmbeddingResponse(
+            id=ids[i],
+            vector=embeddings[i],
+            metadata=metadatas[i]
+        )
+        for i in range(len(ids))
+    ]

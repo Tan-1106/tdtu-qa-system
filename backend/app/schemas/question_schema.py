@@ -5,15 +5,13 @@ from pydantic import BaseModel, Field
 
 # Create Question Schema
 class QuestionCreate(BaseModel):
-    user_id: str = Field(..., description="User ID who asked the question")
     question: str = Field(..., description="The question content")
-    normalized_question: List[str] = Field(..., description="Normalized version of the question")
     
     class Config:
         from_attributes = True
         extra = "forbid"
 
-# Update Question Schema
+# Update Question Schem
 class QuestionUpdate(BaseModel):
     status: str = Field(..., description="Status of the question")
     answer_id: Optional[str] = Field(default=None, description="Answer ID associated with the question")
@@ -35,7 +33,7 @@ class QuestionResponse(BaseModel):
     id: str = Field(alias="_id")
     user_id: str
     question: str
-    normalized_question: List[str]
+    normalized_question: Optional[List[str]] = None
     status: str
     answer_id: Optional[str] = None
     created_at: datetime

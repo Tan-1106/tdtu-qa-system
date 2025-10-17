@@ -194,3 +194,24 @@ async def upload_appendix_document(
             status_code=500,
             message=str(e)
         )
+        
+# Get chunk by doc_id and chunk_index
+@router.get("/{doc_id}/chunks/{chunk_index}")
+async def get_chunk(doc_id: str, chunk_index: int):
+    try:
+        chunk = await document_controller.get_document_chunk(doc_id, chunk_index)
+        return api_response(
+                status_code=200,
+                message="Chunk retrieved successfully.",
+                details=chunk,
+            )
+    except ValueError as e:
+        return api_response(
+            status_code=404,
+            message=str(e),
+        )
+    except Exception as e:
+        return api_response(
+            status_code=500,
+            message=str(e),
+        )

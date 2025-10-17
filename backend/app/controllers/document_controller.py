@@ -16,6 +16,11 @@ async def get_document_by_id(doc_id: str):
     doc = await document_service.get_document_by_id(doc_id)
     return doc
 
+# Get a document chunk by doc_id and chunk_index
+async def get_document_chunk(doc_id: str, chunk_index: int):
+    chunk = await document_service.get_document_chunk(doc_id, chunk_index)
+    return chunk
+
 # Create a new document
 async def create_document(doc_data: document_schema.DocumentCreate, uploaded_by: str):
     doc_data = jsonable_encoder(doc_data)
@@ -57,7 +62,7 @@ async def upload_document(
     
     # Split text into chunks
     print("LOG: Splitting text into chunks...")
-    chunks = await text_process.split_text_into_chunks(document_content, words_per_chunk=800, overlap=300)
+    chunks = await text_process.split_text_into_chunks(document_content, words_per_chunk=400, overlap=150)
     
     # Create document record in DB
     print("LOG: Creating document record in DB...")
@@ -140,7 +145,7 @@ async def upload_appendix_document(
     # Generate questions
     for idx, chunk in enumerate(chunks):
         print("LOG: Generating questions for chunk", idx + 1, "/", len(chunks), "...")
-        questions_data = await document_service.create_question_embeddings(str(doc.id), idx, chunk, num_questions=5)
+        questions_data = await document_service.create_question_embeddings(str(doc.id), idx, chunk, num_questions=3, is_appendix=True)
         response["questions"].append(questions_data)
         
     return response

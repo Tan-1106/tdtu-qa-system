@@ -5,7 +5,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.utils.api_response import api_response
 from app.databases.mongo import connect_to_mongo, close_mongo_connection
-from app.routes import document_route, question_embedding_route, user_route, prototype_route, auth_route
+from app.routes import document_route, question_embedding_route, user_route, prototype_route, auth_route, question_route
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -56,3 +56,4 @@ app.include_router(auth_route.router)
 app.include_router(document_route.router)
 app.include_router(question_embedding_route.router)
 app.include_router(prototype_route.router)
+app.include_router(question_route.router)

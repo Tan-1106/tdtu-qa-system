@@ -1,3 +1,4 @@
+from typing import List
 from app.daos import question_embedding_dao
 
 # Get all question embeddings
@@ -25,7 +26,17 @@ async def delete_question_embedding(embedding_id: str):
     deleted = await question_embedding_dao.delete_question_embedding(embedding_id)
     return deleted
 
+# Delete question embeddings by document ID
+async def delete_question_embeddings_by_doc_id(doc_id: str):
+    deleted = await question_embedding_dao.delete_question_embeddings_by_doc_id(doc_id)
+    return deleted
+
 # Reset (Delete) question embeddings collection
 async def reset_question_embeddings_collection():
     deleted = await question_embedding_dao.reset_question_embeddings_collection()
     return deleted
+
+# Semantic search question embeddings
+async def semantic_search_question_embeddings(query_vector: List[float], top_k: int, relevant_embedding_ids: List[str] = None):
+    question_embeddings = await question_embedding_dao.semantic_search_question_embeddings(query_vector, top_k, relevant_embedding_ids)
+    return question_embeddings

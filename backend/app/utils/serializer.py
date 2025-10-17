@@ -27,3 +27,22 @@ def document_serialize(doc) -> dict:
         "updated_at": doc.get("updated_at").isoformat() if doc.get("updated_at") else None,
     }
     
+# Document Chunk
+def document_chunk_serialize(chunk) -> dict:
+    return {
+        "doc_id": str(chunk.get("doc_id")),
+        "chunk_index": chunk.get("chunk_index"),
+        "chunk_text": chunk.get("chunk_text"),
+    }
+    
+# Question
+def question_serialize(question) -> dict:
+    return {
+        "id": str(question["_id"]),
+        "user_id": question.get("user_id"),
+        "question": question.get("question"),
+        "normalized_question": question.get("normalized_question", []),
+        "status": question.get("status"),
+        "answer_id": question.get("answer_id"),
+        "created_at": question.get("created_at").isoformat() if question.get("created_at") else None,
+    }

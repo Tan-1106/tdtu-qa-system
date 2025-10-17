@@ -67,3 +67,28 @@ async def reset_prototypes_collection() -> bool:
     except Exception as e:
         print(f"Error resetting prototypes collection: {e}")
         return False
+    
+# Semantic search for prototypes
+async def semantic_search_prototypes(query_vector: list[float], top_k: int = 5) -> list[prototype_schema.PrototypeResponse]:
+    results = chroma.prototypes_collection.query(
+        query_embeddings=[query_vector],
+        n_results=top_k,
+        include=["embeddings", "metadatas"]
+    )
+    
+    if not results or 'ids' not in results or len(results['ids']) == 0:
+        return []
+    
+    prototypes = []
+    for idx in range(len(results['ids'][0])):
+        metadata = {k: json.loads(v) for k, v in results['metadatas'][0][idx].items()}
+        
+        prototypes.append(
+            prototype_schema.PrototypeResponse(
+                id=results['ids'][0][idx],
+                centroid_vector=results['embeddings'][0][idx],
+                metadata=metadata
+            )
+        )
+        
+    return prototypes

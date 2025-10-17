@@ -23,6 +23,11 @@ async def get_document_by_id(doc_id: str):
     doc = await document_dao.get_document_by_id(doc_id)
     return doc
 
+# Get a document chunk by doc_id and chunk_index
+async def get_document_chunk(doc_id: str, chunk_index: int):
+    chunk = await document_dao.get_document_chunk(doc_id, chunk_index)
+    return chunk
+
 # Create a new document
 async def create_document(doc_data: dict):
     doc = await document_dao.create_document(doc_data)
@@ -36,7 +41,10 @@ async def update_document(doc_id: str, doc_update: dict):
 # Delete a document by ID
 async def delete_document(doc_id: str):
     deleted = await document_dao.delete_document(doc_id)
-    return deleted
+    if deleted:
+        result = await question_embedding_service.delete_question_embeddings_by_doc_id(doc_id)
+    
+    return result
 
 # Extract text content from a PDF document (both text-based and scanned, not appendix)
 async def extract_pdf_document_content(file: UploadFile):
@@ -71,8 +79,8 @@ async def extract_pdf_document_content(file: UploadFile):
     return document_content
 
 # Generate potential questions for a text chunk
-async def create_question_embeddings(doc_id: str, chunk_idx: int, chunk: str, num_questions: int = 5):
-    generated_questions_list =  model_service.create_questions(chunk, num_questions=num_questions)
+async def create_question_embeddings(doc_id: str, chunk_idx: int, chunk: str, num_questions: int = 5, is_appendix: bool = False):
+    generated_questions_list =  model_service.create_questions(chunk, num_questions=num_questions) if not is_appendix else model_service.create_questions_appendix(chunk, num_questions=num_questions)
 
     print("LOG: Create embeddings for questions...")
     for question in generated_questions_list:
@@ -129,6 +137,7 @@ async def extract_pdf_appendix_content(file: UploadFile):
     except Exception as e:
         raise Exception("Failed to extract text and tables from appendix PDF.") from e
 
+# Extract appendix description (text before the first table)
 def extract_appendix_description(path: str) -> str:
     tables = camelot.read_pdf(path, pages='all', flavor='lattice')
     

@@ -46,3 +46,15 @@ class DocumentResponse(BaseModel):
         from_attributes = True
         populate_by_name = True
         json_encoders = { ObjectId: str }
+        
+# Document Chunk Response Schema
+class DocumentChunkResponse(BaseModel):
+    doc_id: str
+    title: str
+    chunk_index: int
+    chunk_text: str
+    file_url: HttpUrl
+
+    class Config:
+        from_attributes = True
+        json_encoders = { ObjectId: str }

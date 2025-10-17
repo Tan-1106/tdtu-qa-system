@@ -47,7 +47,7 @@ async def cluster_question_embeddings():
     print("- LOG: Clustering embeddings...")
     clusterer = hdbscan.HDBSCAN(
         min_cluster_size=2,
-        min_samples=1,
+        min_samples=2,
         metric='euclidean',
         cluster_selection_epsilon=0.1
     )
@@ -90,3 +90,8 @@ async def cluster_question_embeddings():
 async def reset_prototypes_collection():
     result = await prototype_dao.reset_prototypes_collection()
     return result
+
+# Semantic search prototypes
+async def semantic_search_prototypes(query_vector: List[float], top_k: int = 5):
+    prototypes = await prototype_dao.semantic_search_prototypes(query_vector, top_k)
+    return prototypes

@@ -1,5 +1,6 @@
-from bson import ObjectId
+import json
 from typing import List
+from bson import ObjectId
 from datetime import datetime, timezone
 
 from app.databases import mongo
@@ -19,6 +20,29 @@ async def get_document_by_id(doc_id: str) -> document_schema.DocumentResponse:
     if not doc:
         raise ValueError("Document not found")
     return document_schema.DocumentResponse(**serializer.document_serialize(doc))
+
+# Get a document chunk by doc_id and chunk_index
+async def get_document_chunk(doc_id: str, chunk_index: int) -> document_schema.DocumentChunkResponse:
+    if not ObjectId.is_valid(doc_id):
+        raise ValueError("Invalid document ID")
+    
+    doc = await mongo.get_documents_collection().find_one({"_id": ObjectId(doc_id)})
+    if not doc:
+        raise ValueError("Document not found")    
+    doc = serializer.document_serialize(doc)
+
+    chunks = doc.get("chunks", [])
+    if chunk_index < 0 or chunk_index >= len(chunks):
+        raise ValueError("Chunk index out of range")
+    
+    chunk = chunks[chunk_index]
+    return document_schema.DocumentChunkResponse(
+        doc_id=doc_id,
+        title=doc.get("title", ""),
+        chunk_index=chunk_index,
+        chunk_text=chunk,
+        file_url=doc.get("file_url", "")
+    )
 
 # Create a new document
 async def create_document(doc: dict) -> document_schema.DocumentResponse:
