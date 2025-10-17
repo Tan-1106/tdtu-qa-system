@@ -6,6 +6,9 @@ import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 
+// 1. Import component Modal
+import DocumentFormModal from './DocumentFormModal.jsx';
+
 const typeColor = {
   'Quy định': 'primary',
   'Thông báo': 'success',
@@ -27,12 +30,12 @@ const DocumentManagementPage = () => {
   }, []);
 
   const handleAdd = () => {
-    setEditingDocument(null);
+    setEditingDocument(null); // Đảm bảo không có document nào đang được edit
     setIsModalOpen(true);
   };
 
   const handleEdit = (doc) => {
-    setEditingDocument(doc);
+    setEditingDocument(doc); // Set document đang được edit
     setIsModalOpen(true);
   };
 
@@ -41,6 +44,26 @@ const DocumentManagementPage = () => {
       setDocuments(docs => docs.filter(d => d.id !== docId));
       console.log(`Xóa tài liệu ${docId}`);
     }
+  };
+  
+  // 2. Thêm hàm xử lý lưu
+  const handleSave = (docData) => {
+    // Nếu docData có id, tức là đang sửa
+    if (docData.id) {
+      setDocuments(docs => 
+        docs.map(doc => (doc.id === docData.id ? { ...doc, ...docData } : doc))
+      );
+    } 
+    // Nếu không có id, tức là đang thêm mới
+    else {
+      const newDoc = {
+        ...docData,
+        id: Date.now(), // Tạo id tạm thời
+        uploadDate: new Date().toISOString().split('T')[0], // Lấy ngày hiện tại
+      };
+      setDocuments(docs => [newDoc, ...docs]);
+    }
+    setIsModalOpen(false); // Đóng modal sau khi lưu
   };
 
   return (
@@ -65,7 +88,13 @@ const DocumentManagementPage = () => {
         </Button>
       </Box>
 
-      {/* <DocumentFormModal open={isModalOpen} onClose={() => setIsModalOpen(false)} document={editingDocument} /> */}
+      {/* 3. Render Modal và truyền các props cần thiết */}
+      <DocumentFormModal 
+        open={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleSave}
+        document={editingDocument}
+      />
 
       <TableContainer component={Paper} sx={{ borderRadius: 4, boxShadow: '0 4px 16px 0 rgba(25,118,210,0.06)' }}>
         <Table>
