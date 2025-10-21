@@ -1,5 +1,4 @@
 import logging
-import warnings
 from fastapi import FastAPI, Request
 from contextlib import asynccontextmanager
 from fastapi.exceptions import RequestValidationError
@@ -75,6 +74,6 @@ app.include_router(question_embedding_route.router)
 # Prototype routes
 app.include_router(prototype_route.router)
 
-# Question routes
-app.include_router(question_route.admin_router)
+# Question routes (user_router TRƯỚC để /questions/query không bị admin chặn)
 app.include_router(question_route.user_router)
+app.include_router(question_route.admin_router)

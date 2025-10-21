@@ -28,10 +28,19 @@ async def query(question_data: question_schema.QuestionCreate, user_id: str):
     
     # Create the question
     question = await question_service.create_question(question_data)
-    
-    answer = await question_service.query(question_data)
+    try:
+        # Get the answer
+        answer = await question_service.query(question_data)
+        # Update question status with answer
+        result = await question_service.update_question_status(question.id, answer)
 
-    return {
-        "question": question,
-        "answer": answer
-    }
+    except Exception as e:
+        await question_service.update_question_status(question.id, f"Error: Cannot get answer. {str(e)}", status="Failed")
+        raise e
+
+    return result
+
+# Leave feedback for a question
+async def leave_feedback(question_id: str, user_id: str, feedback: int):
+    question = await question_service.leave_feedback(question_id, user_id, feedback)
+    return question

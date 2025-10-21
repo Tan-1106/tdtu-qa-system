@@ -1,14 +1,15 @@
 from typing import Optional
 from fastapi import UploadFile, Form
 from fastapi.encoders import jsonable_encoder
+from fastapi.responses import StreamingResponse
 
 from app.utils import text_process
 from app.schemas import document_schema
 from app.services import document_service, prototype_service, question_embedding_service
 
 # Get all documents
-async def get_documents():
-    docs = await document_service.get_documents()
+async def get_documents(filters: dict, skip: int, limit: int):
+    docs = await document_service.get_documents(filters=filters, skip=skip, limit=limit)
     return docs
 
 # Get a document by ID
@@ -21,10 +22,10 @@ async def get_document_chunk(doc_id: str, chunk_index: int):
     chunk = await document_service.get_document_chunk(doc_id, chunk_index)
     return chunk
 
-# Get documents by type
-async def get_documents_by_type(doc_type: str):
-    docs = await document_service.get_documents_by_type(doc_type)
-    return docs
+# Get documents count
+async def count_documents(filters: dict):
+    count = await document_service.count_documents(filters=filters)
+    return count
 
 # Create a new document
 async def create_document(doc_data: document_schema.DocumentCreate, uploaded_by: str):
@@ -63,15 +64,21 @@ async def upload_document(
     # Extract text from PDF
     print("- LOG: Extracting text from PDF...")
     document_content = await text_process.extract_pdf_document_content(file)
+    await file.seek(0)
     
     # Split text into chunks
     print("- LOG: Splitting text into chunks...")
     chunks = await text_process.split_text_into_chunks(document_content, words_per_chunk=800, overlap=200)
     
+    # Save document to disk
+    print("- LOG: Saving document to disk...")
+    file_path = await document_service.save_document_file(file)
+    
     # Create document record in DB
     print("- LOG: Creating document record in DB...")
     doc = await document_service.create_document({
         "title": file.filename,
+        "file_path": file_path,
         "chunks": chunks,
         "doc_type": doc_type,
         "department": department,
@@ -79,10 +86,11 @@ async def upload_document(
         "file_url": file_url,
         "uploaded_by": uploaded_by,
     })
-
+    
     # Prepare response and process document (generate questions, get embeddings, store embeddings in ChromaDB)
     response = {
         "doc_id": str(doc.id),
+        "file_path": file_path,
         "title": file.filename,
         "chunks": chunks,
         "file_url": file_url,
@@ -113,6 +121,7 @@ async def upload_appendix_document(
     # Extract text and tables from PDF
     print("- LOG: Extracting text and tables from PDF appendix...")
     file_content = await text_process.extract_pdf_appendix_content(file)
+    await file.seek(0)
 
     # Split appendix into chunks
     print("- LOG: Splitting appendix into chunks...")
@@ -120,10 +129,15 @@ async def upload_appendix_document(
     tables = file_content["tables"]
     chunks = await text_process.split_appendix_into_chunks(appendix_description, tables, table_header_rows=2)
     
+    # Save document to disk
+    print("- LOG: Saving appendix document to disk...")
+    file_path = await document_service.save_document_file(file)
+    
     # Create document record in DB
     print("- LOG: Creating document record in DB...")
     doc = await document_service.create_document({
         "title": file.filename,
+        "file_path": file_path,
         "chunks": chunks,
         "doc_type": doc_type,
         "department": department,
@@ -135,6 +149,7 @@ async def upload_appendix_document(
     # Prepare response and process document (generate questions, get embeddings, store embeddings in ChromaDB)
     response = {
         "doc_id": str(doc.id),
+        "file_path": file_path,
         "title": file.filename,
         "file_url": file_url,
         "questions": []
@@ -154,5 +169,19 @@ async def upload_appendix_document(
 
 # View a document
 async def view_document_file(doc_id: str):
-    file_content = await document_service.view_document_file(doc_id)
-    return file_content
+    file_name, file_content = await document_service.view_document_file(doc_id)
+    
+    return StreamingResponse(
+        file_content,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f"inline; filename={file_name}.pdf",
+            "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+            "Pragma": "no-cache",
+            "Expires": "0",
+            "Content-Security-Policy": "sandbox allow-scripts allow-same-origin",
+            "X-Content-Type-Options": "nosniff",
+            "X-Frame-Options": "SAMEORIGIN",
+            "X-Download-Options": "noopen"
+        }
+    )

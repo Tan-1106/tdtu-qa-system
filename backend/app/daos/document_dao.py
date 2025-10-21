@@ -1,3 +1,4 @@
+import os
 from typing import List
 from bson import ObjectId
 from datetime import datetime, timezone
@@ -7,9 +8,9 @@ from app.utils import serializer
 from app.schemas import document_schema
 
 # Read all documents
-async def get_documents() -> List[document_schema.DocumentResponse]:
+async def get_documents(filters: dict, skip: int, limit: int) -> List[document_schema.DocumentResponse]:
     docs = []
-    async for doc in mongo.get_documents_collection().find():
+    async for doc in mongo.get_documents_collection().find(filters).skip(skip).limit(limit):
         docs.append(document_schema.DocumentResponse(**serializer.document_serialize(doc)))
     return docs
 
@@ -43,12 +44,10 @@ async def get_document_chunk(doc_id: str, chunk_index: int) -> document_schema.D
         file_url=doc.get("file_url", "")
     )
 
-# Get documents by type
-async def get_documents_by_type(doc_type: str) -> List[document_schema.DocumentResponse]:
-    docs = []
-    async for doc in mongo.get_documents_collection().find({"doc_type": doc_type}):
-        docs.append(document_schema.DocumentResponse(**serializer.document_serialize(doc)))
-    return docs
+# Get documents count
+async def count_documents(filters: dict) -> int:
+    count = await mongo.get_documents_collection().count_documents(filters)
+    return count
 
 # Create a new document
 async def create_document(doc: dict) -> document_schema.DocumentResponse:
@@ -80,13 +79,9 @@ async def delete_document(doc_id: str) -> bool:
         raise ValueError("Invalid document ID")
 
     doc = await mongo.get_documents_collection().find_one({"_id": ObjectId(doc_id)})
-    uploaded_file_id = doc.get("uploaded_file_id")
-    
-    if uploaded_file_id and ObjectId.is_valid(uploaded_file_id):
-        try:
-            await mongo.bucket.delete(ObjectId(uploaded_file_id))
-        except Exception as e:
-            raise RuntimeError("Failed to delete associated file from GridFS") from e
+    file_path = doc.get("file_path") if doc else None
+    if file_path and os.path.exists(file_path):
+        os.remove(file_path)        
 
     result = await mongo.get_documents_collection().delete_one({"_id": ObjectId(doc_id)})
 

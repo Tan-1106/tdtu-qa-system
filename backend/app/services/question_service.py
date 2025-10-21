@@ -53,7 +53,25 @@ async def query(question_data: dict):
     # Generate answer using chunks, question and LLM
     answer = await model_service.generate_answer(chunks, question_data['question'])
         
-    return {
-        "chunks": chunks,
-        "answer": answer
-    }
+    print("- Chunks: ", chunks)
+    print("- Answer: ", answer)
+    return answer[0]
+
+# Update question status with answer
+async def update_question_status(question_id: str, answer: str, status: str = "Answered"):
+    updated_question = await question_dao.update_question_status(question_id, answer, status)
+    return updated_question
+
+# Leave feedback for a question
+async def leave_feedback(question_id: str, user_id: str, feedback: int):
+    question = await question_dao.get_question_by_id(question_id)
+    if not question:
+        raise ValueError("Question not found.")
+    
+    question = jsonable_encoder(question)
+    if question['user_id'] != user_id:
+        raise PermissionError("User is not authorized to leave feedback for this question.")
+    
+    # Update feedback
+    updated_question = await question_dao.update_question_feedback(question_id, user_id, feedback)
+    return updated_question

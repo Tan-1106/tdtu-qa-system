@@ -29,3 +29,35 @@ async def create_question(question: dict) -> question_schema.QuestionResponse:
     created_question = await mongo.get_questions_collection().find_one({"_id": result.inserted_id})
     return question_schema.QuestionResponse(**serializer.question_serialize(created_question))
 
+# Update question status with answer
+async def update_question_status(question_id: str, answer: str, status: str) -> question_schema.QuestionResponse:
+    update_result = await mongo.get_questions_collection().update_one(
+        {"_id": ObjectId(question_id)},
+        {
+            "$set": {
+                "status": status,
+                "answer": answer
+            }
+        }
+    )
+    if update_result.matched_count == 0:
+        raise ValueError("Question not found")
+    
+    updated_question = await mongo.get_questions_collection().find_one({"_id": ObjectId(question_id)})
+    return question_schema.QuestionResponse(**serializer.question_serialize(updated_question))
+
+# Leave feedback for a question
+async def update_question_feedback(question_id: str, user_id: str, feedback: int) -> question_schema.QuestionResponse:
+    update_result = await mongo.get_questions_collection().update_one(
+        {"_id": ObjectId(question_id)},
+        {
+            "$set": {
+                "feedback": feedback
+            }
+        }
+    )
+    if update_result.matched_count == 0:
+        raise ValueError("Question not found")
+    
+    updated_question = await mongo.get_questions_collection().find_one({"_id": ObjectId(question_id)})
+    return question_schema.QuestionResponse(**serializer.question_serialize(updated_question))

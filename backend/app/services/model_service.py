@@ -93,9 +93,8 @@ async def generate_answer(chunks: list[str], question: str) -> str:
     1. Sử dụng **chính xác** thông tin trong các đoạn văn bản để trả lời câu hỏi một cách đầy đủ, tự nhiên, có chủ ngữ và vị ngữ rõ ràng.
     2. Nếu văn bản là **phụ lục**, cần chú ý đến cấu trúc bảng: các thông tin trong cùng một hàng thuộc về cùng một đối tượng, và cần đọc theo thứ tự từ trái sang phải để hiểu đúng ý.
     3. Nếu thông tin liên quan có trong nhiều đoạn, hãy **tổng hợp và diễn đạt lại** thành một câu trả lời hoàn chỉnh.
-    4. Ở cuối câu trả lời, hãy thêm mục **"Nguồn tham khảo:"** gồm danh sách các tài liệu đã được sử dụng (mỗi mục gồm tiêu đề và URL ở cuối đoạn văn bản).
-    5. Nếu **không tìm thấy** thông tin phù hợp trong các đoạn văn bản, hãy trả lời:  
-    "Không tìm thấy tài liệu liên quan đến câu hỏi của bạn."
+    4. Nếu có đáp án, thì ở cuối câu trả lời, hãy thêm mục **"Nguồn tham khảo:"** gồm danh sách các tài liệu đã được sử dụng (mỗi mục gồm tiêu đề và URL ở cuối đoạn văn bản).
+    5. Nếu **không tìm thấy** thông tin phù hợp trong các đoạn văn bản, hãy trả lời rằng không thể tìm được tài liệu trong kho dữ liệu liên quan đến câu hỏi của người dùng và không cần dẫn nguồn tham khảo.
     6. Nếu câu hỏi không liên quan đến lĩnh vực quy định, quy chế hoặc không thuộc phạm vi của trường đại học, hãy trả lời:
     "Câu hỏi của bạn không liên quan đến quy định hoặc quy chế của trường đại học."
 

@@ -8,19 +8,27 @@ async def get_users():
 # Get a user by ID
 async def get_user_by_id(user_id: str):
     user = await user_dao.get_user_by_id(user_id)
+    if not user:
+        raise ValueError(f"User with ID {user_id} not found")
     return user
 
 # Get a user by email
 async def get_user_by_email(email: str):
     user = await user_dao.get_user_by_email(email)
+    if not user:
+        raise ValueError(f"User with email {email} not found")
     return user
 
 # Update a user by ID
 async def update_user(user_id: str, user_update: dict):
     updated_user = await user_dao.update_user(user_id, user_update)
+    if not updated_user:
+        raise ValueError(f"User with ID {user_id} not found")
     return updated_user
 
 # Delete a user by ID
 async def delete_user(user_id: str):
     result = await user_dao.delete_user(user_id)
+    if not result:
+        raise ValueError(f"User with ID {user_id} not found")
     return result

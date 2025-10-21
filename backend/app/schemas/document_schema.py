@@ -30,7 +30,7 @@ class DocumentUpdate(BaseModel):
 # Document Response Schema
 class DocumentResponse(BaseModel):
     id: str = Field(alias="_id")
-    uploaded_file_id: str
+    file_path: Optional[str] = None
     title: str
     chunks: List[str]
     doc_type: str

@@ -15,7 +15,7 @@ def user_serialize(user) -> dict:
 def document_serialize(doc) -> dict:
     return {
         "id": str(doc["_id"]),
-        "uploaded_file_id": str(doc.get("uploaded_file_id")),
+        "file_path": doc.get("file_path"),
         "title": doc.get("title"),
         "chunks": doc.get("chunks", []),
         "doc_type": doc.get("doc_type"),
@@ -43,6 +43,7 @@ def question_serialize(question) -> dict:
         "user_id": question.get("user_id"),
         "question": question.get("question"),
         "status": question.get("status"),
-        "answer_id": question.get("answer_id"),
+        "answer": question.get("answer"),
+        "feedback": question.get("feedback"),
         "created_at": question.get("created_at").isoformat() if question.get("created_at") else None,
     }

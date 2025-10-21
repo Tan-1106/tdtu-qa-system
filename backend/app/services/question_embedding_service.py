@@ -1,4 +1,6 @@
+import asyncio
 from typing import List
+
 from app.services import model_service
 from app.daos import question_embedding_dao
 
@@ -44,19 +46,34 @@ async def semantic_search_question_embeddings(query_vector: List[float], top_k: 
 
 # Generate potential questions for a text chunk
 async def create_question_embeddings(doc_id: str, chunk_idx: int, chunk: str, num_questions: int = 5, is_appendix: bool = False):
+    loop = asyncio.get_event_loop()
+    
     if is_appendix:
-        generated_questions_list =  model_service.create_questions_appendix(chunk, num_questions=num_questions)
+        generated_questions_list = await loop.run_in_executor(
+            None,
+            lambda: model_service.create_questions_appendix(chunk, num_questions=num_questions)
+        )
     else:
-        generated_questions_list =  model_service.create_questions(chunk, num_questions=num_questions)
+        generated_questions_list = await loop.run_in_executor(
+            None,
+            lambda: model_service.create_questions(chunk, num_questions=num_questions)
+        )
 
     print("- LOG: Create embeddings for questions...")
-    for question in generated_questions_list:
-        embedding = model_service.get_embedding(question)
+    async def create_single_embedding(question):
+        embedding = await loop.run_in_executor(
+            None,
+            lambda: model_service.get_embedding(question)
+        )
         question_embedding = {
             "vector": embedding,
             "metadata": {"doc_id": doc_id, "chunk_index": chunk_idx}
         }
         await create_question_embedding(question_embedding)
+    
+    await asyncio.gather(*[
+        create_single_embedding(q) for q in generated_questions_list
+    ])
 
     return {
         "doc_id": doc_id,

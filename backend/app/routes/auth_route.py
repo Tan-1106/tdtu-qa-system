@@ -58,8 +58,15 @@ async def login(request: auth_schema.LoginRequest):
 # Get current user
 @router.get("/me")
 async def get_current_user(current_user: user_schema.UserResponse = Depends(auth_controller.get_current_user)):
-    return api_response(
-        status_code=200,
-        message="Current user fetched successfully",
-        details=current_user
-    )
+    try:
+        return api_response(
+            status_code=200,
+            message="Current user fetched successfully",
+            details=current_user
+        )
+    except Exception as e:
+        return api_response(
+            status_code=500,
+            message="Failed to fetch current user",
+            details=str(e)
+        )

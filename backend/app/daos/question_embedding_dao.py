@@ -100,8 +100,7 @@ async def semantic_search_question_embeddings(
     query_vector: list[float],
     top_k: int,
     relevant_embedding_ids: list[str] = None
-) -> list[question_embedding_schema.QuestionEmbeddingResponse]:
-    
+) -> list[question_embedding_schema.QuestionEmbeddingResponse]:    
     if relevant_embedding_ids:
         # Tạo sub-collection tạm
         temp_name = f"temp_search_{uuid.uuid4().hex[:8]}"

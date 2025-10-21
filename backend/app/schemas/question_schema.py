@@ -1,6 +1,6 @@
 from bson import ObjectId
 from datetime import datetime
-from typing import List, Optional
+from typing import Literal, Optional
 from pydantic import BaseModel, Field
 
 # Create Question Schema
@@ -14,16 +14,16 @@ class QuestionCreate(BaseModel):
 # Update Question Schem
 class QuestionUpdate(BaseModel):
     status: str = Field(..., description="Status of the question")
-    answer_id: Optional[str] = Field(default=None, description="Answer ID associated with the question")
+    answer: Optional[str] = Field(None, description="Answer to the question")
     
     class Config:
         from_attributes = True
         extra = "forbid"
         
-# Update Normalized Question Schema
-class QuestionNormalizedUpdate(BaseModel):
-    normalized_question: List[str] = Field(..., description="Updated normalized version of the question")
-    
+# Feedback Schema
+class AnswerFeedback(BaseModel):
+    feedback: Optional[Literal[1, -1]] = Field(default=None, description="Feedback on the answer (Like/Dislike | 1 for Like, -1 for Dislike)")
+
     class Config:
         from_attributes = True
         extra = "forbid"
@@ -34,7 +34,8 @@ class QuestionResponse(BaseModel):
     user_id: str
     question: str
     status: str
-    answer_id: Optional[str] = None
+    answer: Optional[str] = None
+    feedback: Optional[int] = None
     created_at: datetime
 
     class Config:

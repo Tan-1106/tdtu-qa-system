@@ -38,6 +38,27 @@ async def create_document(doc: document_schema.DocumentCreate, current_user = De
             status_code=500,
             message=str(e),
         )
+        
+# Get chunk by doc_id and chunk_index
+@admin_route.get("/{doc_id}/chunks/{chunk_index}")
+async def get_chunk(doc_id: str, chunk_index: int):
+    try:
+        chunk = await document_controller.get_document_chunk(doc_id, chunk_index)
+        return api_response(
+                status_code=200,
+                message="Chunk retrieved successfully.",
+                details=chunk
+            )
+    except ValueError as e:
+        return api_response(
+            status_code=404,
+            message=str(e)
+        )
+    except Exception as e:
+        return api_response(
+            status_code=500,
+            message=str(e)
+        )
     
 # Update a document by ID
 @admin_route.patch("/{doc_id}")
@@ -164,13 +185,32 @@ async def upload_appendix_document(
 # USER ROUTES
 # Get all documents
 @user_route.get("/")
-async def get_documents():
+async def get_documents(
+    page: int = Query(1, ge=1),
+    limit: int = Query(10, ge=1, le=100),
+    type: str | None = Query(None),
+    department: str | None = Query(None)
+):
     try:
-        docs = await document_controller.get_documents()
+        skip = (page - 1) * limit
+        filters = {}
+        if type:
+            filters["doc_type"] = type
+        if department:
+            filters["department"] = department
+        
+        total = await document_controller.count_documents(filters=filters)
+        total_pages = (total + limit - 1) // limit
+        
+        docs = await document_controller.get_documents(filters=filters, skip=skip, limit=limit)
         return api_response(
             status_code=200,
             message="Documents retrieved successfully.",
-            details=docs
+            details= {
+                "documents": docs,
+                "page": page,
+                "total_pages": total_pages
+            }
         )
     except Exception as e:
         return api_response(
@@ -178,22 +218,22 @@ async def get_documents():
             message=str(e),
         ) 
 
-# Get documents by type
-@user_route.get("/")
-async def get_documents_by_type(type: str = Query(None)):
+# View document file
+@user_route.get("/view/{doc_id}")
+async def view_document_file(doc_id: str):
     try:
-        docs = await document_controller.get_documents_by_type(type)
+        file_content = await document_controller.view_document_file(doc_id)
+        return file_content
+    except ValueError as e:
         return api_response(
-            status_code=200,
-            message="Documents retrieved successfully.",
-            details=docs
+            status_code=404,
+            message=str(e)
         )
     except Exception as e:
         return api_response(
             status_code=500,
-            message=str(e),
+            message=str(e)
         )
-        
         
 # Get a document by ID
 @user_route.get("/{doc_id}")
@@ -214,42 +254,4 @@ async def get_document(doc_id: str):
         return api_response(
             status_code=500,
             message=str(e),
-        )
-        
-# Get chunk by doc_id and chunk_index
-@user_route.get("/{doc_id}/chunks/{chunk_index}")
-async def get_chunk(doc_id: str, chunk_index: int):
-    try:
-        chunk = await document_controller.get_document_chunk(doc_id, chunk_index)
-        return api_response(
-                status_code=200,
-                message="Chunk retrieved successfully.",
-                details=chunk
-            )
-    except ValueError as e:
-        return api_response(
-            status_code=404,
-            message=str(e)
-        )
-    except Exception as e:
-        return api_response(
-            status_code=500,
-            message=str(e)
-        )
-
-# View document file
-@user_route.get("/view/{doc_id}")
-async def view_document_file(doc_id: str):
-    try:
-        file_content = await document_controller.view_document_file(doc_id)
-        return file_content
-    except ValueError as e:
-        return api_response(
-            status_code=404,
-            message=str(e)
-        )
-    except Exception as e:
-        return api_response(
-            status_code=500,
-            message=str(e)
         )

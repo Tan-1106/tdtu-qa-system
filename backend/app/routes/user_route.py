@@ -57,9 +57,9 @@ async def get_user_by_id(user_id: str):
             message="Internal Server Error",
             details=str(e)
         )
-        
-# Get a user by email
-@admin_router.get("/email/{email}")
+
+# Search user by email
+@admin_router.get("/search")
 async def get_user_by_email(email: str):
     try:
         user = await user_controller.get_user_by_email(email)
