@@ -69,7 +69,7 @@ async def reset_prototypes_collection() -> bool:
         return False
     
 # Semantic search for prototypes
-async def semantic_search_prototypes(query_vector: list[float], top_k: int = 5) -> list[prototype_schema.PrototypeResponse]:
+async def semantic_search_prototypes(query_vector: list[float], top_k: int = 3) -> list[prototype_schema.PrototypeResponse]:
     results = chroma.prototypes_collection.query(
         query_embeddings=[query_vector],
         n_results=top_k,

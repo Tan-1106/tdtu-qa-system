@@ -1,9 +1,12 @@
 import os
 import re
+import logging
 from openai import OpenAI
 from app.utils import text_process
 from pyvi.ViTokenizer import tokenize
 from sentence_transformers import SentenceTransformer
+
+logging.getLogger("sentence_transformers").setLevel(logging.WARNING)
 
 # Environment variables
 GPT_KEY = os.getenv("GPT_KEY")
@@ -16,20 +19,21 @@ embedding_model = SentenceTransformer(EMBEDDING_MODEL)
 # Generate questions from a given text chunk
 def create_questions(context: str, num_questions: int = 5) -> list[str]:
     prompt = f"""
-        Bạn là một trợ lý tạo câu hỏi thông minh.
-        Nhiệm vụ: tạo ra {num_questions} câu hỏi ngắn gọn, tự nhiên mà một sinh viên có thể hỏi về các quy định hoặc quy chế của trường đại học, 
-        dựa trên nội dung trong đoạn văn bản sau đây. 
-        Chỉ tạo những câu hỏi mà thông tin trả lời có thể tìm thấy trong đoạn văn.
+    Bạn là một trợ lý tạo câu hỏi thông minh.
 
-        Đoạn văn bản:
-        \"\"\"{context}\"\"\"
+    Nhiệm vụ:
+    Tạo ra {num_questions} câu hỏi **ngắn gọn**, **rõ ràng**, **không trùng lặp** và **tự nhiên**, mà một sinh viên có thể hỏi về các **quy định hoặc quy chế của trường đại học**, dựa trên **nội dung trong đoạn văn bản dưới đây**.  
+    Mỗi câu hỏi phải có **ý nghĩa đầy đủ**, có thể hiểu được mà **không cần đọc lại văn bản gốc**, và **nội dung câu hỏi phải có thông tin trả lời trong đoạn văn**.
 
-        Yêu cầu định dạng đầu ra:
-        Trả về đúng một danh sách Python hợp lệ chứa {num_questions} chuỗi (string), không thêm bất kỳ nội dung nào khác.
-        Ví dụ:
-        ["Câu hỏi 1", "Câu hỏi 2", ..., "Câu hỏi {num_questions}"]
+    Đoạn văn bản:
+    \"\"\"{context}\"\"\"
+
+    Yêu cầu định dạng đầu ra:
+    - Trả về **một danh sách Python hợp lệ** chứa đúng {num_questions} chuỗi (string).
+    - Không thêm bất kỳ mô tả, giải thích, hoặc ký tự thừa nào khác ngoài danh sách.
+    - Ví dụ đầu ra:
+    ["Câu hỏi 1", "Câu hỏi 2", ..., "Câu hỏi {num_questions}"]
     """
-
 
     response = gpt_client.responses.create(
         model=GPT_MODEL,
@@ -45,20 +49,27 @@ def create_questions(context: str, num_questions: int = 5) -> list[str]:
 # Generate questions from a given text chunk (appendix version)
 def create_questions_appendix(context: str, num_questions: int = 3) -> list[str]:
     prompt = f"""
-        Bạn là một trợ lý tạo câu hỏi thông minh.
-        Nhiệm vụ: tạo ra {num_questions} câu hỏi ngắn gọn, tự nhiên mà một sinh viên có thể hỏi về các quy định hoặc quy chế của trường đại học. 
-        Dựa trên nội dung trong đoạn văn bản sau đây, chỉ tạo câu hỏi dựa trên nội dung "Content" của văn bản, không tạo dựa trên "Description" và "Table header".
-        Câu hỏi được tạo ra phải rõ nghĩa và không cần phải đối chiếu tài liệu văn bản để hiểu ý nghĩa của câu hỏi.
-        Chỉ tạo những câu hỏi mà thông tin trả lời có thể tìm thấy trong đoạn văn.
+    Bạn là một trợ lý tạo câu hỏi thông minh.
 
-        Đoạn văn bản:
-        \"\"\"{context}\"\"\"
+    Nhiệm vụ:
+    Tạo ra {num_questions} câu hỏi **ngắn gọn**, **tự nhiên**, và **không trùng lặp** mà một sinh viên có thể hỏi về các **quy định hoặc quy chế của trường đại học**.  
+    Dựa trên nội dung trong đoạn văn bản dưới đây, **chỉ sử dụng phần "Content"** để tạo câu hỏi — **không dùng phần "Description"** hoặc **"Table header"** để hình thành câu hỏi.
 
-        Yêu cầu định dạng đầu ra:
-        Trả về đúng một danh sách Python hợp lệ chứa {num_questions} chuỗi (string), không thêm bất kỳ nội dung nào khác.
-        Ví dụ:
-        ["Câu hỏi 1", "Câu hỏi 2", ..., "Câu hỏi {num_questions}"]
+    Yêu cầu:
+    - Câu hỏi phải **rõ nghĩa**, có thể hiểu được mà **không cần đọc lại văn bản gốc**.  
+    - Chỉ tạo những câu hỏi mà **câu trả lời có thể tìm thấy** trong phần "Content" của văn bản.  
+    - Không tạo câu hỏi nếu thông tin không rõ ràng hoặc không đủ dữ kiện trong nội dung.
+
+    Đoạn văn bản:
+    \"\"\"{context}\"\"\"
+
+    Định dạng đầu ra:
+    - Trả về **duy nhất một danh sách Python hợp lệ**, chứa đúng {num_questions} chuỗi (string).  
+    - Không thêm bất kỳ mô tả, lời giải thích hoặc ký tự thừa nào khác ngoài danh sách.  
+    - Ví dụ đầu ra:
+    ["Câu hỏi 1", "Câu hỏi 2", ..., "Câu hỏi {num_questions}"]
     """
+
 
 
     response = gpt_client.responses.create(
@@ -72,35 +83,32 @@ def create_questions_appendix(context: str, num_questions: int = 3) -> list[str]
     print("LOG: Generated appendix questions:", output_text)
     return output_text
 
-# Get embedding for a given text
-def get_embedding(text: str):
-    text = text.strip()
-    text = re.sub(r'\s+', ' ', text)
-    
-    text_tokenized = tokenize(text)
-    embedding = embedding_model.encode(text_tokenized).tolist()
-
-    return embedding
-
 # Generate answer using provided chunks and question
 async def generate_answer(chunks: list[str], question: str) -> str:
     context = "\n\n".join([f"Đoạn {i+1}: {chunk}" for i, chunk in enumerate(chunks)])
     prompt = f"""
-        Bạn là một trợ lý thông minh giúp trả lời các câu hỏi dựa trên ngữ cảnh được cung cấp.
-        Nhiệm vụ: sử dụng thông tin từ các đoạn văn bản dưới đây để trả lời câu hỏi một cách chính xác, đầy đủ, tự nhiên và giải thích chi tiết dựa trên tài liệu nếu cần thiết.
-        Nếu văn bản được cung cấp là phụ lục, cần chú ý cấu trúc bảng để tìm thông tin chính xác theo thứ tự của các ô trong 1 dòng.
-        Nếu thông tin có trong các đoạn văn bản, khi trả lời xong thì dẫn nguồn theo định dạng: ". Theo văn bản [Document Title] - [File URL]", nếu có nhiều nguồn thì liệt kê tất cả.
-        Nếu thông tin không có trong các đoạn văn, hãy trả lời "Không tìm thấy tài liệu liên quan đến câu hỏi của bạn."
+    Bạn là một trợ lý thông minh có nhiệm vụ trả lời câu hỏi dựa trên các đoạn văn bản được cung cấp.
 
-        Ngữ cảnh:
-        {context}
+    Hướng dẫn:
+    1. Sử dụng **chính xác** thông tin trong các đoạn văn bản để trả lời câu hỏi một cách đầy đủ, tự nhiên, có chủ ngữ và vị ngữ rõ ràng.
+    2. Nếu văn bản là **phụ lục**, cần chú ý đến cấu trúc bảng: các thông tin trong cùng một hàng thuộc về cùng một đối tượng, và cần đọc theo thứ tự từ trái sang phải để hiểu đúng ý.
+    3. Nếu thông tin liên quan có trong nhiều đoạn, hãy **tổng hợp và diễn đạt lại** thành một câu trả lời hoàn chỉnh.
+    4. Ở cuối câu trả lời, hãy thêm mục **"Nguồn tham khảo:"** gồm danh sách các tài liệu đã được sử dụng (mỗi mục gồm tiêu đề và URL ở cuối đoạn văn bản).
+    5. Nếu **không tìm thấy** thông tin phù hợp trong các đoạn văn bản, hãy trả lời:  
+    "Không tìm thấy tài liệu liên quan đến câu hỏi của bạn."
+    6. Nếu câu hỏi không liên quan đến lĩnh vực quy định, quy chế hoặc không thuộc phạm vi của trường đại học, hãy trả lời:
+    "Câu hỏi của bạn không liên quan đến quy định hoặc quy chế của trường đại học."
 
-        Câu hỏi:
-        {question}
+    Ngữ cảnh:
+    {context}
 
-        Yêu cầu định dạng đầu ra:
-        Trả về đúng một chuỗi (string) chứa câu trả lời đầy đủ từ đoạn văn bản có ngữ cảnh. Câu trả lời phải rõ ràng, mạch lạc, dễ hiểu và đầy đủ chủ ngữ, vị ngữ.
+    Câu hỏi:
+    {question}
+
+    Định dạng đầu ra:
+    - Trả về đúng **một chuỗi (string)** chứa câu trả lời hoàn chỉnh, có thể bao gồm mục "Nguồn tham khảo:" nếu có.
     """
+
 
     response = gpt_client.responses.create(
         model=GPT_MODEL,
@@ -111,3 +119,13 @@ async def generate_answer(chunks: list[str], question: str) -> str:
     answer = response.output_text.strip()
     answer = text_process.normalize_text(answer)
     return answer
+
+# Get embedding for a given text
+def get_embedding(text: str):
+    text = text.strip()
+    text = re.sub(r'\s+', ' ', text)
+    
+    text_tokenized = tokenize(text)
+    embedding = embedding_model.encode(text_tokenized).tolist()
+
+    return embedding

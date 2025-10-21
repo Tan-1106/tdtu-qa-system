@@ -4,7 +4,7 @@ from fastapi.encoders import jsonable_encoder
 
 from app.utils import text_process
 from app.schemas import document_schema
-from app.services import document_service
+from app.services import document_service, prototype_service, question_embedding_service
 
 # Get all documents
 async def get_documents():
@@ -20,6 +20,11 @@ async def get_document_by_id(doc_id: str):
 async def get_document_chunk(doc_id: str, chunk_index: int):
     chunk = await document_service.get_document_chunk(doc_id, chunk_index)
     return chunk
+
+# Get documents by type
+async def get_documents_by_type(doc_type: str):
+    docs = await document_service.get_documents_by_type(doc_type)
+    return docs
 
 # Create a new document
 async def create_document(doc_data: document_schema.DocumentCreate, uploaded_by: str):
@@ -49,28 +54,27 @@ async def delete_document(doc_id: str):
 # Upload a document
 async def upload_document(
     file: UploadFile,
-    title: str,
     doc_type: str,
+    department: str,
     uploaded_by: str,
-    tags: Optional[str] = None,
     language: Optional[str] = Form('["vi"]'),
     file_url: str = Form(...)
 ):
     # Extract text from PDF
-    print("LOG: Extracting text from PDF...")
-    document_content = await document_service.extract_pdf_document_content(file)
+    print("- LOG: Extracting text from PDF...")
+    document_content = await text_process.extract_pdf_document_content(file)
     
     # Split text into chunks
-    print("LOG: Splitting text into chunks...")
-    chunks = await text_process.split_text_into_chunks(document_content, words_per_chunk=400, overlap=150)
+    print("- LOG: Splitting text into chunks...")
+    chunks = await text_process.split_text_into_chunks(document_content, words_per_chunk=800, overlap=200)
     
     # Create document record in DB
-    print("LOG: Creating document record in DB...")
+    print("- LOG: Creating document record in DB...")
     doc = await document_service.create_document({
-        "title": title,
+        "title": file.filename,
         "chunks": chunks,
         "doc_type": doc_type,
-        "tags": eval(tags) if tags else [],
+        "department": department,
         "language": eval(language) if language else [],
         "file_url": file_url,
         "uploaded_by": uploaded_by,
@@ -79,51 +83,50 @@ async def upload_document(
     # Prepare response and process document (generate questions, get embeddings, store embeddings in ChromaDB)
     response = {
         "doc_id": str(doc.id),
-        "title": title[:20] + "...",
-        "num_chunks": len(chunks),
-        "doc_type": doc_type,
-        "tags": eval(tags) if tags else [],
-        "language": eval(language) if language else ["vi"],
+        "title": file.filename,
+        "chunks": chunks,
         "file_url": file_url,
-        "uploaded_by": uploaded_by,
         "questions": []
     }
     
     # Generate questions
     for idx, chunk in enumerate(chunks):
-        print("LOG: Generating questions for chunk", idx + 1, "/", len(chunks), "...")
-        questions_data = await document_service.create_question_embeddings(str(doc.id), idx, chunk, num_questions=5)
+        print("- LOG: Generating questions for chunk", idx + 1, "/", len(chunks), "...")
+        questions_data = await question_embedding_service.create_question_embeddings(str(doc.id), idx, chunk, num_questions=5)
         response["questions"].append(questions_data)
         
+    # Cluster question embeddings
+    print("- LOG: Clustering question embeddings...")
+    await prototype_service.cluster_question_embeddings()
+
     return response
 
 # Upload appendix document
 async def upload_appendix_document(
     file: UploadFile,
-    title: str,
     doc_type: str,
+    department: str,
     uploaded_by: str,
-    tags: Optional[str] = None,
     language: Optional[str] = Form('["vi"]'),
     file_url: str = Form(...)
 ):
     # Extract text and tables from PDF
-    print("LOG: Extracting text and tables from PDF appendix...")
-    file_content = await document_service.extract_pdf_appendix_content(file)
+    print("- LOG: Extracting text and tables from PDF appendix...")
+    file_content = await text_process.extract_pdf_appendix_content(file)
 
     # Split appendix into chunks
-    print("LOG: Splitting appendix into chunks...")
+    print("- LOG: Splitting appendix into chunks...")
     appendix_description = file_content["description"]
     tables = file_content["tables"]
-    chunks = await document_service.split_appendix_into_chunks(appendix_description, tables, table_header_rows=2)
+    chunks = await text_process.split_appendix_into_chunks(appendix_description, tables, table_header_rows=2)
     
     # Create document record in DB
-    print("LOG: Creating document record in DB...")
+    print("- LOG: Creating document record in DB...")
     doc = await document_service.create_document({
-        "title": title,
+        "title": file.filename,
         "chunks": chunks,
         "doc_type": doc_type,
-        "tags": eval(tags) if tags else [],
+        "department": department,
         "language": eval(language) if language else [],
         "file_url": file_url,
         "uploaded_by": uploaded_by,
@@ -132,20 +135,24 @@ async def upload_appendix_document(
     # Prepare response and process document (generate questions, get embeddings, store embeddings in ChromaDB)
     response = {
         "doc_id": str(doc.id),
-        "title": title[:20] + "...",
-        "num_chunks": len(chunks),
-        "doc_type": doc_type,
-        "tags": eval(tags) if tags else [],
-        "language": eval(language) if language else ["vi"],
+        "title": file.filename,
         "file_url": file_url,
-        "uploaded_by": uploaded_by,
         "questions": []
     }
     
     # Generate questions
     for idx, chunk in enumerate(chunks):
-        print("LOG: Generating questions for chunk", idx + 1, "/", len(chunks), "...")
-        questions_data = await document_service.create_question_embeddings(str(doc.id), idx, chunk, num_questions=3, is_appendix=True)
+        print("- LOG: Generating questions for chunk", idx + 1, "/", len(chunks), "...")
+        questions_data = await question_embedding_service.create_question_embeddings(str(doc.id), idx, chunk, num_questions=3, is_appendix=True)
         response["questions"].append(questions_data)
         
+    # Cluster question embeddings
+    print("- LOG: Clustering question embeddings...")
+    await prototype_service.cluster_question_embeddings()
+        
     return response
+
+# View a document
+async def view_document_file(doc_id: str):
+    file_content = await document_service.view_document_file(doc_id)
+    return file_content

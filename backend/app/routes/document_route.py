@@ -1,57 +1,27 @@
 from typing import Optional
 from fastapi.encoders import jsonable_encoder
-from fastapi import APIRouter, Depends, UploadFile, Form
+from fastapi import APIRouter, Depends, UploadFile, Form, Query
 
 from app.services import auth_service
 from app.schemas import document_schema
 from app.controllers import document_controller
 from app.utils.api_response import api_response
 
-router = APIRouter(
+admin_route = APIRouter(
     prefix="/documents",
     tags=["Documents"],
     dependencies=[Depends(auth_service.require_role(["Admin"]))]
 )
 
-# Get all documents
-@router.get("/")
-async def get_documents():
-    try:
-        docs = await document_controller.get_documents()
-        return api_response(
-            status_code=200,
-            message="Documents retrieved successfully.",
-            details=docs
-        )
-    except Exception as e:
-        return api_response(
-            status_code=500,
-            message=str(e),
-        ) 
-        
-# Get a document by ID
-@router.get("/{doc_id}")
-async def get_document(doc_id: str):
-    try:
-        doc = await document_controller.get_document_by_id(doc_id)
-        return api_response(
-                status_code=200,
-                message="Document retrieved successfully.",
-                details=doc,
-            )
-    except ValueError as e:
-        return api_response(
-            status_code=404,
-            message=str(e),
-        )
-    except Exception as e:
-        return api_response(
-            status_code=500,
-            message=str(e),
-        )
+user_route = APIRouter(
+    prefix="/documents",
+    tags=["Documents"],
+    dependencies=[Depends(auth_service.get_current_user)]
+)
 
+# ADMIN ROUTES
 # Create a new document
-@router.post("/")
+@admin_route.post("/")
 async def create_document(doc: document_schema.DocumentCreate, current_user = Depends(auth_service.get_current_user)):
     try:
         current_user = jsonable_encoder(current_user)
@@ -70,7 +40,7 @@ async def create_document(doc: document_schema.DocumentCreate, current_user = De
         )
     
 # Update a document by ID
-@router.patch("/{doc_id}")
+@admin_route.patch("/{doc_id}")
 async def update_document(doc_id: str, doc_update: document_schema.DocumentUpdate, current_user = Depends(auth_service.get_current_user)):
     try:
         current_user = jsonable_encoder(current_user)
@@ -94,7 +64,7 @@ async def update_document(doc_id: str, doc_update: document_schema.DocumentUpdat
         )
     
 # Delete a document by ID
-@router.delete("/{doc_id}")
+@admin_route.delete("/{doc_id}")
 async def delete_document(doc_id: str):
     try:
         await document_controller.delete_document(doc_id)
@@ -116,12 +86,11 @@ async def delete_document(doc_id: str):
 
 # Upload a document
 # (PDF -> Extract text -> Chunk text -> Generate questions -> Get embeddings -> Store in DB)
-@router.post("/upload")
+@admin_route.post("/upload")
 async def upload_document(
     file: UploadFile,
-    title: str = Form(...),
-    doc_type: Optional[str] = Form(""),
-    tags: Optional[str] = Form(None),
+    doc_type: str = Form(...),
+    department: str = Form(...),
     language: Optional[str] = Form('["vi"]'),
     file_url: str = Form(...),
     current_user = Depends(auth_service.get_current_user)
@@ -132,9 +101,8 @@ async def upload_document(
         
         result = await document_controller.upload_document(
             file=file,
-            title=title,
             doc_type=doc_type,
-            tags=tags,
+            department=department,
             language=language,
             file_url=file_url,
             uploaded_by=uploaded_by
@@ -156,12 +124,11 @@ async def upload_document(
         )
         
 # Upload appendix document (PDF)
-@router.post("/upload-appendix")
+@admin_route.post("/upload-appendix")
 async def upload_appendix_document(
     file: UploadFile,
-    title: str = Form(...),
-    doc_type: Optional[str] = Form(""),
-    tags: Optional[str] = Form(None),
+    doc_type: Optional[str] = Form(...),
+    department: str = Form(...),
     language: Optional[str] = Form('["vi"]'),
     file_url: str = Form(...),
     current_user = Depends(auth_service.get_current_user)
@@ -172,9 +139,8 @@ async def upload_appendix_document(
         
         result = await document_controller.upload_appendix_document(
             file=file,
-            title=title,
             doc_type=doc_type,
-            tags=tags,
+            department=department,
             language=language,
             file_url=file_url,
             uploaded_by=uploaded_by
@@ -195,15 +161,49 @@ async def upload_appendix_document(
             message=str(e)
         )
         
-# Get chunk by doc_id and chunk_index
-@router.get("/{doc_id}/chunks/{chunk_index}")
-async def get_chunk(doc_id: str, chunk_index: int):
+# USER ROUTES
+# Get all documents
+@user_route.get("/")
+async def get_documents():
     try:
-        chunk = await document_controller.get_document_chunk(doc_id, chunk_index)
+        docs = await document_controller.get_documents()
+        return api_response(
+            status_code=200,
+            message="Documents retrieved successfully.",
+            details=docs
+        )
+    except Exception as e:
+        return api_response(
+            status_code=500,
+            message=str(e),
+        ) 
+
+# Get documents by type
+@user_route.get("/")
+async def get_documents_by_type(type: str = Query(None)):
+    try:
+        docs = await document_controller.get_documents_by_type(type)
+        return api_response(
+            status_code=200,
+            message="Documents retrieved successfully.",
+            details=docs
+        )
+    except Exception as e:
+        return api_response(
+            status_code=500,
+            message=str(e),
+        )
+        
+        
+# Get a document by ID
+@user_route.get("/{doc_id}")
+async def get_document(doc_id: str):
+    try:
+        doc = await document_controller.get_document_by_id(doc_id)
         return api_response(
                 status_code=200,
-                message="Chunk retrieved successfully.",
-                details=chunk,
+                message="Document retrieved successfully.",
+                details=doc,
             )
     except ValueError as e:
         return api_response(
@@ -214,4 +214,42 @@ async def get_chunk(doc_id: str, chunk_index: int):
         return api_response(
             status_code=500,
             message=str(e),
+        )
+        
+# Get chunk by doc_id and chunk_index
+@user_route.get("/{doc_id}/chunks/{chunk_index}")
+async def get_chunk(doc_id: str, chunk_index: int):
+    try:
+        chunk = await document_controller.get_document_chunk(doc_id, chunk_index)
+        return api_response(
+                status_code=200,
+                message="Chunk retrieved successfully.",
+                details=chunk
+            )
+    except ValueError as e:
+        return api_response(
+            status_code=404,
+            message=str(e)
+        )
+    except Exception as e:
+        return api_response(
+            status_code=500,
+            message=str(e)
+        )
+
+# View document file
+@user_route.get("/view/{doc_id}")
+async def view_document_file(doc_id: str):
+    try:
+        file_content = await document_controller.view_document_file(doc_id)
+        return file_content
+    except ValueError as e:
+        return api_response(
+            status_code=404,
+            message=str(e)
+        )
+    except Exception as e:
+        return api_response(
+            status_code=500,
+            message=str(e)
         )

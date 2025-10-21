@@ -7,7 +7,6 @@ from pydantic import BaseModel, Field
 class AnswerCreate(BaseModel):
     question_id: str = Field(..., description="Question ID associated with the answer")
     answer: str = Field(..., description="The answer content")
-    source_docs: List[str] = Field(..., description="List of source document IDs")
 
     class Config:
         from_attributes = True
@@ -26,7 +25,6 @@ class AnswerResponse(BaseModel):
     id: str = Field(alias="_id")
     question_id: str
     answer: str
-    source_docs: List[str]
     feedback: Optional[str] = None
     created_at: datetime
 

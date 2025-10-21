@@ -33,7 +33,6 @@ class QuestionResponse(BaseModel):
     id: str = Field(alias="_id")
     user_id: str
     question: str
-    normalized_question: Optional[List[str]] = None
     status: str
     answer_id: Optional[str] = None
     created_at: datetime

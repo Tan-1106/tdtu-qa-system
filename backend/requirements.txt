@@ -10,10 +10,12 @@ pydantic
 pydantic[email]
 
 pymupdf
+tiktoken
 pdf2image
 pdfplumber
 pytesseract
 camelot-py[base]
+langchain-text-splitters
 
 pyvi
 openai

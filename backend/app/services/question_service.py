@@ -24,7 +24,7 @@ async def query(question_data: dict):
     embedded_question = model_service.get_embedding(question_data['question'])
 
     # Semantic search for relevant prototypes
-    relevant_prototypes = await prototype_service.semantic_search_prototypes(embedded_question, top_k=2)
+    relevant_prototypes = await prototype_service.semantic_search_prototypes(embedded_question, top_k=1)
     
     # Collect relevant question embedding IDs from prototypes
     relevant_embedding_ids = []
@@ -45,17 +45,15 @@ async def query(question_data: dict):
         chunk = await document_service.get_document_chunk(metadata['doc_id'], metadata['chunk_index'])
         
         chunk = jsonable_encoder(chunk)
-        chunk_content = f"""Document Title: {chunk['title']}. Content: {chunk['chunk_text']}. File URL: {chunk['file_url']}"""
+        chunk_content = f"""Tài liệu: {chunk['title']}. Nội dung: {chunk['chunk_text']}. URL: {chunk['file_url']}"""
         chunks.append(chunk_content)
     unique_chunks = set(chunks)
     chunks = list(unique_chunks)
     
     # Generate answer using chunks, question and LLM
     answer = await model_service.generate_answer(chunks, question_data['question'])
-
+        
     return {
-        "relevant_embeddings_Id": relevant_embedding_ids,
-        "relevant_embeddings": relevant_question_embeddings,
         "chunks": chunks,
         "answer": answer
     }

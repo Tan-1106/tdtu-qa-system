@@ -96,51 +96,6 @@ async def reset_question_embeddings_collection() -> bool:
         raise Exception("Error deleting all question embeddings: " + str(e))
     
 # Semantic search question embeddings
-# async def semantic_search_question_embeddings(
-#     query_vector: list[float],
-#     top_k: int,
-#     relevant_embedding_ids: list[str] = None
-# ) -> list[question_embedding_schema.QuestionEmbeddingResponse]:
-#     # Query rộng hơn để có đủ kết quả trước khi lọc
-#     n_results = max(top_k * 5, 50)
-
-#     results = chroma.question_embeddings_collection.query(
-#         query_embeddings=[query_vector],
-#         n_results=n_results,
-#         include=["embeddings", "metadatas"]
-#     )
-
-#     if not results or 'ids' not in results or len(results['ids']) == 0:
-#         return []
-
-#     ids = results["ids"][0]
-#     embeddings = results["embeddings"][0]
-#     metadatas = results["metadatas"][0]
-
-#     # Nếu có giới hạn danh sách ID
-#     if relevant_embedding_ids:
-#         allowed_ids = set(relevant_embedding_ids)
-#         filtered = [
-#             (i, e, m)
-#             for i, e, m in zip(ids, embeddings, metadatas)
-#             if i in allowed_ids
-#         ]
-#     else:
-#         filtered = list(zip(ids, embeddings, metadatas))
-
-#     # Sắp xếp lại theo độ tương đồng (Chroma trả sẵn theo thứ tự)
-#     filtered = filtered[:top_k]
-
-#     # Map sang schema
-#     return [
-#         question_embedding_schema.QuestionEmbeddingResponse(
-#             id=i,
-#             vector=e,
-#             metadata=m
-#         )
-#         for i, e, m in filtered
-#     ]
-
 async def semantic_search_question_embeddings(
     query_vector: list[float],
     top_k: int,

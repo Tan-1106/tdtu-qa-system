@@ -3,10 +3,9 @@ import numpy as np
 from typing import List
 from sklearn.preprocessing import normalize
 from fastapi.encoders import jsonable_encoder
-from sklearn.metrics.pairwise import cosine_similarity
 
-from app.daos import question_embedding_dao, prototype_dao
 from app.schemas import prototype_schema
+from app.daos import question_embedding_dao, prototype_dao
 
 # Get all prototypes
 async def get_prototypes():
@@ -32,9 +31,7 @@ async def cluster_question_embeddings():
         raise ValueError("No question embeddings available for clustering.")
     
     embeddings = np.array([qe['vector'] for qe in jsonable_encoder(question_embeddings)])
-    print(f"- LOG: Retrieved {embeddings.shape[0]} embeddings of dimension {embeddings.shape[1]}.")
     embedding_ids = [qe['id'] for qe in jsonable_encoder(question_embeddings)]
-    print(f"- LOG: Retrieved {len(embedding_ids)} embedding IDs.")
     
     # Normalize embeddings to unit length if not already
     print("- LOG: Normalizing embeddings...")
@@ -46,7 +43,7 @@ async def cluster_question_embeddings():
     # Cluster embeddings using HDBSCAN
     print("- LOG: Clustering embeddings...")
     clusterer = hdbscan.HDBSCAN(
-        min_cluster_size=2,
+        min_cluster_size=5,
         min_samples=2,
         metric='euclidean',
         cluster_selection_epsilon=0.1
@@ -56,7 +53,6 @@ async def cluster_question_embeddings():
     cluster_labels = clusterer.fit_predict(embeddings)
     print(f"- LOG: Found {len(set(cluster_labels)) - (1 if -1 in cluster_labels else 0)} clusters.")
     unique_labels = [l for l in np.unique(cluster_labels) if l != -1]
-    print(f"- LOG: Unique cluster labels (excluding noise): {unique_labels}")
     
     prototypes: List[prototype_schema.PrototypeCreate] = []
     
@@ -79,7 +75,7 @@ async def cluster_question_embeddings():
         prototypes.append(prototype)
         
     # Create prototypes in the database
-    print("Storing prototypes in database...")
+    print("- LOG: Storing prototypes in database...")
     await prototype_dao.reset_prototypes_collection()
     for proto in prototypes:
         await prototype_dao.create_prototype(proto)

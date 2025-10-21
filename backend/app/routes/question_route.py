@@ -6,14 +6,22 @@ from app.schemas import question_schema
 from app.controllers import question_controller
 from app.utils.api_response import api_response
 
-router = APIRouter(
+admin_router = APIRouter(
     prefix="/questions",
-    tags=["Questions"]
+    tags=["Questions"],
+    dependencies=[Depends(auth_service.require_role(["Admin"]))]
 )
 
+user_router = APIRouter(
+    prefix="/questions",
+    tags=["Questions"],
+    dependencies=[Depends(auth_service.get_current_user)]
+)
+
+# ADMIN ROUTES
 # Get all questions
-@router.get("/")
-async def get_questions(current_user = Depends(auth_service.require_role(["Admin"]))):
+@admin_router.get("/")
+async def get_questions():
     try:
         questions = await question_controller.get_questions()
         return api_response(
@@ -28,8 +36,8 @@ async def get_questions(current_user = Depends(auth_service.require_role(["Admin
         )
         
 # Get a question by ID
-@router.get("/{question_id}")
-async def get_question(question_id: str, current_user = Depends(auth_service.require_role(["Admin"]))):
+@admin_router.get("/{question_id}")
+async def get_question(question_id: str):
     try:
         question = await question_controller.get_question_by_id(question_id)
         return api_response(
@@ -49,8 +57,8 @@ async def get_question(question_id: str, current_user = Depends(auth_service.req
         )
         
 # Create a new question
-@router.post("/")
-async def create_question(data: question_schema.QuestionCreate, current_user = Depends(auth_service.require_role(["Admin"]))):
+@admin_router.post("/")
+async def create_question(data: question_schema.QuestionCreate, current_user = Depends(auth_service.get_current_user)):
     try:
         current_user = jsonable_encoder(current_user)
         user_id = current_user["_id"]
@@ -71,9 +79,10 @@ async def create_question(data: question_schema.QuestionCreate, current_user = D
             status_code=500,
             message=str(e)
         )
-        
+       
+# USER ROUTES 
 # Ask a question
-@router.post("/query")
+@user_router.post("/query")
 async def query(data: question_schema.QuestionCreate, current_user = Depends(auth_service.get_current_user)):
     try:
         current_user = jsonable_encoder(current_user)

@@ -1,4 +1,19 @@
-FROM pytorch/pytorch:2.8.0-cuda12.9-cudnn9-runtime
+# ---------- Stage 1: build dependencies ----------
+FROM python:3.11-slim AS builder
+
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --upgrade pip setuptools wheel && \
+    pip install --prefix=/install -r requirements.txt
+
+# ---------- Stage 2: runtime ----------
+FROM python:3.11-slim
 
 RUN apt-get update && apt-get install -y \
     tesseract-ocr \
@@ -6,21 +21,16 @@ RUN apt-get update && apt-get install -y \
     tesseract-ocr-vie \
     libtesseract-dev \
     poppler-utils \
+    curl \
     git \
-    build-essential \
-    python3-dev \
-    g++ \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-COPY requirements.txt ./
-RUN pip install --upgrade pip setuptools wheel && \
-    pip install --no-cache-dir -r requirements.txt && \
-    pip install --no-cache-dir hdbscan && \
-    pip install -U pypdf cryptography
+COPY --from=builder /install /usr/local
 
-COPY ./app ./app
+RUN mkdir -p /app/app
 
 EXPOSE 8000
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

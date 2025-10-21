@@ -29,5 +29,9 @@ async def query(question_data: question_schema.QuestionCreate, user_id: str):
     # Create the question
     question = await question_service.create_question(question_data)
     
-    result = await question_service.query(question_data)
-    return result
+    answer = await question_service.query(question_data)
+
+    return {
+        "question": question,
+        "answer": answer
+    }

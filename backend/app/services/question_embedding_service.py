@@ -1,4 +1,5 @@
 from typing import List
+from app.services import model_service
 from app.daos import question_embedding_dao
 
 # Get all question embeddings
@@ -40,3 +41,25 @@ async def reset_question_embeddings_collection():
 async def semantic_search_question_embeddings(query_vector: List[float], top_k: int, relevant_embedding_ids: List[str] = None):
     question_embeddings = await question_embedding_dao.semantic_search_question_embeddings(query_vector, top_k, relevant_embedding_ids)
     return question_embeddings
+
+# Generate potential questions for a text chunk
+async def create_question_embeddings(doc_id: str, chunk_idx: int, chunk: str, num_questions: int = 5, is_appendix: bool = False):
+    if is_appendix:
+        generated_questions_list =  model_service.create_questions_appendix(chunk, num_questions=num_questions)
+    else:
+        generated_questions_list =  model_service.create_questions(chunk, num_questions=num_questions)
+
+    print("- LOG: Create embeddings for questions...")
+    for question in generated_questions_list:
+        embedding = model_service.get_embedding(question)
+        question_embedding = {
+            "vector": embedding,
+            "metadata": {"doc_id": doc_id, "chunk_index": chunk_idx}
+        }
+        await create_question_embedding(question_embedding)
+
+    return {
+        "doc_id": doc_id,
+        "chunk_index": chunk_idx,
+        "questions_list": generated_questions_list
+    }

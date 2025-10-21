@@ -1,3 +1,5 @@
+import logging
+import warnings
 from fastapi import FastAPI, Request
 from contextlib import asynccontextmanager
 from fastapi.exceptions import RequestValidationError
@@ -6,6 +8,11 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.utils.api_response import api_response
 from app.databases.mongo import connect_to_mongo, close_mongo_connection
 from app.routes import document_route, question_embedding_route, user_route, prototype_route, auth_route, question_route
+
+class HealthCheckFilter(logging.Filter):
+    def filter(self, record: logging.LogRecord) -> bool:
+        return record.getMessage().find("GET / ") == -1
+logging.getLogger("uvicorn.access").addFilter(HealthCheckFilter())
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -51,9 +58,23 @@ async def home():
     return {"msg": "Welcome to the TDTU QA System API"}
 
 # Thiết lập router
-app.include_router(user_route.router)
+# Authentication routes
 app.include_router(auth_route.router)
-app.include_router(document_route.router)
+
+# User routes
+app.include_router(user_route.admin_router)
+app.include_router(user_route.user_router)
+
+# Document routes
+app.include_router(document_route.admin_route)
+app.include_router(document_route.user_route)
+
+# Question Embedding routes
 app.include_router(question_embedding_route.router)
+
+# Prototype routes
 app.include_router(prototype_route.router)
-app.include_router(question_route.router)
+
+# Question routes
+app.include_router(question_route.admin_router)
+app.include_router(question_route.user_router)

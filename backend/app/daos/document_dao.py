@@ -1,4 +1,3 @@
-import json
 from typing import List
 from bson import ObjectId
 from datetime import datetime, timezone
@@ -44,6 +43,13 @@ async def get_document_chunk(doc_id: str, chunk_index: int) -> document_schema.D
         file_url=doc.get("file_url", "")
     )
 
+# Get documents by type
+async def get_documents_by_type(doc_type: str) -> List[document_schema.DocumentResponse]:
+    docs = []
+    async for doc in mongo.get_documents_collection().find({"doc_type": doc_type}):
+        docs.append(document_schema.DocumentResponse(**serializer.document_serialize(doc)))
+    return docs
+
 # Create a new document
 async def create_document(doc: dict) -> document_schema.DocumentResponse:
     doc["created_at"] = datetime.now(timezone.utc)
@@ -72,8 +78,18 @@ async def update_document(doc_id: str, doc_update: dict) -> document_schema.Docu
 async def delete_document(doc_id: str) -> bool:
     if not ObjectId.is_valid(doc_id):
         raise ValueError("Invalid document ID")
+
+    doc = await mongo.get_documents_collection().find_one({"_id": ObjectId(doc_id)})
+    uploaded_file_id = doc.get("uploaded_file_id")
     
+    if uploaded_file_id and ObjectId.is_valid(uploaded_file_id):
+        try:
+            await mongo.bucket.delete(ObjectId(uploaded_file_id))
+        except Exception as e:
+            raise RuntimeError("Failed to delete associated file from GridFS") from e
+
     result = await mongo.get_documents_collection().delete_one({"_id": ObjectId(doc_id)})
+
     if result.deleted_count == 0:
         raise ValueError("Document not found")
     
