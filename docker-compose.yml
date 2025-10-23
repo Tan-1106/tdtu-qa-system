@@ -28,6 +28,19 @@ services:
       - ./uploads:/app/uploads
     env_file:
       - .env
+<<<<<<< Updated upstream
+=======
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           capabilities: [ gpu ]
+    # runtime: nvidia
+    # environment:
+    #   - NVIDIA_VISIBLE_DEVICES=all
+    #   - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+>>>>>>> Stashed changes
     depends_on:
       mongodb:
         condition: service_healthy
