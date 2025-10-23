@@ -3,6 +3,7 @@ from fastapi import FastAPI, Request
 from contextlib import asynccontextmanager
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.utils.api_response import api_response
 from app.databases.mongo import connect_to_mongo, close_mongo_connection
@@ -24,6 +25,20 @@ app = FastAPI(
     lifespan=lifespan
 )
     
+# CORS Middleware
+origins = [
+    "http://localhost:5173",  
+    "http://localhost",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,  
+    allow_credentials=True,
+    allow_methods=["*"], 
+    allow_headers=["*"],  
+)
+
 # Validation Error
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
@@ -58,22 +73,22 @@ async def home():
 
 # Thiết lập router
 # Authentication routes
-app.include_router(auth_route.router)
+app.include_router(auth_route.router, prefix="/api")
 
 # User routes
-app.include_router(user_route.user_router)
-app.include_router(user_route.admin_router)
+app.include_router(user_route.user_router, prefix="/api")
+app.include_router(user_route.admin_router, prefix="/api")
 
 # Document routes
-app.include_router(document_route.user_route)
-app.include_router(document_route.admin_route)
+app.include_router(document_route.user_route, prefix="/api")
+app.include_router(document_route.admin_route, prefix="/api")
 
 # Question Embedding routes
-app.include_router(question_embedding_route.router)
+app.include_router(question_embedding_route.router, prefix="/api")
 
 # Prototype routes
-app.include_router(prototype_route.router)
+app.include_router(prototype_route.router, prefix="/api")
 
 # Question routes
-app.include_router(question_route.user_router)
-app.include_router(question_route.admin_router)
+app.include_router(question_route.user_router, prefix="/api")
+app.include_router(question_route.admin_router, prefix="/api")

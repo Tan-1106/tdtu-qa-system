@@ -1,18 +1,52 @@
 import React, { useState } from 'react';
-import { Box, Typography, TextField, Button, Grid, Link as MuiLink, Paper, Avatar } from '@mui/material';
-import { Link as RouterLink } from 'react-router-dom';
+import { Box, Typography, TextField, Button, Grid, Link as MuiLink, Paper, Avatar, Alert } from '@mui/material';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import AuthLayout from './AuthLayout.jsx';
+import axiosInstance from '../../api/axiosInstance'; // axiosInstance vẫn dùng chung
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    const formData = { email, password };
-    console.log('Login form submitted:', formData);
-    alert('Đã gửi thông tin đăng nhập! Mở Console (F12) để xem dữ liệu.');
+    setError('');
+
+    try {
+      // 1. Quay lại gửi JSON object
+      // Backend của bạn mong đợi một JSON body, không phải Form Data
+      const response = await axiosInstance.post('/auth/login', {
+        email: email,
+        password: password
+      });
+      
+      // Dữ liệu trả về bây giờ có 2 phần: token và user
+      const { token, user } = response.data.details;
+
+      if (token && user) {
+        // 1. Lưu token vào localStorage
+        localStorage.setItem('accessToken', token.access_token);
+        
+        // 2. Lưu thông tin user vào localStorage
+        localStorage.setItem('currentUser', JSON.stringify(user));
+
+        // 3. Kiểm tra vai trò (role) và chuyển hướng
+        if (user.role === 'Admin') {
+          navigate('/admin/dashboard'); // Nếu là Admin, vào trang Admin
+        } else {
+          navigate('/'); // Nếu là User, về trang chủ
+        }
+        
+      } else {
+        setError('Không nhận được token hoặc thông tin người dùng.');
+      }
+    } catch (err) {
+      const errorMessage = err.response?.data?.message || 'Đã có lỗi xảy ra. Vui lòng thử lại.';
+      setError(errorMessage);
+    }
   };
 
   return (
@@ -34,6 +68,9 @@ const LoginPage = () => {
         <Typography component="h1" variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
           Đăng nhập
         </Typography>
+
+        {error && <Alert severity="error" sx={{ width: '100%', mt: 2, borderRadius: 3 }}>{error}</Alert>}
+
         <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1, width: '100%' }}>
           <TextField
             margin="normal"
@@ -46,9 +83,7 @@ const LoginPage = () => {
             autoFocus
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            sx={{
-              '& .MuiOutlinedInput-root': { borderRadius: 3 }
-            }}
+            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
           />
           <TextField
             margin="normal"
@@ -61,9 +96,7 @@ const LoginPage = () => {
             autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            sx={{
-              '& .MuiOutlinedInput-root': { borderRadius: 3 }
-            }}
+            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
           />
           <Button
             type="submit"

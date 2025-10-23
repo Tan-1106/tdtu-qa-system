@@ -36,7 +36,9 @@ async def authenticate_user(request: dict) -> dict:
         raise ValueError("Wrong password")
 
     token = await generate_token(user)
-    return {"access_token": token, "token_type": "bearer"}
+    user_details = {"full_name": user["full_name"], "email": user["email"], "role": user["role"]}
+    
+    return {"token": {"access_token": token, "token_type": "bearer"}, "user": user_details}
 
 # Generate JWT token
 async def generate_token(user: dict) -> str:
@@ -92,3 +94,15 @@ def require_role(required_role: list[str]):
             )
         return current_user
     return role_checker
+
+# Verify self action or admin
+def require_self_or_admin():
+    async def self_or_admin_checker(user_id: str, current_user: dict = Depends(get_current_user)):
+        current_user = jsonable_encoder(current_user)
+        if current_user["role"] != "Admin" and str(current_user["_id"]) != user_id:
+            raise HTTPException(
+                status_code=403,
+                detail="Operation not permitted"
+            )
+        return current_user
+    return self_or_admin_checker
