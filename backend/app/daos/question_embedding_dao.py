@@ -49,21 +49,6 @@ async def create_question_embedding(embedding: question_embedding_schema.Questio
         vector=embedding["vector"],
         metadata=embedding["metadata"]
     )
-    
-# Update feedback for a question embedding
-async def update_question_embedding_feedback(embedding_id: str, score: int) -> question_embedding_schema.QuestionEmbeddingResponse:
-    existing_embedding = await get_question_embedding_by_id(embedding_id)
-    if not existing_embedding:
-        raise ValueError("Question embedding not found.")
-    
-    existing_embedding.metadata.feedback_score += score
-    existing_embedding.metadata.feedback_count += 1
-    
-    chroma.question_embeddings_collection.update(
-        ids=[embedding_id],
-        metadatas=[existing_embedding.metadata.model_dump()]
-    )
-    return existing_embedding
 
 # Delete a question embedding by ID
 async def delete_question_embedding(embedding_id: str) -> bool:

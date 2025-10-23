@@ -19,9 +19,12 @@ async def create_question(question: dict):
     return created_question
 
 # Ask a question and get an answer
-async def query(question_data: dict):
+async def query(question_data: dict, lang: str = 'vi'):
     # Get embedding for the question
-    embedded_question = model_service.get_embedding(question_data['question'])
+    if lang == 'en':
+        embedded_question = model_service.get_embedding(question_data['translated_question'])
+    else:
+        embedded_question = model_service.get_embedding(question_data['question'])
 
     # Semantic search for relevant prototypes
     relevant_prototypes = await prototype_service.semantic_search_prototypes(embedded_question, top_k=1)
@@ -51,7 +54,7 @@ async def query(question_data: dict):
     chunks = list(unique_chunks)
     
     # Generate answer using chunks, question and LLM
-    answer = await model_service.generate_answer(chunks, question_data['question'])
+    answer = await model_service.generate_answer(chunks, question_data['question'], lang)
         
     print("- Chunks: ", chunks)
     print("- Answer: ", answer)

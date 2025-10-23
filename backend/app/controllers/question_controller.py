@@ -1,7 +1,8 @@
+from langdetect import detect
 from fastapi.encoders import jsonable_encoder
 
 from app.schemas import question_schema
-from app.services import question_service
+from app.services import question_service, model_service
 
 # Get all questions
 async def get_questions():
@@ -26,11 +27,18 @@ async def query(question_data: question_schema.QuestionCreate, user_id: str):
     question_data = jsonable_encoder(question_data)
     question_data['user_id'] = user_id
     
+    lang = detect(question_data['question'])
+    
     # Create the question
     question = await question_service.create_question(question_data)
     try:
         # Get the answer
-        answer = await question_service.query(question_data)
+        if lang == 'vi':
+            answer = await question_service.query(question_data)
+        else:
+            question_data['translated_question'] = await model_service.translate_to_vietnamese(question_data['question'])
+            answer = await question_service.query(question_data, lang='en')
+        
         # Update question status with answer
         result = await question_service.update_question_status(question.id, answer)
 

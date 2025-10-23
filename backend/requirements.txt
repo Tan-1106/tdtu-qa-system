@@ -12,6 +12,7 @@ pydantic[email]
 pymupdf
 tiktoken
 pdf2image
+langdetect
 pdfplumber
 pytesseract
 camelot-py[base]

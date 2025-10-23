@@ -19,11 +19,6 @@ async def create_question_embedding(embedding: dict):
     created_embedding = await question_embedding_dao.create_question_embedding(embedding)
     return created_embedding
 
-# Update feedback for a question embedding
-async def update_question_embedding_feedback(embedding_id: str, score: int):
-    updated_embedding = await question_embedding_dao.update_question_embedding_feedback(embedding_id, score)
-    return updated_embedding
-
 # Delete a question embedding by ID
 async def delete_question_embedding(embedding_id: str):
     deleted = await question_embedding_dao.delete_question_embedding(embedding_id)

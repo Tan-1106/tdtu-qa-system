@@ -61,12 +61,12 @@ async def home():
 app.include_router(auth_route.router)
 
 # User routes
-app.include_router(user_route.admin_router)
 app.include_router(user_route.user_router)
+app.include_router(user_route.admin_router)
 
 # Document routes
-app.include_router(document_route.admin_route)
 app.include_router(document_route.user_route)
+app.include_router(document_route.admin_route)
 
 # Question Embedding routes
 app.include_router(question_embedding_route.router)
@@ -74,6 +74,6 @@ app.include_router(question_embedding_route.router)
 # Prototype routes
 app.include_router(prototype_route.router)
 
-# Question routes (user_router TRƯỚC để /questions/query không bị admin chặn)
+# Question routes
 app.include_router(question_route.user_router)
 app.include_router(question_route.admin_router)

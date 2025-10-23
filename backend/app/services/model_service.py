@@ -1,10 +1,12 @@
 import os
 import re
+import asyncio
 import logging
 from openai import OpenAI
 from app.utils import text_process
 from pyvi.ViTokenizer import tokenize
 from sentence_transformers import SentenceTransformer
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
 logging.getLogger("sentence_transformers").setLevel(logging.WARNING)
 
@@ -12,9 +14,12 @@ logging.getLogger("sentence_transformers").setLevel(logging.WARNING)
 GPT_KEY = os.getenv("GPT_KEY")
 GPT_MODEL = os.getenv("GPT_MODEL")
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL")
+TRANSLATE_MODEL = "VietAI/envit5-translation"
 
 gpt_client = OpenAI(api_key=GPT_KEY)
 embedding_model = SentenceTransformer(EMBEDDING_MODEL)
+translate_tokenizer = AutoTokenizer.from_pretrained(TRANSLATE_MODEL)
+translate_model = AutoModelForSeq2SeqLM.from_pretrained(TRANSLATE_MODEL)
 
 # Generate questions from a given text chunk
 def create_questions(context: str, num_questions: int = 5) -> list[str]:
@@ -84,31 +89,51 @@ def create_questions_appendix(context: str, num_questions: int = 3) -> list[str]
     return output_text
 
 # Generate answer using provided chunks and question
-async def generate_answer(chunks: list[str], question: str) -> str:
+async def generate_answer(chunks: list[str], question: str, lang: str) -> str:
     context = "\n\n".join([f"Đoạn {i+1}: {chunk}" for i, chunk in enumerate(chunks)])
-    prompt = f"""
-    Bạn là một trợ lý thông minh có nhiệm vụ trả lời câu hỏi dựa trên các đoạn văn bản được cung cấp.
+    if lang == 'vi':
+        prompt = f"""
+        Bạn là một trợ lý thông minh có nhiệm vụ trả lời câu hỏi về quy định, quy chế của Trường Đại học Tôn Đức Thắng dựa trên các đoạn văn bản được cung cấp thông qua hệ thống Retrieval Augmented Generation (RAG).
 
-    Hướng dẫn:
-    1. Sử dụng **chính xác** thông tin trong các đoạn văn bản để trả lời câu hỏi một cách đầy đủ, tự nhiên, có chủ ngữ và vị ngữ rõ ràng.
-    2. Nếu văn bản là **phụ lục**, cần chú ý đến cấu trúc bảng: các thông tin trong cùng một hàng thuộc về cùng một đối tượng, và cần đọc theo thứ tự từ trái sang phải để hiểu đúng ý.
-    3. Nếu thông tin liên quan có trong nhiều đoạn, hãy **tổng hợp và diễn đạt lại** thành một câu trả lời hoàn chỉnh.
-    4. Nếu có đáp án, thì ở cuối câu trả lời, hãy thêm mục **"Nguồn tham khảo:"** gồm danh sách các tài liệu đã được sử dụng (mỗi mục gồm tiêu đề và URL ở cuối đoạn văn bản).
-    5. Nếu **không tìm thấy** thông tin phù hợp trong các đoạn văn bản, hãy trả lời rằng không thể tìm được tài liệu trong kho dữ liệu liên quan đến câu hỏi của người dùng và không cần dẫn nguồn tham khảo.
-    6. Nếu câu hỏi không liên quan đến lĩnh vực quy định, quy chế hoặc không thuộc phạm vi của trường đại học, hãy trả lời:
-    "Câu hỏi của bạn không liên quan đến quy định hoặc quy chế của trường đại học."
+        Hướng dẫn:
+        1. Sử dụng **chính xác** thông tin trong các đoạn văn bản để trả lời câu hỏi một cách đầy đủ, tự nhiên, có chủ ngữ và vị ngữ rõ ràng.
+        2. Nếu văn bản là **phụ lục**, cần chú ý đến cấu trúc bảng: các thông tin trong cùng một hàng thuộc về cùng một đối tượng, và cần đọc theo thứ tự từ trái sang phải để hiểu đúng ý.
+        3. Nếu thông tin liên quan có trong nhiều đoạn, hãy **tổng hợp và diễn đạt lại** thành một câu trả lời hoàn chỉnh.
+        4. Nếu có đáp án, thì ở cuối câu trả lời, hãy thêm mục **Nguồn tham khảo** gồm danh sách các tài liệu đã được sử dụng (mỗi mục gồm tiêu đề và URL ở cuối đoạn văn bản).
+        5. Nếu **không tìm thấy** thông tin phù hợp trong các đoạn văn bản, hãy trả lời rằng không thể tìm được tài liệu trong kho dữ liệu liên quan đến câu hỏi của người dùng, không đề cập đến các tài liệu bạn được cung cấp và không cần dẫn nguồn tham khảo.
+        6. Nếu người dùng cố gắng trò chuyện về các chủ đề không phù hợp hoặc ngoài phạm vi thay vì hỏi về quy định hoặc quy chế của Trường Đại học Tôn Đức Thắng, hãy trả lời một cách lịch sự rằng bạn chỉ có thể hỗ trợ các câu hỏi liên quan đến quy định, quy chế của Trường Đại học Tôn Đức Thắng và không được thiết kế để tham gia vào các cuộc trò chuyện ngoài phạm vi này, ngoài ra không cung cấp thông tin gì thêm về tài liệu nhận được từ hệ thống RAG.
 
-    Ngữ cảnh:
-    {context}
+        Ngữ cảnh từ hệ thống RAG:
+        {context}
 
-    Câu hỏi:
-    {question}
+        Câu hỏi:
+        {question}
 
-    Định dạng đầu ra:
-    - Trả về đúng **một chuỗi (string)** chứa câu trả lời hoàn chỉnh, có thể bao gồm mục "Nguồn tham khảo:" nếu có.
-    """
+        Định dạng đầu ra:
+        - Trả về đúng **một chuỗi (string)** chứa câu trả lời hoàn chỉnh, có thể bao gồm mục "Nguồn tham khảo:" nếu có.
+        """
+    else:
+        prompt = f"""
+        You are a smart assistant tasked with answering questions about the regulations and policies of Ton Duc Thang University based on the text passages provided through the Retrieval Augmented Generation (RAG) system.
 
+        Instructions:
+        1. Use the **exact** information from the text passages to answer the question completely, naturally, with clear subject and predicate.
+        2. If the text is **appendix**, pay attention to the table structure: information in the same row belongs to the same subject, and read from left to right to understand correctly.
+        3. If relevant information is found in multiple passages, **synthesize and rephrase** it into a complete answer. The relevant information may be in Vietnamese, so make sure to translate your response completly to English.
+        4. If there is an answer, at the end of the response, add a **References** section listing the documents used (each item includes the title and URL at the end of the passage).
+        5. If **no relevant information** is found in the text passages, respond that you could not find documents related to the user's question in the database, do not mention the documents you were provided, and do not include a references section.
+        6. If the user tries to chat about inappropriate or out-of-scope topics instead of asking about the regulations or policies of Ton Duc Thang University, politely respond that you can only assist with questions related to the regulations and policies of Ton Duc Thang University and are not designed to engage in out-of-scope conversations, without providing any additional information about the documents received from the RAG system.
+        7. If the question is not in Vietnamese or English, politely inform the user that you can only process questions in Vietnamese or English. This response language is the question language if you can detect it, otherwise respond in English.
 
+        Context from RAG system:
+        {context}
+
+        Question:
+        {question}
+
+        Output format:
+        - Return exactly **one string** containing the complete answer, which may include a "References:" section if applicable.
+        """
     response = gpt_client.responses.create(
         model=GPT_MODEL,
         input=prompt,
@@ -128,3 +153,24 @@ def get_embedding(text: str):
     embedding = embedding_model.encode(text_tokenized).tolist()
 
     return embedding
+
+# Translate text from English to Vietnamese
+async def translate_to_vietnamese(text: str) -> str:
+    loop = asyncio.get_event_loop()
+    
+    def _translate():
+        input_text = ["en: " + text]
+        
+        inputs = translate_tokenizer(input_text, return_tensors="pt", padding=True)
+        output = translate_model.generate(
+            inputs.input_ids,
+            max_length=512,
+            num_beams=5,
+            early_stopping=True
+        )
+        translated = translate_tokenizer.batch_decode(output, skip_special_tokens=True)
+        
+        return translated[0]
+    
+    result = await loop.run_in_executor(None, _translate)
+    return result

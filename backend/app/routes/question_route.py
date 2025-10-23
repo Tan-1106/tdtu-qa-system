@@ -83,12 +83,12 @@ async def create_question(data: question_schema.QuestionCreate, current_user = D
 # USER ROUTES 
 # Ask a question
 @user_router.post("/query")
-async def query(data: question_schema.QuestionCreate, current_user = Depends(auth_service.get_current_user)):
+async def query(question: question_schema.QuestionCreate, current_user = Depends(auth_service.get_current_user)):
     try:
         current_user = jsonable_encoder(current_user)
         user_id = current_user["_id"]
 
-        created_question = await question_controller.query(data, user_id)
+        created_question = await question_controller.query(question, user_id)
         return api_response(
             status_code=201,
             details=created_question,

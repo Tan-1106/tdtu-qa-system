@@ -19,12 +19,6 @@ async def create_question_embedding(embedding_data: question_embedding_schema.Qu
     question_embedding = await question_embedding_service.create_question_embedding(embedding_data)
     return question_embedding
 
-# Update feedback for a question embedding
-async def update_question_embedding_feedback(embedding_id: str, feedback: question_embedding_schema.QuestionEmbeddingFeedbackUpdate):
-    feedback = jsonable_encoder(feedback)
-    question_embedding = await question_embedding_service.update_question_embedding_feedback(embedding_id, feedback['feedback_score'])
-    return question_embedding
-
 # Delete a question embedding by ID
 async def delete_question_embedding(embedding_id: str):
     deleted = await question_embedding_service.delete_question_embedding(embedding_id)

@@ -73,27 +73,6 @@ async def create_question_embedding(data: question_embedding_schema.QuestionEmbe
             status_code=500,
             message=str(e)
         )
-        
-# Update feedback for a question embedding
-@router.patch("/{embedding_id}/feedback")
-async def update_question_embedding_feedback(embedding_id: str, feedback: question_embedding_schema.QuestionEmbeddingFeedbackUpdate):
-    try:
-        updated_embedding = await question_embedding_controller.update_question_embedding_feedback(embedding_id, feedback)
-        return api_response(
-                status_code=200,
-                message="Question embedding feedback updated successfully.",
-                details=updated_embedding
-            )
-    except ValueError as e:
-        return api_response(
-            status_code=404,
-            message=str(e)
-        )
-    except Exception as e:
-        return api_response(
-            status_code=500,
-            message=str(e)
-        )
     
 # Delete a question embedding by ID
 @router.delete("/{embedding_id}")
