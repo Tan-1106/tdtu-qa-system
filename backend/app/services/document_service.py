@@ -5,7 +5,7 @@ from fastapi import UploadFile
 from fastapi.encoders import jsonable_encoder
 
 from app.daos import document_dao
-from app.services import question_embedding_service
+from app.services import question_embedding_service, potential_question_service, prototype_service
 
 UPLOAD_DIRECTORY = "uploads/documents"
 
@@ -47,9 +47,11 @@ async def update_document(doc_id: str, doc_update: dict):
 async def delete_document(doc_id: str):
     deleted = await document_dao.delete_document(doc_id)
     if deleted:
-        result = await question_embedding_service.delete_question_embeddings_by_doc_id(doc_id)
-    
-    return result
+        await question_embedding_service.delete_question_embeddings_by_doc_id(doc_id)
+        await potential_question_service.delete_potential_questions_by_doc_id(doc_id)
+        await prototype_service.cluster_question_embeddings()
+
+    return deleted
 
 # Save document file to disk
 async def save_document_file(file: UploadFile):

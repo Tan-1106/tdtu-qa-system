@@ -1,0 +1,37 @@
+# Exclude application source from build context (mounted at runtime via volumes)
+app/
+
+# Python cache and build output
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+.build/
+dist/
+build/
+.eggs/
+*.egg-info/
+
+# Virtual environments and caches
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.cache/
+
+# VCS and editor settings
+.git/
+.gitignore
+.gitattributes
+.vscode/
+.idea/
+
+# Env and logs
+.env
+.env.*
+*.log
+
+# Tests (if present)
+tests/

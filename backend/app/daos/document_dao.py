@@ -88,4 +88,4 @@ async def delete_document(doc_id: str) -> bool:
     if result.deleted_count == 0:
         raise ValueError("Document not found")
     
-    return True
+    return result.deleted_count > 0

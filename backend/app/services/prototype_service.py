@@ -43,7 +43,7 @@ async def cluster_question_embeddings():
     # Cluster embeddings using HDBSCAN
     print("- LOG: Clustering embeddings...")
     clusterer = hdbscan.HDBSCAN(
-        min_cluster_size=5,
+        min_cluster_size=3,
         min_samples=2,
         metric='euclidean',
         cluster_selection_epsilon=0.1

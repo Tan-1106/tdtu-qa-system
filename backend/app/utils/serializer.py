@@ -35,6 +35,18 @@ def document_chunk_serialize(chunk) -> dict:
         "chunk_index": chunk.get("chunk_index"),
         "chunk_text": chunk.get("chunk_text"),
     }
+
+# Potential Question
+def potential_question_serialize(pq) -> dict:
+    return {
+        "id": str(pq["_id"]),
+        "doc_id": pq.get("doc_id"),
+        "chunk_index": pq.get("chunk_index"),
+        "potential_questions": pq.get("potential_questions"),
+        "embedding_ids": pq.get("embedding_ids", []),
+        "created_at": pq.get("created_at").isoformat() if pq.get("created_at") else None,
+        "updated_at": pq.get("updated_at").isoformat() if pq.get("updated_at") else None,
+    } 
     
 # Question
 def question_serialize(question) -> dict:

@@ -49,6 +49,26 @@ async def create_question_embedding(embedding: question_embedding_schema.Questio
         vector=embedding["vector"],
         metadata=embedding["metadata"]
     )
+    
+# Update a question embedding by ID
+async def update_question_embedding(embedding_id: str, embedding_update: question_embedding_schema.QuestionEmbeddingCreate) -> question_embedding_schema.QuestionEmbeddingResponse:
+    updated_data = jsonable_encoder(embedding_update)
+    
+    # Delete the old embedding
+    chroma.question_embeddings_collection.delete(ids=[embedding_id])
+    
+    # Add the updated embedding
+    chroma.question_embeddings_collection.add(
+        ids=[embedding_id],
+        embeddings=[updated_data["vector"]],
+        metadatas=[updated_data["metadata"]]
+    )
+    
+    return question_embedding_schema.QuestionEmbeddingResponse(
+        id=embedding_id,
+        vector=updated_data["vector"],
+        metadata=updated_data["metadata"]
+    )
 
 # Delete a question embedding by ID
 async def delete_question_embedding(embedding_id: str) -> bool:

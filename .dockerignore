@@ -1,0 +1,35 @@
+# Global ignore for production build contexts (docker-compose.prod.yml)
+# Keep backend/app included for prod image build (we copy it in Dockerfile.prod)
+
+# VCS and editor
+.git/
+.gitignore
+.gitattributes
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Python caches and venvs
+**/__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.cache/
+
+# Node / frontend artefacts
+frontend/node_modules/
+frontend/dist/
+frontend/.dist/
+frontend/.vite/
+
+# Large caches and runtime data not needed for build contexts
+hf_cache/
+uploads/
+
+# Env and logs
+.env
+.env.*
+*.log

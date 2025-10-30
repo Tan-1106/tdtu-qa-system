@@ -1,0 +1,17 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install deps first for better caching
+COPY package.json package-lock.json ./
+RUN npm ci
+
+# Copy source (will be overridden by volume in compose for live reload)
+COPY . .
+
+ENV HOST=0.0.0.0
+ENV CHOKIDAR_USEPOLLING=1
+
+EXPOSE 5173
+
+CMD ["npm", "run", "dev", "--", "--host"]

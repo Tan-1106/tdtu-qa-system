@@ -3,6 +3,7 @@ from typing import List
 
 from app.services import model_service
 from app.daos import question_embedding_dao
+from app.controllers import potential_question_controller
 
 # Get all question embeddings
 async def get_question_embeddings():
@@ -18,6 +19,11 @@ async def get_question_embedding_by_id(embedding_id: str):
 async def create_question_embedding(embedding: dict):
     created_embedding = await question_embedding_dao.create_question_embedding(embedding)
     return created_embedding
+
+# Update a question embedding by ID
+async def update_question_embedding(embedding_id: str, embedding_update: dict):
+    updated_embedding = await question_embedding_dao.update_question_embedding(embedding_id, embedding_update)
+    return updated_embedding
 
 # Delete a question embedding by ID
 async def delete_question_embedding(embedding_id: str):
@@ -55,6 +61,7 @@ async def create_question_embeddings(doc_id: str, chunk_idx: int, chunk: str, nu
         )
 
     print("- LOG: Create embeddings for questions...")
+    question_embeddings = []
     async def create_single_embedding(question):
         embedding = await loop.run_in_executor(
             None,
@@ -64,11 +71,21 @@ async def create_question_embeddings(doc_id: str, chunk_idx: int, chunk: str, nu
             "vector": embedding,
             "metadata": {"doc_id": doc_id, "chunk_index": chunk_idx}
         }
-        await create_question_embedding(question_embedding)
+        qe = await create_question_embedding(question_embedding)
+        question_embeddings.append(qe)
     
     await asyncio.gather(*[
         create_single_embedding(q) for q in generated_questions_list
     ])
+    
+    print("- LOG: Saving potential questions to DB...")
+    potential_question = {
+        "doc_id": doc_id,
+        "chunk_index": chunk_idx,
+        "potential_questions": generated_questions_list,
+        "embedding_ids": [str(qe.id) for qe in question_embeddings]
+    }
+    await potential_question_controller.create_potential_questions(potential_question)
 
     return {
         "doc_id": doc_id,

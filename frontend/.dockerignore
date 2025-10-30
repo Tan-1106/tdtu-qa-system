@@ -1,0 +1,45 @@
+# Node / Vite typical ignores to shrink Docker build context
+node_modules/
+.dist/
+dist/
+
+# Lockfiles for other managers (we use package-lock.json)
+yarn.lock
+pnpm-lock.yaml
+pnpm-store/
+
+# Caches
+.npm/
+.npmrc
+.cache/
+.vite/
+**/.vite/
+**/.cache/
+
+# Test/coverage and storybook
+coverage/
+.cypress/
+**/__tests__/
+**/__mocks__/
+.storybook/
+
+# Env files and logs
+.env
+.env.*
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# VCS and editors
+.git/
+.gitignore
+.gitattributes
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# OS / misc
+*.swp
+*.swc

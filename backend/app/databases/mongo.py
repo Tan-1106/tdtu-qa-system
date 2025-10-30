@@ -49,6 +49,14 @@ def get_documents_collection():
     logging.info(f"LOG: Accessing collection: documents in database: {DB_NAME}")
     return db.get_collection("documents")
 
+# Potential questions collection
+def get_potential_questions_collection():
+    global db
+    if db is None:
+        raise RuntimeError("Database is not initialized. Did you call connect_to_mongo()?")
+    logging.info(f"LOG: Accessing collection: potential_questions in database: {DB_NAME}")
+    return db.get_collection("potential_questions")
+
 # Questions collection
 def get_questions_collection():
     global db

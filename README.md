@@ -54,16 +54,26 @@ CHROMA_PORT=8000
 ```bash
 # Về thư mục root của project
 cd ..
-# Build và chạy tất cả services
-docker-compose up --build
+# BUILD
+# 1. Build và chạy tất cả services cho dev
+docker-compose -f docker-compose.dev.yml up --build
+# 2. Build và chạy tất cả services cho production
+docker-compose -f docker-compose.prod.yml up --build
+
 # Hoặc chạy ở background
 docker-compose up -d
-# Xem logs
-docker-compose logs -f
-# Dừng services
-docker-compose down
+
+# STOP
+# 1. Dev
+docker-compose -f docker-compose.dev.yml down
+# 2. Production
+docker-compose -f docker-compose.prod.yml down
+
 # Dừng và xóa volumes (reset database)
-docker-compose down -v
+# 1. Dev
+docker-compose -f docker-compose.dev.yml down -v
+# 2. Production
+docker-compose -f docker-compose.prod.yml down -v
 ```
 
 ##  3.2. Chạy Development Mode (Backend riêng lẻ)
