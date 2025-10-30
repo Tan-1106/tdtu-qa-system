@@ -1,125 +1,152 @@
 # TDTU Q&A System
-Hệ thống hỏi đáp thông minh cho sinh viên Đại học Tôn Đức Thắng sử dụng FastAPI, MongoDB, ChromaDB và React.
+Hệ thống hỏi đáp cho sinh viên Trường ĐH Tôn Đức Thắng, xây dựng trên FastAPI (backend), React + Vite + Nginx (frontend), MongoDB và ChromaDB.
 
-#   1. Setup Backend (Python + FastAPI)
-##  1.1 Tạo Virtual Environment
-```bash
-# Di chuyển vào thư mục backend
-cd backend
-# Tạo virtual environment
-python -m venv venv
-# Kích hoạt virtual environment
-# Windows:
-venv\Scripts\activate
-# Linux/Mac:
-source venv/bin/activate
-# Cài đặt dependencies
-pip install -r requirements.txt
-# Đặt môi trường ảo cho project
-Ctrl+Shift+P chọn "Python:Selected Interpreter" và chọn đường dẫn đến file venv vừa tạo xuất hiện trong project.
+## Mục lục
+- Giới thiệu & cấu trúc dự án
+- Yêu cầu hệ thống
+- Biến môi trường (.env)
+- Chạy môi trường Dev (Docker Compose)
+- Chạy môi trường Prod (Docker Compose)
+- Dừng/dọn dẹp dịch vụ
+- Chạy backend local (tùy chọn)
+- Quản lý dependencies
+
+---
+
+## Giới thiệu & cấu trúc dự án
+
+```
+tdtu-qa-system/
+├─ docker-compose.dev.yml
+├─ docker-compose.prod.yml
+├─ README.md
+├─ .dockerignore                  # dùng cho build prod (context = repo root)
+├─ backend/
+│  ├─ Dockerfile.dev             # dev: uvicorn --reload, không COPY code
+│  ├─ Dockerfile.prod            # prod: COPY code vào image, uvicorn workers
+│  ├─ Dockerfile                 # (dev-compatible; không bắt buộc dùng)
+│  ├─ .dockerignore              # dev: loại trừ app/ để build nhanh (dùng volumes)
+│  ├─ requirements.txt
+│  └─ app/
+│     ├─ main.py
+│     ├─ controllers/ routes/ services/ daos/ schemas/ databases/ utils/
+├─ frontend/
+│  ├─ Dockerfile.dev             # dev: Vite dev server (port 5173)
+│  ├─ Dockerfile.prod            # prod: build dist + Nginx serve (port 80)
+│  ├─ .dockerignore
+│  ├─ nginx.conf                 # proxy /api → backend:8000 trong prod
+│  └─ src/ public/ ...
+├─ hf_cache/                     # cache models (được mount volume)
+└─ uploads/                      # lưu file upload (được mount volume)
 ```
 
-##  1.2. Kiểm tra môi trường
-```bash
-# Kiểm tra Python version (>= 3.11)
-python --version
-# Kiểm tra pip packages đã cài
-pip list
-```
+## Yêu cầu hệ thống
+- Docker Desktop + Docker Compose
+- Python 3.11 (nếu chạy backend local)
 
-#   2. Setup Docker Environment
-##  2.1. Kiểm tra Docker
-```bash
-# Kiểm tra Docker và Docker Compose đã cài chưa
+Kiểm tra cài đặt:
+```powershell
 docker --version
 docker-compose --version
 ```
 
-##  2.2. Tạo file .env (nếu chưa có)
-```bash
-# Tạo file .env trong thư mục root
-# MongoDB
-MONGO_URL=mongodb://mongodb:27017
-MONGO_DB_NAME=tdtu_qa_db
-# ChromaDB
-CHROMA_HOST=tdtu_qa_chromadb
-CHROMA_PORT=8000
-# Models
-# EMBEDDING_MODEL=BAAI/bge-m3
-# LLM_MODEL=meta-llama/Llama-3.1-8B
+## Biến môi trường (.env)
+Tạo file `.env` ở repo root (đã được load bởi backend):
+```
+GPT_KEY=...
+GPT_MODEL=...
+EMBEDDING_MODEL=...
+# Tuỳ chọn khác nếu bạn có:
+# MONGODB_URI=mongodb://mongodb:27017
+# CHROMA_HOST=chromadb
+# CHROMA_PORT=8000
 ```
 
-#   3. Chạy ứng dụng
-##  3.1. Chạy với Docker Compose (Khuyến nghị)
-```bash
-# Về thư mục root của project
-cd ..
-# BUILD
-# 1. Build và chạy tất cả services cho dev
-docker-compose -f docker-compose.dev.yml up --build
-# 2. Build và chạy tất cả services cho production
-docker-compose -f docker-compose.prod.yml up --build
+---
 
-# STOP
-# 1. Dev
+## Chạy môi trường Dev (Docker Compose)
+Mặc định dùng hot-reload cho cả FE/BE.
+
+```powershell
+# Từ thư mục repo root
+docker-compose -f docker-compose.dev.yml up -d --build
+```
+
+URL dev:
+- Frontend (Vite): http://localhost:5173/
+- Backend API (FastAPI): http://localhost:8000/
+- MongoDB: localhost:27018 (Compass URI: mongodb://localhost:27018)
+- ChromaDB HTTP: http://localhost:8001/
+
+Ghi chú dev:
+- Backend dev mount code: `./backend/app:/app/app` (không COPY code khi build)
+- Frontend dev chạy Vite server, mount `./frontend:/app`
+- Windows đã bật polling để hot-reload ổn định
+
+---
+
+## Chạy môi trường Prod (Docker Compose)
+Prod sẽ “đóng gói” mã nguồn vào image, không mount code.
+
+```powershell
+docker-compose -f docker-compose.prod.yml up -d --build
+```
+
+URL prod:
+- Frontend (Nginx): http://localhost/
+- Backend API (Uvicorn): http://localhost:8000/
+
+Ghi chú prod:
+- Frontend Dockerfile.prod: build dist và serve qua Nginx; proxy `/api` → `backend:8000`
+- Backend Dockerfile.prod: COPY `backend/app` vào image, chạy uvicorn nhiều workers
+- Volumes dữ liệu được giữ lại: `uploads`, `mongo_data`, `chroma_data`, `hf_cache`
+
+---
+
+## Dừng/dọn dẹp dịch vụ
+```powershell
+# Dev
 docker-compose -f docker-compose.dev.yml down
-# 2. Production
-docker-compose -f docker-compose.prod.yml down
-
-# Dừng và xóa volumes (reset database)
-# 1. Dev
+# Dev (xóa cả volumes: MẤT DỮ LIỆU)
 docker-compose -f docker-compose.dev.yml down -v
-# 2. Production
+
+# Prod
+docker-compose -f docker-compose.prod.yml down
+# Prod (xóa cả volumes: MẤT DỮ LIỆU)
 docker-compose -f docker-compose.prod.yml down -v
 ```
 
-##  3.2. Chạy Development Mode (Backend riêng lẻ)
-```bash
-# Chạy MongoDB và ChromaDB bằng Docker
-docker-compose up mongodb chromadb
-# Chạy backend ở local (terminal khác)
+Xem log live:
+```powershell
+docker-compose -f docker-compose.dev.yml logs -f backend
+docker-compose -f docker-compose.dev.yml logs -f frontend
+```
+
+---
+
+## Chạy backend local (tuỳ chọn, không Docker)
+```powershell
+# Chạy MongoDB & ChromaDB bằng Docker (terminal 1)
+docker-compose -f docker-compose.dev.yml up mongodb chromadb
+
+# Chạy backend local (terminal 2)
 cd backend
-venv\Scripts\activate  # Windows
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
-#   4. Development Workflow
-##  4.1. Thêm dependencies mới
-```bash
-# Kích hoạt venv
+---
+
+## Quản lý dependencies (backend)
+Thêm package mới và cập nhật requirements:
+```powershell
 cd backend
+python -m venv venv
 venv\Scripts\activate
-# Cài package mới
-pip install package-name
-# Cập nhật requirements.txt
-pip freeze > requirements.txt
+pip install <package>
+python -m pip freeze | Out-File -Encoding UTF8 requirements.txt
 ```
 
-##  4.2. Database Operations
-```bash
-# Reset database
-docker-compose down -v
-docker-compose up mongodb
-# Backup database (nếu cần)
-docker exec tdtu_qa_mongodb mongodump --out /data/backup
-# Connect vào MongoDB shell
-docker exec -it tdtu_qa_mongodb mongosh
-# Connect bằng MongoDB Compass
-mongodb://localhost:27018
-```
-
-# 5. Ẩn bớt các file không cần thiết hiện lên folder project
-```bash
-Ctrl + ,
-Tìm files:exclude
-Chọn Add Pattern và thêm 2 pattern sau:
-**/__init__.py
-**/__pycache__
-```
-
-# 6. Triển khai GPU cho LLM self host
-```bash
-Tải và cài đặt Cuda toolkit cho máy tùy theo phiên bản tương thích
-Trong venv, sử dụng lệnh cài đặt PyTorch tùy theo version cuda tương thích:
-pip3 install --pre torch torchvision --index-url https://download.pytorch.org/whl/nightly/cu130 (Version 13)
-```
+---
