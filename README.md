@@ -60,9 +60,6 @@ docker-compose -f docker-compose.dev.yml up --build
 # 2. Build và chạy tất cả services cho production
 docker-compose -f docker-compose.prod.yml up --build
 
-# Hoặc chạy ở background
-docker-compose up -d
-
 # STOP
 # 1. Dev
 docker-compose -f docker-compose.dev.yml down
