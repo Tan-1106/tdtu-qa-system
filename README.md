@@ -75,7 +75,7 @@ docker-compose -f docker-compose.dev.yml up -d --build
 URL dev:
 - Frontend (Vite): http://localhost:5173/
 - Backend API (FastAPI): http://localhost:8000/
-- MongoDB: localhost:27018 (Compass URI: mongodb://localhost:27018)
+- MongoDB: localhost:27020 (Compass URI: mongodb://localhost:27020)
 - ChromaDB HTTP: http://localhost:8001/
 
 Ghi chú dev:

@@ -90,7 +90,7 @@ app.include_router(question_embedding_route.router, prefix="/api")
 app.include_router(prototype_route.router, prefix="/api")
 
 # Potential Question routes
-app.include_router(potential_question_route.route)
+app.include_router(potential_question_route.route, prefix="/api")
 
 # Question routes
 app.include_router(question_route.user_router, prefix="/api")

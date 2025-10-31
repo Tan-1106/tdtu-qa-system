@@ -45,7 +45,7 @@ services:
     image: mongo:6.0
     container_name: tdtu_qa_mongodb_prod
     ports:
-      - "27017:27017"
+      - "27020:27017"
     command: mongod --bind_ip_all --noauth
     volumes:
       - mongo_data:/data/db

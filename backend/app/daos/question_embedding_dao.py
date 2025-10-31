@@ -1,3 +1,4 @@
+import json
 import uuid
 from fastapi.encoders import jsonable_encoder
 
@@ -49,6 +50,30 @@ async def create_question_embedding(embedding: question_embedding_schema.Questio
         vector=embedding["vector"],
         metadata=embedding["metadata"]
     )
+    
+# Import question embeddings from uploaded JSON file
+async def import_question_embeddings_file(file):
+    content = await file.read()
+    data = json.loads(content)
+
+    imported_embeddings = []
+    for item in data:
+        embedding_create = jsonable_encoder(question_embedding_schema.QuestionEmbeddingImport(
+            id=item["id"],
+            vector=item["vector"],
+            metadata={
+                "doc_id": item["metadata"]["doc_id"],
+                "chunk_index": item["metadata"]["chunk_index"]
+            }
+        ))
+        chroma.question_embeddings_collection.add(
+            ids=[embedding_create["id"]],
+            embeddings=[embedding_create["vector"]],
+            metadatas=[embedding_create["metadata"]]
+        )
+        imported_embeddings.append(embedding_create)
+    
+    return imported_embeddings
     
 # Update a question embedding by ID
 async def update_question_embedding(embedding_id: str, embedding_update: question_embedding_schema.QuestionEmbeddingCreate) -> question_embedding_schema.QuestionEmbeddingResponse:

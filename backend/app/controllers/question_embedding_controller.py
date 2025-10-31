@@ -1,3 +1,4 @@
+from fastapi import UploadFile
 from fastapi.encoders import jsonable_encoder
 
 from app.schemas import question_embedding_schema
@@ -12,6 +13,11 @@ async def get_question_embeddings():
 async def get_question_embedding_by_id(embedding_id: str):
     question_embedding = await question_embedding_service.get_question_embedding_by_id(embedding_id)
     return question_embedding
+
+# Import question embeddings from uploaded JSON file
+async def import_question_embeddings_file(file: UploadFile):
+    result = await question_embedding_service.import_question_embeddings_file(file=file)
+    return result
 
 # Create a new question embedding
 async def create_question_embedding(embedding_data: question_embedding_schema.QuestionEmbeddingCreate):

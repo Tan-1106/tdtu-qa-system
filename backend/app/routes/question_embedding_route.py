@@ -1,4 +1,7 @@
-from fastapi import APIRouter, Depends
+from datetime import datetime, timezone
+from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
+from fastapi import APIRouter, Depends, UploadFile
 
 from app.services import auth_service
 from app.utils.api_response import api_response
@@ -31,6 +34,49 @@ async def get_question_embeddings():
             status_code=500,
             message=str(e)
         )
+        
+# Export all question embeddings as downloadable JSON
+@router.get("/export")
+async def export_question_embeddings():
+    try:
+        embeddings = await question_embedding_controller.get_question_embeddings()
+        data = jsonable_encoder(embeddings)
+        filename = f"question_embeddings_{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}.json"
+        return JSONResponse(
+            content=data,
+            media_type="application/json",
+            headers={
+                "Content-Disposition": f"attachment; filename=\"{filename}\"",
+                "Cache-Control": "no-store"
+            }
+        )
+    except Exception as e:
+        return api_response(
+            status_code=500,
+            message=str(e)
+        )
+        
+# Import question embeddings from uploaded JSON file
+@router.post("/import")
+async def import_question_embeddings(file: UploadFile):
+    try:
+        result = await question_embedding_controller.import_question_embeddings_file(file=file)
+        return api_response(
+            status_code=200,
+            message="Question embeddings imported successfully.",
+            details=result
+        )
+    except ValueError as e:
+        return api_response(
+            status_code=400,
+            message=str(e)
+        )
+    except Exception as e:
+        return api_response(
+            status_code=500,
+            message=str(e)
+        )
+
 
 # Get a question embedding by ID
 @router.get("/{embedding_id}")

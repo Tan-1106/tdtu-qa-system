@@ -10,6 +10,12 @@ class QuestionEmbeddingMetadata(BaseModel):
     class Config:
         from_attributes = True
         extra = "forbid"
+        
+# Import Question Embedding Schema
+class QuestionEmbeddingImport(BaseModel):
+    id: str = Field(..., description="Unique identifier for the question embedding")
+    vector: List[float] = Field(..., description="The embedding vector")
+    metadata: QuestionEmbeddingMetadata = Field(..., description="Metadata associated with the question embedding")
 
 # Create Document Schema
 class QuestionEmbeddingCreate(BaseModel):

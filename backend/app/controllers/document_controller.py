@@ -1,3 +1,4 @@
+import os
 from typing import Optional
 from fastapi import UploadFile, Form
 from fastapi.encoders import jsonable_encoder
@@ -76,8 +77,9 @@ async def upload_document(
     
     # Create document record in DB
     print("- LOG: Creating document record in DB...")
+    base_filename = os.path.splitext(file.filename)[0]
     doc = await document_service.create_document({
-        "title": file.filename,
+        "title": base_filename,
         "file_path": file_path,
         "chunks": chunks,
         "doc_type": doc_type,
@@ -91,8 +93,7 @@ async def upload_document(
     response = {
         "doc_id": str(doc.id),
         "file_path": file_path,
-        "title": file.filename,
-        "chunks": chunks,
+        "title": base_filename,
         "file_url": file_url,
         "questions": []
     }
@@ -135,8 +136,9 @@ async def upload_appendix_document(
     
     # Create document record in DB
     print("- LOG: Creating document record in DB...")
+    base_filename = os.path.splitext(file.filename)[0]
     doc = await document_service.create_document({
-        "title": file.filename,
+        "title": base_filename,
         "file_path": file_path,
         "chunks": chunks,
         "doc_type": doc_type,
@@ -150,7 +152,7 @@ async def upload_appendix_document(
     response = {
         "doc_id": str(doc.id),
         "file_path": file_path,
-        "title": file.filename,
+        "title": base_filename,
         "file_url": file_url,
         "questions": []
     }
@@ -170,12 +172,13 @@ async def upload_appendix_document(
 # View a document
 async def view_document_file(doc_id: str):
     file_name, file_content = await document_service.view_document_file(doc_id)
+    base_name = os.path.splitext(file_name)[0]
     
     return StreamingResponse(
         file_content,
         media_type="application/pdf",
         headers={
-            "Content-Disposition": f"inline; filename={file_name}.pdf",
+            "Content-Disposition": f"inline; filename={base_name}.pdf",
             "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
             "Pragma": "no-cache",
             "Expires": "0",

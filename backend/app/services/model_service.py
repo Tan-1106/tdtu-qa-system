@@ -14,7 +14,7 @@ logging.getLogger("sentence_transformers").setLevel(logging.WARNING)
 GPT_KEY = os.getenv("GPT_KEY")
 GPT_MODEL = os.getenv("GPT_MODEL")
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL")
-TRANSLATE_MODEL = "VietAI/envit5-translation"
+TRANSLATE_MODEL = os.getenv("TRANSLATE_MODEL")
 
 gpt_client = OpenAI(api_key=GPT_KEY)
 embedding_model = SentenceTransformer(EMBEDDING_MODEL)
@@ -27,9 +27,13 @@ def create_questions(context: str, num_questions: int = 5) -> list[str]:
     Bạn là một trợ lý tạo câu hỏi thông minh.
 
     Nhiệm vụ:
-    Tạo ra {num_questions} câu hỏi **ngắn gọn**, **rõ ràng**, **không trùng lặp** và **tự nhiên**, mà một sinh viên có thể hỏi về các **quy định hoặc quy chế của trường đại học**, dựa trên **nội dung trong đoạn văn bản dưới đây**.  
-    Mỗi câu hỏi phải có **ý nghĩa đầy đủ**, có thể hiểu được mà **không cần đọc lại văn bản gốc**, và **nội dung câu hỏi phải có thông tin trả lời trong đoạn văn**.
-
+    Sinh ra đúng {num_questions} câu hỏi tiềm năng đáp ứng toàn bộ tiêu chí sau:
+    - Ngắn gọn, rõ ràng, không trùng lặp, tự nhiên.
+    - Là những câu hỏi mà một sinh viên tại Trường Đại học Tôn Đức Thắng có thể đặt ra liên quan đến phạm vi, hoạt động, quy định… của trường dựa trên đoạn văn bạn được cung cấp bên dưới bằng hệ thống Retrieval-Augmented Generation (RAG).
+    - Không được hỏi dựa theo cú pháp hoặc câu chữ cụ thể trong văn bản, chỉ dựa trên chủ đề có thể được văn bản đề cập.
+    - Không được nhắc đến bản thân văn bản hoặc vị trí văn bản (ví dụ: “theo văn bản trên”, “dựa trên nội dung đã cho”, “thông báo này”, “quy định này”,...).
+    - Câu hỏi phải có ý nghĩa đầy đủ, người đọc không cần xem đoạn văn bản vẫn hiểu được.
+    - Ít nhất phải có 1 câu hỏi tổng quát về chủ đề chính của đoạn văn bản.
     Đoạn văn bản:
     \"\"\"{context}\"\"\"
 
@@ -64,6 +68,8 @@ def create_questions_appendix(context: str, num_questions: int = 3) -> list[str]
     - Câu hỏi phải **rõ nghĩa**, có thể hiểu được mà **không cần đọc lại văn bản gốc**.  
     - Chỉ tạo những câu hỏi mà **câu trả lời có thể tìm thấy** trong phần "Content" của văn bản.  
     - Không tạo câu hỏi nếu thông tin không rõ ràng hoặc không đủ dữ kiện trong nội dung.
+    - Câu hỏi được sinh ra không được bắt đầu theo bất kỳ cụm từ nào như "Theo đoạn văn bản trên", "Dựa trên nội dung đã cho", "Theo Content", v.v.
+    
 
     Đoạn văn bản:
     \"\"\"{context}\"\"\"
@@ -101,7 +107,7 @@ async def generate_answer(chunks: list[str], question: str, lang: str) -> str:
         3. Nếu thông tin liên quan có trong nhiều đoạn, hãy **tổng hợp và diễn đạt lại** thành một câu trả lời hoàn chỉnh.
         4. Nếu có đáp án, thì ở cuối câu trả lời, hãy thêm mục **Nguồn tham khảo** gồm danh sách các tài liệu đã được sử dụng (mỗi mục gồm tiêu đề và URL ở cuối đoạn văn bản).
         5. Nếu **không tìm thấy** thông tin phù hợp trong các đoạn văn bản, hãy trả lời rằng không thể tìm được tài liệu trong kho dữ liệu liên quan đến câu hỏi của người dùng, không đề cập đến các tài liệu bạn được cung cấp và không cần dẫn nguồn tham khảo.
-        6. Nếu người dùng cố gắng trò chuyện về các chủ đề không phù hợp hoặc ngoài phạm vi thay vì hỏi về quy định hoặc quy chế của Trường Đại học Tôn Đức Thắng, hãy trả lời một cách lịch sự rằng bạn chỉ có thể hỗ trợ các câu hỏi liên quan đến quy định, quy chế của Trường Đại học Tôn Đức Thắng và không được thiết kế để tham gia vào các cuộc trò chuyện ngoài phạm vi này, ngoài ra không cung cấp thông tin gì thêm về tài liệu nhận được từ hệ thống RAG.
+        6. Nếu người dùng cố gắng trò chuyện về các chủ đề không phù hợp hoặc ngoài phạm vi thay vì hỏi về nội dung thuộc phạm vi của Trường Đại học Tôn Đức Thắng, hãy trả lời một cách lịch sự rằng bạn chỉ có thể hỗ trợ các câu hỏi liên quan đến quy định, quy chế của Trường Đại học Tôn Đức Thắng và không được thiết kế để tham gia vào các cuộc trò chuyện ngoài phạm vi này, ngoài ra không cung cấp thông tin gì thêm về tài liệu nhận được từ hệ thống RAG.
 
         Ngữ cảnh từ hệ thống RAG:
         {context}
@@ -122,7 +128,7 @@ async def generate_answer(chunks: list[str], question: str, lang: str) -> str:
         3. If relevant information is found in multiple passages, **synthesize and rephrase** it into a complete answer. The relevant information may be in Vietnamese, so make sure to translate your response completly to English.
         4. If there is an answer, at the end of the response, add a **References** section listing the documents used (each item includes the title and URL at the end of the passage).
         5. If **no relevant information** is found in the text passages, respond that you could not find documents related to the user's question in the database, do not mention the documents you were provided, and do not include a references section.
-        6. If the user tries to chat about inappropriate or out-of-scope topics instead of asking about the regulations or policies of Ton Duc Thang University, politely respond that you can only assist with questions related to the regulations and policies of Ton Duc Thang University and are not designed to engage in out-of-scope conversations, without providing any additional information about the documents received from the RAG system.
+        6. If the user tries to chat about inappropriate or out-of-scope topics instead of asking about the scope of Ton Duc Thang University, politely respond that you can only assist with questions related to the scope of Ton Duc Thang University and are not designed to engage in out-of-scope conversations, without providing any additional information about the documents received from the RAG system.
         7. If the question is not in Vietnamese or English, politely inform the user that you can only process questions in Vietnamese or English. This response language is the question language if you can detect it, otherwise respond in English.
 
         Context from RAG system:
