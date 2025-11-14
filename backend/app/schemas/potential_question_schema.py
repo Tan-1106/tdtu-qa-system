@@ -13,6 +13,7 @@ class PotentialQuestionCreate(BaseModel):
         from_attributes = True
         extra = "forbid"
         
+        
 # Update A Potential Question Schema
 class PotentialQuestionUpdate(BaseModel):
     new_question: str = Field(..., description="New question content for update")
@@ -21,6 +22,7 @@ class PotentialQuestionUpdate(BaseModel):
         from_attributes = True
         extra = "forbid"
         
+        
 # Add A Potential Question Schema
 class AddPotentialQuestion(BaseModel):
     question: str = Field(..., description="The potential question to be added")
@@ -28,6 +30,7 @@ class AddPotentialQuestion(BaseModel):
     class Config:
         from_attributes = True
         extra = "forbid"
+        
         
 # Potential Questions Response Schema
 class PotentialQuestionResponse(BaseModel):

@@ -22,6 +22,7 @@ async def get_question_embeddings() -> list[question_embedding_schema.QuestionEm
         )
     return embeddings
 
+
 # Read a question embedding by ID
 async def get_question_embedding_by_id(embedding_id: str) -> question_embedding_schema.QuestionEmbeddingResponse:
     results = chroma.question_embeddings_collection.get(ids=[embedding_id], include=["embeddings", "metadatas"])
@@ -33,6 +34,7 @@ async def get_question_embedding_by_id(embedding_id: str) -> question_embedding_
         vector=results['embeddings'][0],
         metadata=results['metadatas'][0]
     )
+
 
 # Create a new question embedding
 async def create_question_embedding(embedding: question_embedding_schema.QuestionEmbeddingCreate) -> question_embedding_schema.QuestionEmbeddingResponse:
@@ -50,6 +52,7 @@ async def create_question_embedding(embedding: question_embedding_schema.Questio
         vector=embedding["vector"],
         metadata=embedding["metadata"]
     )
+    
     
 # Import question embeddings from uploaded JSON file
 async def import_question_embeddings_file(file):
@@ -75,6 +78,7 @@ async def import_question_embeddings_file(file):
     
     return imported_embeddings
     
+    
 # Update a question embedding by ID
 async def update_question_embedding(embedding_id: str, embedding_update: question_embedding_schema.QuestionEmbeddingCreate) -> question_embedding_schema.QuestionEmbeddingResponse:
     updated_data = jsonable_encoder(embedding_update)
@@ -95,6 +99,7 @@ async def update_question_embedding(embedding_id: str, embedding_update: questio
         metadata=updated_data["metadata"]
     )
 
+
 # Delete a question embedding by ID
 async def delete_question_embedding(embedding_id: str) -> bool:
     try:
@@ -106,6 +111,7 @@ async def delete_question_embedding(embedding_id: str) -> bool:
     except Exception as e:
         raise Exception("Error deleting question embedding: " + str(e))
     
+    
 # Delete question embeddings by document ID
 async def delete_question_embeddings_by_doc_id(doc_id: str) -> bool:
     try:
@@ -116,6 +122,7 @@ async def delete_question_embeddings_by_doc_id(doc_id: str) -> bool:
     except Exception as e:
         raise Exception("Error deleting question embeddings for document ID " + doc_id + ": " + str(e))
     
+    
 # Reset (Delete) question embeddings collection
 async def reset_question_embeddings_collection() -> bool:
     try:
@@ -125,6 +132,7 @@ async def reset_question_embeddings_collection() -> bool:
     except Exception as e:
         raise Exception("Error deleting all question embeddings: " + str(e))
     
+    
 # Semantic search question embeddings
 async def semantic_search_question_embeddings(
     query_vector: list[float],
@@ -132,11 +140,9 @@ async def semantic_search_question_embeddings(
     relevant_embedding_ids: list[str] = None
 ) -> list[question_embedding_schema.QuestionEmbeddingResponse]:    
     if relevant_embedding_ids:
-        # Tạo sub-collection tạm
         temp_name = f"temp_search_{uuid.uuid4().hex[:8]}"
         sub_collection = chroma.client.create_collection(name=temp_name)
         try:
-            # Lấy các embedding cụ thể
             data = chroma.question_embeddings_collection.get(
                 ids=relevant_embedding_ids,
                 include=["embeddings", "metadatas"]
@@ -150,7 +156,6 @@ async def semantic_search_question_embeddings(
                 metadatas=data['metadatas']
             )
 
-            # Query trong sub-collection
             results = sub_collection.query(
                 query_embeddings=[query_vector],
                 n_results=top_k,
@@ -159,7 +164,6 @@ async def semantic_search_question_embeddings(
         finally:
             chroma.client.delete_collection(temp_name)
     else:
-        # Query trực tiếp trên collection chính
         results = chroma.question_embeddings_collection.query(
             query_embeddings=[query_vector],
             n_results=top_k,

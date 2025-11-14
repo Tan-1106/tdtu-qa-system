@@ -25,6 +25,7 @@ async def get_prototypes() -> list[prototype_schema.PrototypeResponse]:
         
     return prototypes
 
+
 # Read a prototype by ID
 async def get_prototype_by_id(prototype_id: str) -> prototype_schema.PrototypeResponse:
     results = chroma.prototypes_collection.get(ids=[prototype_id], include=["embeddings", "metadatas"])
@@ -38,6 +39,7 @@ async def get_prototype_by_id(prototype_id: str) -> prototype_schema.PrototypeRe
         centroid_vector=results['embeddings'][0],
         metadata=metadata
     )
+    
     
 # Create a new prototype
 async def create_prototype(prototype_data: prototype_schema.PrototypeCreate) -> prototype_schema.PrototypeResponse:
@@ -58,6 +60,7 @@ async def create_prototype(prototype_data: prototype_schema.PrototypeCreate) -> 
         metadata=prototype_data["metadata"]
     )
     
+    
 # Reset (delete) prototypes collection
 async def reset_prototypes_collection() -> bool:
     try:
@@ -67,6 +70,7 @@ async def reset_prototypes_collection() -> bool:
     except Exception as e:
         print(f"Error resetting prototypes collection: {e}")
         return False
+    
     
 # Semantic search for prototypes
 async def semantic_search_prototypes(query_vector: list[float], top_k: int = 3) -> list[prototype_schema.PrototypeResponse]:
@@ -92,3 +96,53 @@ async def semantic_search_prototypes(query_vector: list[float], top_k: int = 3) 
         )
         
     return prototypes
+
+
+# Iterate all prototypes and count how many question embeddings were clustered into each
+def count_embeddings_per_prototype(batch_size: int = 1000, verbose: bool = True):
+    counts = []
+    try:
+        offset = 0
+        total_seen = 0
+        while True:
+            res = chroma.prototypes_collection.get(include=["metadatas"], limit=batch_size, offset=offset)
+            ids = res.get("ids", []) or []
+            metas = res.get("metadatas", []) or []
+
+            if not ids:
+                break
+
+            for i, pid in enumerate(ids):
+                meta = metas[i] or {}
+                raw = meta.get("question_embedding_ids")
+                if raw is None:
+                    n = 0
+                else:
+                    if isinstance(raw, str):
+                        try:
+                            items = json.loads(raw)
+                            n = len(items) if isinstance(items, list) else 0
+                        except Exception:
+                            n = 0
+                    elif isinstance(raw, list):
+                        n = len(raw)
+                    else:
+                        n = 0
+
+                counts.append({"id": pid, "count": n})
+
+            seen = len(ids)
+            total_seen += seen
+            offset += seen
+
+        if verbose:
+            total = sum(c["count"] for c in counts)
+            num = len(counts)
+            if num:
+                avg = total / num
+                print(f"Prototypes: {num}, Total clustered embeddings: {total}, Avg per prototype: {avg:.2f}")
+            else:
+                print("No prototypes found.")
+
+    except Exception as e:
+        print(f"Error counting embeddings per prototype: {e}")

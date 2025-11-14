@@ -14,12 +14,14 @@ async def get_documents(filters: dict, skip: int, limit: int) -> List[document_s
         docs.append(document_schema.DocumentResponse(**serializer.document_serialize(doc)))
     return docs
 
+
 # Read a document by ID
 async def get_document_by_id(doc_id: str) -> document_schema.DocumentResponse:
     doc = await mongo.get_documents_collection().find_one({"_id": ObjectId(doc_id)})
     if not doc:
         raise ValueError("Document not found")
     return document_schema.DocumentResponse(**serializer.document_serialize(doc))
+
 
 # Get a document chunk by doc_id and chunk_index
 async def get_document_chunk(doc_id: str, chunk_index: int) -> document_schema.DocumentChunkResponse:
@@ -44,10 +46,12 @@ async def get_document_chunk(doc_id: str, chunk_index: int) -> document_schema.D
         file_url=doc.get("file_url", "")
     )
 
+
 # Get documents count
 async def count_documents(filters: dict) -> int:
     count = await mongo.get_documents_collection().count_documents(filters)
     return count
+
 
 # Create a new document
 async def create_document(doc: dict) -> document_schema.DocumentResponse:
@@ -56,6 +60,7 @@ async def create_document(doc: dict) -> document_schema.DocumentResponse:
     
     created_doc = await mongo.get_documents_collection().find_one({"_id": result.inserted_id})
     return document_schema.DocumentResponse(**serializer.document_serialize(created_doc))
+
 
 # Update an existing document
 async def update_document(doc_id: str, doc_update: dict) -> document_schema.DocumentResponse:
@@ -72,6 +77,7 @@ async def update_document(doc_id: str, doc_update: dict) -> document_schema.Docu
     
     updated_doc = await mongo.get_documents_collection().find_one({"_id": ObjectId(doc_id)})
     return document_schema.DocumentResponse(**serializer.document_serialize(updated_doc))
+
 
 # Delete a document by ID
 async def delete_document(doc_id: str) -> bool:

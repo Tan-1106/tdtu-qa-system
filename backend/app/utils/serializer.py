@@ -8,8 +8,8 @@ def user_serialize(user) -> dict:
         "password": user.get("password"),
         "role": user.get("role"),
         "created_at": user.get("created_at").isoformat() if user.get("created_at") else None,
-        "updated_at": user.get("updated_at").isoformat() if user.get("updated_at") else None,
     }
+
 
 # Document
 def document_serialize(doc) -> dict:
@@ -28,6 +28,7 @@ def document_serialize(doc) -> dict:
         "updated_at": doc.get("updated_at").isoformat() if doc.get("updated_at") else None,
     }
     
+    
 # Document Chunk
 def document_chunk_serialize(chunk) -> dict:
     return {
@@ -35,6 +36,7 @@ def document_chunk_serialize(chunk) -> dict:
         "chunk_index": chunk.get("chunk_index"),
         "chunk_text": chunk.get("chunk_text"),
     }
+
 
 # Potential Question
 def potential_question_serialize(pq) -> dict:
@@ -47,6 +49,7 @@ def potential_question_serialize(pq) -> dict:
         "created_at": pq.get("created_at").isoformat() if pq.get("created_at") else None,
         "updated_at": pq.get("updated_at").isoformat() if pq.get("updated_at") else None,
     } 
+    
     
 # Question
 def question_serialize(question) -> dict:

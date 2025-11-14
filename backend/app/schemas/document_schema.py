@@ -15,6 +15,7 @@ class DocumentCreate(BaseModel):
         from_attributes = True
         extra = "forbid"
 
+
 # Update Document Schema
 class DocumentUpdate(BaseModel):
     title: Optional[str] = Field(default=None, description="Title of the document")
@@ -26,6 +27,7 @@ class DocumentUpdate(BaseModel):
     class Config:
         from_attributes = True
         extra = "forbid"
+
 
 # Document Response Schema
 class DocumentResponse(BaseModel):
@@ -46,6 +48,7 @@ class DocumentResponse(BaseModel):
         from_attributes = True
         populate_by_name = True
         json_encoders = { ObjectId: str }
+        
         
 # Document Chunk Response Schema
 class DocumentChunkResponse(BaseModel):

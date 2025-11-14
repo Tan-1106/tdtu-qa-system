@@ -1,7 +1,8 @@
 import os
+import unicodedata
 from typing import Optional
+from urllib.parse import quote
 from fastapi import UploadFile, Form
-from fastapi.encoders import jsonable_encoder
 from fastapi.responses import StreamingResponse
 
 from app.utils import text_process
@@ -13,34 +14,28 @@ async def get_documents(filters: dict, skip: int, limit: int):
     docs = await document_service.get_documents(filters=filters, skip=skip, limit=limit)
     return docs
 
+
 # Get a document by ID
 async def get_document_by_id(doc_id: str):
     doc = await document_service.get_document_by_id(doc_id)
     return doc
+
 
 # Get a document chunk by doc_id and chunk_index
 async def get_document_chunk(doc_id: str, chunk_index: int):
     chunk = await document_service.get_document_chunk(doc_id, chunk_index)
     return chunk
 
+
 # Get documents count
 async def count_documents(filters: dict):
     count = await document_service.count_documents(filters=filters)
     return count
 
-# Create a new document
-async def create_document(doc_data: document_schema.DocumentCreate, uploaded_by: str):
-    doc_data = jsonable_encoder(doc_data)
-    doc_data["uploaded_by"] = uploaded_by
-    
-    doc = await document_service.create_document(doc_data)
-    return doc
 
 # Update an existing document
-async def update_document(doc_id: str, doc_update: document_schema.DocumentUpdate, edited_by: str):
-    update_data = jsonable_encoder(doc_update)
-    update_data = {k: v for k, v in update_data.items() if v is not None}
-    
+async def update_document(doc_id: str, doc_update: dict, edited_by: str):
+    update_data = {k: v for k, v in doc_update.items() if v is not None}
     if not update_data:
         raise ValueError("No fields to update.")
     
@@ -48,10 +43,12 @@ async def update_document(doc_id: str, doc_update: document_schema.DocumentUpdat
     response = await document_service.update_document(doc_id, update_data)
     return response
 
+
 # Delete a document by ID
 async def delete_document(doc_id: str):
     result = await document_service.delete_document(doc_id)
     return result
+
 
 # Upload a document
 async def upload_document(
@@ -62,6 +59,9 @@ async def upload_document(
     language: Optional[str] = Form('["vi"]'),
     file_url: str = Form(...)
 ):
+    print("-"*50)
+    print(f"- LOG: Uploading document: {file.filename}")
+    
     # Extract text from PDF
     print("- LOG: Extracting text from PDF...")
     document_content = await text_process.extract_pdf_document_content(file)
@@ -109,6 +109,7 @@ async def upload_document(
     await prototype_service.cluster_question_embeddings()
 
     return response
+
 
 # Upload appendix document
 async def upload_appendix_document(
@@ -169,16 +170,22 @@ async def upload_appendix_document(
         
     return response
 
+
 # View a document
 async def view_document_file(doc_id: str):
     file_name, file_content = await document_service.view_document_file(doc_id)
     base_name = os.path.splitext(file_name)[0]
     
+    display_name = f"{base_name}.pdf"
+    ascii_fallback = unicodedata.normalize("NFKD", display_name).encode("ascii", "ignore").decode("ascii") or "document.pdf"
+    utf8_encoded = quote(display_name)
+    content_disposition = f"inline; filename=\"{ascii_fallback}\"; filename*=UTF-8''{utf8_encoded}"
+
     return StreamingResponse(
         file_content,
         media_type="application/pdf",
         headers={
-            "Content-Disposition": f"inline; filename={base_name}.pdf",
+            "Content-Disposition": content_disposition,
             "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
             "Pragma": "no-cache",
             "Expires": "0",

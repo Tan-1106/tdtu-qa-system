@@ -14,6 +14,7 @@ router = APIRouter(
     dependencies=[Depends(auth_service.require_role(["Admin"]))]
 )
 
+
 # Get all question embeddings
 @router.get("/")
 async def get_question_embeddings():
@@ -35,6 +36,7 @@ async def get_question_embeddings():
             message=str(e)
         )
         
+        
 # Export all question embeddings as downloadable JSON
 @router.get("/export")
 async def export_question_embeddings():
@@ -55,6 +57,7 @@ async def export_question_embeddings():
             status_code=500,
             message=str(e)
         )
+       
         
 # Import question embeddings from uploaded JSON file
 @router.post("/import")
@@ -99,10 +102,12 @@ async def get_question_embedding(embedding_id: str):
             message=str(e)
         )
 
-# Create a new question embedding
+
+# Create a new question embedding (JUST FOR TESTING)
 @router.post("/")
 async def create_question_embedding(data: question_embedding_schema.QuestionEmbeddingCreate):
     try:
+        data = jsonable_encoder(data)
         created_question_embedding = await question_embedding_controller.create_question_embedding(data)
         return api_response(
             status_code=201,
@@ -119,6 +124,7 @@ async def create_question_embedding(data: question_embedding_schema.QuestionEmbe
             status_code=500,
             message=str(e)
         )
+    
     
 # Delete a question embedding by ID
 @router.delete("/{embedding_id}")
@@ -139,6 +145,7 @@ async def delete_question_embedding(embedding_id: str):
             status_code=500,
             message=str(e)
         )
+    
     
 # Reset (Delete) question embeddings collection
 @router.delete("/")

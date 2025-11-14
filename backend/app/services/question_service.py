@@ -8,15 +8,18 @@ async def get_questions():
     questions = await question_dao.get_questions()
     return questions
 
+
 # Get a question by ID
 async def get_question_by_id(question_id: str):
     question = await question_dao.get_question_by_id(question_id)
     return question
 
+
 # Create a new question
 async def create_question(question: dict):
     created_question = await question_dao.create_question(question)
     return created_question
+
 
 # Ask a question and get an answer
 async def query(question_data: dict, lang: str = 'vi'):
@@ -60,10 +63,12 @@ async def query(question_data: dict, lang: str = 'vi'):
     print("- Answer: ", answer)
     return answer[0]
 
+
 # Update question status with answer
 async def update_question_status(question_id: str, answer: str, status: str = "Answered"):
     updated_question = await question_dao.update_question_status(question_id, answer, status)
     return updated_question
+
 
 # Leave feedback for a question
 async def leave_feedback(question_id: str, user_id: str, feedback: int):

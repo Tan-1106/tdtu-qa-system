@@ -14,7 +14,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 # Initialize tokenizer
 enc = get_encoding("cl100k_base")
 
-# Normalize table cell content
+# Normalize content
 def normalize_text(text: str):
     if isinstance(text, str):
         try:
@@ -44,12 +44,14 @@ def normalize_text(text: str):
 
     return data
 
+
 # Normalize individual table cell content
 def normalize_cell(x):
     x = str(x)
     x = re.sub(r'[\n\r\t]+', '', x)
     x = re.sub(r'\s{2,}', ' ', x)
     return x.strip()
+
 
 # Check if a PDF is text-based
 def is_text_based_pdf(file_path: str) -> bool:
@@ -64,6 +66,7 @@ def is_text_based_pdf(file_path: str) -> bool:
         return False
     except Exception as e:
         raise RuntimeError("Failed to process PDF file.") from e
+
 
 # Extract text content from a PDF document (both text-based and scanned, not appendix)
 async def extract_pdf_document_content(file: UploadFile):
@@ -96,6 +99,7 @@ async def extract_pdf_document_content(file: UploadFile):
             raise RuntimeError("Failed to extract text from PDF.") from e
         
     return document_content
+
 
 # Extract text and tables from a text-based PDF appendix
 async def extract_pdf_appendix_content(file: UploadFile):
@@ -137,6 +141,7 @@ async def extract_pdf_appendix_content(file: UploadFile):
     except Exception as e:
         raise Exception("Failed to extract text and tables from appendix PDF.") from e
 
+
 # Extract appendix description (text before the first table)
 def extract_appendix_description(path: str) -> str:
     tables = camelot.read_pdf(path, pages='all', flavor='lattice')
@@ -170,6 +175,7 @@ def extract_appendix_description(path: str) -> str:
         full_description = '\n\n'.join(description_parts).strip()
         
     return full_description
+
 
 # Split appendix into chunks
 async def split_appendix_into_chunks(description: str, tables: list[list[str]], table_header_rows: int) -> list[str]:
@@ -212,6 +218,7 @@ async def split_text_into_chunks(text: str, words_per_chunk: int, overlap: int) 
     merged_chunks = await merge_chunks(chunks, target_max_length=words_per_chunk)
         
     return merged_chunks
+
 
 # Merge chunks
 async def merge_chunks(chunks: list[str], target_max_length: int) -> list[str]:

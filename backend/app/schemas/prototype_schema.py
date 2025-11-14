@@ -10,6 +10,7 @@ class PrototypeMetadata(BaseModel):
         from_attributes = True
         extra = "forbid"
 
+
 # Create Prototype Schema
 class PrototypeCreate(BaseModel):
     centroid_vector: List[float] = Field(..., description="The centroid embedding vector")
@@ -18,6 +19,7 @@ class PrototypeCreate(BaseModel):
     class Config:
         from_attributes = True
         extra = "forbid"
+        
         
 # Prototype Response Schema
 class PrototypeResponse(BaseModel):

@@ -14,6 +14,7 @@ class PopularQuestionCreate(BaseModel):
         from_attributes = True
         extra = "forbid"
         
+        
 # Update Answer Schema
 class PopularQuestionAnswerUpdate(BaseModel):
     answer: str = Field(..., description="The updated answer content")
@@ -22,6 +23,7 @@ class PopularQuestionAnswerUpdate(BaseModel):
     class Config:
         from_attributes = True
         extra = "forbid"
+        
         
 # Popular Question Response Schema
 class PopularQuestionResponse(BaseModel):

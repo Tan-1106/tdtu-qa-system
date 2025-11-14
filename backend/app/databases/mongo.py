@@ -3,14 +3,16 @@ import logging
 from pymongo.errors import ConnectionFailure
 from motor.motor_asyncio import AsyncIOMotorClient
 
-# Cấu hình logging
+# Logging configuration
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
-# Đọc biến môi trường
+
+# Read environment variables
 MONGO_URL = os.getenv("MONGO_URL", "mongodb://mongodb:27017")
 DB_NAME = os.getenv("MONGO_DB_NAME", "tdtu_qa_db")
 
-# Kết nối MongoDB
+
+# Connect to MongoDB
 client: AsyncIOMotorClient | None = None
 db = None
 
@@ -25,12 +27,14 @@ async def connect_to_mongo():
         logging.error(f"LOG: Could not connect to MongoDB: {e}")
         raise e
 
+
 # Đóng kết nối MongoDB
 async def close_mongo_connection():
     global client
     if client:
         client.close()
         logging.info("LOG: MongoDB connection closed.")
+
 
 # COLLECTIONS
 # Users collection
@@ -41,6 +45,16 @@ def get_users_collection():
     logging.info(f"LOG: Accessing collection: users in database: {DB_NAME}")
     return db.get_collection("users")
 
+
+# Refresh tokens collection
+def get_refresh_tokens_collection():
+    global db
+    if db is None:
+        raise RuntimeError("Database is not initialized. Did you call connect_to_mongo()?")
+    logging.info(f"LOG: Accessing collection: refresh_tokens in database: {DB_NAME}")
+    return db.get_collection("refresh_tokens")
+
+
 # Documents collection
 def get_documents_collection():
     global db
@@ -48,6 +62,7 @@ def get_documents_collection():
         raise RuntimeError("Database is not initialized. Did you call connect_to_mongo()?")
     logging.info(f"LOG: Accessing collection: documents in database: {DB_NAME}")
     return db.get_collection("documents")
+
 
 # Potential questions collection
 def get_potential_questions_collection():
@@ -57,6 +72,7 @@ def get_potential_questions_collection():
     logging.info(f"LOG: Accessing collection: potential_questions in database: {DB_NAME}")
     return db.get_collection("potential_questions")
 
+
 # Questions collection
 def get_questions_collection():
     global db
@@ -65,6 +81,7 @@ def get_questions_collection():
     logging.info(f"LOG: Accessing collection: questions in database: {DB_NAME}")
     return db.get_collection("questions")
 
+
 # Answers collection
 def get_answers_collection():
     global db
@@ -72,6 +89,7 @@ def get_answers_collection():
         raise RuntimeError("Database is not initialized. Did you call connect_to_mongo()?")
     logging.info(f"LOG: Accessing collection: answers in database: {DB_NAME}")
     return db.get_collection("answers")
+
 
 # Popular questions collection
 def get_popular_questions_collection():

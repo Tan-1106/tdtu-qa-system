@@ -8,6 +8,7 @@ class ApiResponse(BaseModel):
     message: str
     details: Optional[Any] = None
 
+
 def api_response(status_code: int, message: str, details: Any = None):
     return JSONResponse(
         status_code=status_code,

@@ -1,14 +1,17 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
+from fastapi.encoders import jsonable_encoder
+
 from app.services import auth_service
+from app.schemas import prototype_schema
 from app.utils.api_response import api_response
 from app.controllers import prototype_controller
-from app.schemas import prototype_schema
 
 router = APIRouter(
     prefix="/prototypes",
     tags=["Prototypes"],
     dependencies=[Depends(auth_service.require_role(["Admin"]))]
 )
+
 
 # Get all prototypes
 @router.get("/")
@@ -25,6 +28,7 @@ async def get_prototypes():
             status_code=500,
             message=str(e)
         )
+
 
 # Get a prototype by ID
 @router.get("/{prototype_id}")
@@ -47,11 +51,12 @@ async def get_prototype(prototype_id: str):
             message=str(e)
         )
 
-# Create a prototype
+
+# Create a prototype (JUST FOR TESTING)
 @router.post("/")
 async def create_prototype(data: prototype_schema.PrototypeCreate):
     try:
-        print("LOG: Received data for prototype creation in route:", data)
+        data = jsonable_encoder(data)
         created_prototype = await prototype_controller.create_prototype(data)
         return api_response(
             status_code=200,
@@ -63,6 +68,7 @@ async def create_prototype(data: prototype_schema.PrototypeCreate):
             status_code=500,
             message=str(e)
         )
+      
         
 # Cluster question embeddings into prototypes
 @router.post("/cluster")
@@ -79,6 +85,7 @@ async def cluster_question_embeddings():
             message=str(e)
         )
 
+
 # Reset (delete) prototypes collection
 @router.delete("/")
 async def reset_prototypes_collection():
@@ -93,4 +100,3 @@ async def reset_prototypes_collection():
             status_code=500,
             message=str(e)
         )
-

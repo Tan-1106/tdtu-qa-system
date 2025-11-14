@@ -12,7 +12,8 @@ logging.getLogger("sentence_transformers").setLevel(logging.WARNING)
 
 # Environment variables
 GPT_KEY = os.getenv("GPT_KEY")
-GPT_MODEL = os.getenv("GPT_MODEL")
+GPT_5_NANO = os.getenv("GPT_5_NANO")
+GPT_5_MINI = os.getenv("GPT_5_MINI")
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL")
 TRANSLATE_MODEL = os.getenv("TRANSLATE_MODEL")
 
@@ -20,6 +21,7 @@ gpt_client = OpenAI(api_key=GPT_KEY)
 embedding_model = SentenceTransformer(EMBEDDING_MODEL)
 translate_tokenizer = AutoTokenizer.from_pretrained(TRANSLATE_MODEL)
 translate_model = AutoModelForSeq2SeqLM.from_pretrained(TRANSLATE_MODEL)
+
 
 # Generate questions from a given text chunk
 def create_questions(context: str, num_questions: int = 5) -> list[str]:
@@ -45,7 +47,7 @@ def create_questions(context: str, num_questions: int = 5) -> list[str]:
     """
 
     response = gpt_client.responses.create(
-        model=GPT_MODEL,
+        model=GPT_5_NANO,
         input=prompt,
         store=False
     )
@@ -54,6 +56,7 @@ def create_questions(context: str, num_questions: int = 5) -> list[str]:
     output_text = text_process.normalize_text(output_text)
     print("LOG: Generated questions:", output_text)
     return output_text
+
 
 # Generate questions from a given text chunk (appendix version)
 def create_questions_appendix(context: str, num_questions: int = 3) -> list[str]:
@@ -84,7 +87,7 @@ def create_questions_appendix(context: str, num_questions: int = 3) -> list[str]
 
 
     response = gpt_client.responses.create(
-        model=GPT_MODEL,
+        model=GPT_5_NANO,
         input=prompt,
         store=False
     )
@@ -93,6 +96,7 @@ def create_questions_appendix(context: str, num_questions: int = 3) -> list[str]
     output_text = text_process.normalize_text(output_text)
     print("LOG: Generated appendix questions:", output_text)
     return output_text
+
 
 # Generate answer using provided chunks and question
 async def generate_answer(chunks: list[str], question: str, lang: str) -> str:
@@ -141,7 +145,7 @@ async def generate_answer(chunks: list[str], question: str, lang: str) -> str:
         - Return exactly **one string** containing the complete answer, which may include a "References:" section if applicable.
         """
     response = gpt_client.responses.create(
-        model=GPT_MODEL,
+        model=GPT_5_MINI,
         input=prompt,
         store=False
     )
@@ -149,6 +153,7 @@ async def generate_answer(chunks: list[str], question: str, lang: str) -> str:
     answer = response.output_text.strip()
     answer = text_process.normalize_text(answer)
     return answer
+
 
 # Get embedding for a given text
 def get_embedding(text: str):
@@ -159,6 +164,7 @@ def get_embedding(text: str):
     embedding = embedding_model.encode(text_tokenized).tolist()
 
     return embedding
+
 
 # Translate text from English to Vietnamese
 async def translate_to_vietnamese(text: str) -> str:

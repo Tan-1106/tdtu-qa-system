@@ -1,18 +1,19 @@
-import os
 from typing import List
-from bson import ObjectId
 from datetime import datetime, timezone
+from fastapi.encoders import jsonable_encoder
 
 from app.databases import mongo
 from app.utils import serializer
 from app.schemas import potential_question_schema
 
 # Create potential questions for a chunk
-async def create_potential_questions(potential_question_data: dict) -> potential_question_schema.PotentialQuestionResponse:
+async def create_potential_questions(potential_question_data: potential_question_schema.PotentialQuestionCreate) -> potential_question_schema.PotentialQuestionResponse:
+    potential_question_data = jsonable_encoder(potential_question_data)
     potential_question_data["created_at"] = datetime.now(timezone.utc)
     result = await mongo.get_potential_questions_collection().insert_one(potential_question_data)
     created_pq = await mongo.get_potential_questions_collection().find_one({"_id": result.inserted_id})
     return potential_question_schema.PotentialQuestionResponse(**serializer.potential_question_serialize(created_pq))
+
 
 # Read all potential questions
 async def get_potential_questions() -> List[potential_question_schema.PotentialQuestionResponse]:
@@ -21,13 +22,13 @@ async def get_potential_questions() -> List[potential_question_schema.PotentialQ
         pq_list.append(potential_question_schema.PotentialQuestionResponse(**serializer.potential_question_serialize(pq)))
     return pq_list
 
+
 # Read potential questions by doc_id and chunk_index
 async def get_potential_questions_by_chunk(doc_id: str, chunk_index: int) -> potential_question_schema.PotentialQuestionResponse:
-    pq_list = []
     query = {"doc_id": doc_id, "chunk_index": chunk_index}
     async for pq in mongo.get_potential_questions_collection().find(query):
-        pq_list.append(potential_question_schema.PotentialQuestionResponse(**serializer.potential_question_serialize(pq)))
-    return pq_list
+        return potential_question_schema.PotentialQuestionResponse(**serializer.potential_question_serialize(pq))
+    raise ValueError("Potential questions not found for the specified chunk.")
 
 # Add a potential question for a chunk
 async def add_potential_question(question_data: dict) -> potential_question_schema.PotentialQuestionResponse:
@@ -54,8 +55,9 @@ async def add_potential_question(question_data: dict) -> potential_question_sche
     else:
         raise ValueError("Chunk not found. Cannot add potential question.")
 
+
 # Update a potential question of a chunk
-async def update_potential_question(doc_id: str, chunk_index: int, question_index: int, question_update: potential_question_schema.PotentialQuestionUpdate) -> potential_question_schema.PotentialQuestionResponse:
+async def update_potential_question(doc_id: str, chunk_index: int, question_index: int, new_question: str) -> potential_question_schema.PotentialQuestionResponse:
     query = {"doc_id": doc_id, "chunk_index": chunk_index}
     pq = await mongo.get_potential_questions_collection().find_one(query)
     if not pq:
@@ -65,7 +67,7 @@ async def update_potential_question(doc_id: str, chunk_index: int, question_inde
     if question_index < 0 or question_index >= len(potential_questions):
         raise Exception("Question index out of range.")
     
-    potential_questions[question_index] = question_update.new_question
+    potential_questions[question_index] = new_question
     
     update_data = {
         "potential_questions": potential_questions,
@@ -76,6 +78,7 @@ async def update_potential_question(doc_id: str, chunk_index: int, question_inde
     
     updated_pq = await mongo.get_potential_questions_collection().find_one(query)
     return potential_question_schema.PotentialQuestionResponse(**serializer.potential_question_serialize(updated_pq))
+
 
 # Delete a potential question of a chunk
 async def delete_potential_question(doc_id: str, chunk_index: int, question_index: int) -> dict:
@@ -103,6 +106,7 @@ async def delete_potential_question(doc_id: str, chunk_index: int, question_inde
     await mongo.get_potential_questions_collection().update_one(query, {"$set": update_data})
     
     return {"deleted_question": deleted_question}
+
 
 # Delete potential questions by doc_id
 async def delete_potential_questions_by_doc_id(doc_id: str) -> dict:

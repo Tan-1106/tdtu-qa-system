@@ -18,6 +18,7 @@ user_router = APIRouter(
     dependencies=[Depends(auth_service.get_current_user)]
 )
 
+
 # ADMIN ROUTES
 # Get all questions
 @admin_router.get("/")
@@ -34,6 +35,7 @@ async def get_questions():
             status_code=500,
             message=str(e)
         )
+       
         
 # Get a question by ID
 @admin_router.get("/{question_id}")
@@ -56,10 +58,12 @@ async def get_question(question_id: str):
             message=str(e)
         )
         
+        
 # Create a new question
 @admin_router.post("/")
 async def create_question(data: question_schema.QuestionCreate, current_user = Depends(auth_service.get_current_user)):
     try:
+        data = jsonable_encoder(data)
         current_user = jsonable_encoder(current_user)
         user_id = current_user["_id"]
         
@@ -80,11 +84,13 @@ async def create_question(data: question_schema.QuestionCreate, current_user = D
             message=str(e)
         )
        
+       
 # USER ROUTES 
 # Ask a question
 @user_router.post("/query")
 async def query(question: question_schema.QuestionCreate, current_user = Depends(auth_service.get_current_user)):
     try:
+        question = jsonable_encoder(question)
         current_user = jsonable_encoder(current_user)
         user_id = current_user["_id"]
 
@@ -104,6 +110,7 @@ async def query(question: question_schema.QuestionCreate, current_user = Depends
             status_code=500,
             message=str(e)
         )
+      
         
 # Leave feedback on an answer
 @user_router.post("/{question_id}/feedback")
@@ -117,9 +124,9 @@ async def leave_feedback(
         user_id = current_user["_id"]
 
         updated_question = await question_controller.leave_feedback(
-            question_id,
-            user_id,
-            feedback_data.feedback
+            question_id=question_id,
+            user_id=user_id,
+            feedback=feedback_data.feedback
         )
         return api_response(
             status_code=200,

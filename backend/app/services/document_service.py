@@ -14,12 +14,14 @@ async def get_documents(filters: dict, skip: int, limit: int):
     docs = await document_dao.get_documents(filters=filters, skip=skip, limit=limit)
     return docs
 
+
 # Get a document by ID
 async def get_document_by_id(doc_id: str):
     doc = await document_dao.get_document_by_id(doc_id)
     if not doc:
         raise ValueError(f"Document with ID {doc_id} not found")
     return doc
+
 
 # Get a document chunk by doc_id and chunk_index
 async def get_document_chunk(doc_id: str, chunk_index: int):
@@ -28,20 +30,24 @@ async def get_document_chunk(doc_id: str, chunk_index: int):
         raise ValueError(f"Chunk {chunk_index} not found in document {doc_id}")
     return chunk
 
+
 # Get documents count
 async def count_documents(filters: dict):
     count = await document_dao.count_documents(filters=filters)
     return count
+
 
 # Create a new document
 async def create_document(doc_data: dict):
     doc = await document_dao.create_document(doc_data)
     return doc
 
+
 # Update an existing document
 async def update_document(doc_id: str, doc_update: dict):
     updated_doc = await document_dao.update_document(doc_id, doc_update)
     return updated_doc
+
 
 # Delete a document by ID
 async def delete_document(doc_id: str):
@@ -52,6 +58,7 @@ async def delete_document(doc_id: str):
         await prototype_service.cluster_question_embeddings()
 
     return deleted
+
 
 # Save document file to disk
 async def save_document_file(file: UploadFile):
@@ -67,6 +74,7 @@ async def save_document_file(file: UploadFile):
     )
         
     return file_path
+
 
 # View document file
 async def view_document_file(doc_id: str):

@@ -12,6 +12,7 @@ async def get_users() -> list[user_schema.UserResponse]:
         users.append(user_schema.UserResponse(**serializer.user_serialize(user)))
     return users
 
+
 # Read user by ID
 async def get_user_by_id(user_id: str) -> user_schema.UserResponse:
     user = await mongo.get_users_collection().find_one({"_id": ObjectId(user_id)})
@@ -19,12 +20,14 @@ async def get_user_by_id(user_id: str) -> user_schema.UserResponse:
         raise ValueError("User not found")
     return user_schema.UserResponse(**serializer.user_serialize(user))
 
+
 # Get user by email
 async def get_user_by_email(email: str) -> user_schema.UserResponse:
     user = await mongo.get_users_collection().find_one({"email": email})
     if not user:
         raise ValueError("User not found")
     return user_schema.UserResponse(**serializer.user_serialize(user))
+
 
 # Create a new user
 async def create_user(user: dict) -> user_schema.UserResponse:
@@ -38,6 +41,7 @@ async def create_user(user: dict) -> user_schema.UserResponse:
     
     created_user = await mongo.get_users_collection().find_one({"_id": result.inserted_id})
     return user_schema.UserResponse(**serializer.user_serialize(created_user))
+
 
 # Update a user by ID
 async def update_user(user_id: str, user_update: dict) -> user_schema.UserResponse:
@@ -59,6 +63,7 @@ async def update_user(user_id: str, user_update: dict) -> user_schema.UserRespon
 
     updated_user = await mongo.get_users_collection().find_one({"_id": ObjectId(user_id)})
     return user_schema.UserResponse(**serializer.user_serialize(updated_user))
+
 
 # Delete a user by ID
 async def delete_user(user_id: str) -> bool:

@@ -13,32 +13,15 @@ admin_route = APIRouter(
     dependencies=[Depends(auth_service.require_role(["Admin"]))]
 )
 
+
 user_route = APIRouter(
     prefix="/documents",
     tags=["Documents"],
     dependencies=[Depends(auth_service.get_current_user)]
 )
 
-# ADMIN ROUTES
-# Create a new document
-@admin_route.post("/")
-async def create_document(doc: document_schema.DocumentCreate, current_user = Depends(auth_service.get_current_user)):
-    try:
-        current_user = jsonable_encoder(current_user)
-        uploaded_by = current_user["_id"]
 
-        created_doc = await document_controller.create_document(doc, uploaded_by)
-        return api_response(
-            status_code=201,
-            message="Document created successfully.",
-            details=created_doc
-        )
-    except Exception as e:
-        return api_response(
-            status_code=500,
-            message=str(e),
-        )
-        
+# ADMIN ROUTES
 # Get chunk by doc_id and chunk_index
 @admin_route.get("/{doc_id}/chunks/{chunk_index}")
 async def get_chunk(doc_id: str, chunk_index: int):
@@ -60,10 +43,12 @@ async def get_chunk(doc_id: str, chunk_index: int):
             message=str(e)
         )
     
+    
 # Update a document by ID
 @admin_route.patch("/{doc_id}")
 async def update_document(doc_id: str, doc_update: document_schema.DocumentUpdate, current_user = Depends(auth_service.get_current_user)):
     try:
+        doc_update = jsonable_encoder(doc_update)
         current_user = jsonable_encoder(current_user)
         edited_by = current_user["_id"]
 
@@ -83,6 +68,7 @@ async def update_document(doc_id: str, doc_update: document_schema.DocumentUpdat
             status_code=500,
             message=str(e),
         )
+   
     
 # Delete a document by ID
 @admin_route.delete("/{doc_id}")
@@ -105,8 +91,8 @@ async def delete_document(doc_id: str):
             message=str(e),
         )
 
+
 # Upload a document
-# (PDF -> Extract text -> Chunk text -> Generate questions -> Get embeddings -> Store in DB)
 @admin_route.post("/upload")
 async def upload_document(
     file: UploadFile,
@@ -143,6 +129,7 @@ async def upload_document(
             status_code=500,
             message=str(e)
         )
+        
         
 # Upload appendix document (PDF)
 @admin_route.post("/upload-appendix")
@@ -182,6 +169,7 @@ async def upload_appendix_document(
             message=str(e)
         )
         
+        
 # USER ROUTES
 # Get all documents
 @user_route.get("/")
@@ -218,6 +206,7 @@ async def get_documents(
             message=str(e),
         ) 
 
+
 # View document file
 @user_route.get("/view/{doc_id}")
 async def view_document_file(doc_id: str):
@@ -234,6 +223,7 @@ async def view_document_file(doc_id: str):
             status_code=500,
             message=str(e)
         )
+        
         
 # Get a document by ID
 @user_route.get("/{doc_id}")

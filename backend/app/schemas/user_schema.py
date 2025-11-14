@@ -6,11 +6,20 @@ from pydantic import BaseModel, Field, EmailStr
 # Update User Information Schema
 class UserInformationUpdate(BaseModel):
     full_name: Optional[str] = Field(default=None, description="Full name of the user")
-    email: Optional[EmailStr] = Field(default=None, description="Email address of the user")
     
     class Config:
         from_attributes = True
         extra = "forbid"
+        
+        
+# Email Lookup Schema
+class EmailLookup(BaseModel):
+    email: EmailStr = Field(..., description="Email address of the user to look up")
+    
+    class Config:
+        from_attributes = True
+        extra = "forbid"
+      
         
 # User Response Schema
 class UserResponse(BaseModel):
@@ -20,7 +29,6 @@ class UserResponse(BaseModel):
     password: str
     role: str
     created_at: datetime
-    updated_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True

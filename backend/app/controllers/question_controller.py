@@ -1,5 +1,4 @@
 from langdetect import detect
-from fastapi.encoders import jsonable_encoder
 
 from app.schemas import question_schema
 from app.services import question_service, model_service
@@ -9,24 +8,24 @@ async def get_questions():
     questions = await question_service.get_questions()
     return questions
 
+
 # Get a question by ID
 async def get_question_by_id(question_id: str):
     question = await question_service.get_question_by_id(question_id)
     return question
 
+
 # Create a new question
-async def create_question(question_data: question_schema.QuestionCreate, user_id: str):
-    question_data = jsonable_encoder(question_data)
+async def create_question(question_data: dict, user_id: str):
     question_data['user_id'] = user_id
     
     question = await question_service.create_question(question_data)
     return question
 
+
 # Ask a question
-async def query(question_data: question_schema.QuestionCreate, user_id: str):
-    question_data = jsonable_encoder(question_data)
+async def query(question_data: dict, user_id: str):
     question_data['user_id'] = user_id
-    
     lang = detect(question_data['question'])
     
     # Create the question
@@ -47,6 +46,7 @@ async def query(question_data: question_schema.QuestionCreate, user_id: str):
         raise e
 
     return result
+
 
 # Leave feedback for a question
 async def leave_feedback(question_id: str, user_id: str, feedback: int):

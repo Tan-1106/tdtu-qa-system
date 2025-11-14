@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends
+from fastapi.encoders import jsonable_encoder
 
 from app.services import auth_service
 from app.utils.api_response import api_response
@@ -10,6 +11,7 @@ route = APIRouter(
     tags=["Potential Questions"],
     dependencies=[Depends(auth_service.require_role(["Admin"]))]
 )
+
 
 # Get all potential questions
 @route.get("/")
@@ -27,6 +29,7 @@ async def get_potential_questions():
             message=str(e)
         )
 
+
 # Get potential questions by doc_id & chunk_index
 @route.get("/{doc_id}/chunks/{chunk_index}")
 async def get_potential_questions_by_chunk(doc_id: str, chunk_index: int):
@@ -43,11 +46,12 @@ async def get_potential_questions_by_chunk(doc_id: str, chunk_index: int):
             message=str(e)
         )
 
+
 # Create a potential question for chunk
 @route.post("/{doc_id}/chunks/{chunk_index}")
 async def add_potential_question(doc_id: str, chunk_index: int, potential_question_data: potential_question_schema.AddPotentialQuestion):
     try:
-        print("LOG: ROUTE - CREATE POTENTIAL QUESTION")
+        potential_question_data = jsonable_encoder(potential_question_data)
         created_questions = await potential_question_controller.add_potential_question(doc_id, chunk_index, potential_question_data)
         return api_response(
             status_code=201,
@@ -65,11 +69,12 @@ async def add_potential_question(doc_id: str, chunk_index: int, potential_questi
             message=str(e)
         )
 
+
 # Update a potential question of a chunk
 @route.put("/{doc_id}/chunks/{chunk_index}/questions/{question_index}")
 async def update_potential_question(doc_id: str, chunk_index: int, question_index: int, question_update: potential_question_schema.PotentialQuestionUpdate):
     try:
-        print("LOG: ROUTE")
+        question_update = jsonable_encoder(question_update)
         updated_question = await potential_question_controller.update_potential_question(doc_id, chunk_index, question_index, question_update)
         return api_response(
             status_code=200,
@@ -81,6 +86,7 @@ async def update_potential_question(doc_id: str, chunk_index: int, question_inde
             status_code=500,
             message=str(e)
         )
+
 
 # Delete a potential question of a chunk
 @route.delete("/{doc_id}/chunks/{chunk_index}/questions/{question_index}")

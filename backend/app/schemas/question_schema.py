@@ -11,6 +11,7 @@ class QuestionCreate(BaseModel):
         from_attributes = True
         extra = "forbid"
 
+
 # Update Question Schem
 class QuestionUpdate(BaseModel):
     status: str = Field(..., description="Status of the question")
@@ -20,6 +21,7 @@ class QuestionUpdate(BaseModel):
         from_attributes = True
         extra = "forbid"
         
+        
 # Feedback Schema
 class AnswerFeedback(BaseModel):
     feedback: Optional[Literal[1, -1]] = Field(default=None, description="Feedback on the answer (Like/Dislike | 1 for Like, -1 for Dislike)")
@@ -27,6 +29,7 @@ class AnswerFeedback(BaseModel):
     class Config:
         from_attributes = True
         extra = "forbid"
+
 
 # Question Response Schema
 class QuestionResponse(BaseModel):

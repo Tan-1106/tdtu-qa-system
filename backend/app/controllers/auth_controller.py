@@ -1,21 +1,26 @@
 from fastapi import Depends
-from fastapi.encoders import jsonable_encoder
 
 from app.services import auth_service
-from app.schemas import auth_schema, user_schema
+from app.schemas import user_schema
 
-# Register a new user
-async def register(request: auth_schema.RegisterRequest):
-    user_data = jsonable_encoder(request)
-    user = await auth_service.register_user(user_data)
+# Register
+async def register(user: dict):
+    user = await auth_service.register_user(user)
     return user
 
-# Login user
-async def login(request: auth_schema.LoginRequest):
-    request = jsonable_encoder(request)
-    response = await auth_service.authenticate_user(request)
+
+# Login
+async def login(request: dict):
+    response = await auth_service.login(request)
     return response
 
-# Get current user from token
+
+# Get Current User
 async def get_current_user(current_user: user_schema.UserResponse = Depends(auth_service.get_current_user)):
     return current_user
+
+
+# Tokens Refresh
+async def refresh_tokens(refresh_token: str):
+    new_tokens = await auth_service.refresh_tokens(refresh_token)
+    return new_tokens

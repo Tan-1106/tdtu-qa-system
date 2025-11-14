@@ -25,6 +25,7 @@ app = FastAPI(
     lifespan=lifespan
 )
     
+    
 # CORS Middleware
 origins = [
     "http://localhost:5173",  
@@ -39,6 +40,7 @@ app.add_middleware(
     allow_headers=["*"],  
 )
 
+
 # Validation Error
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
@@ -47,6 +49,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         message="Validation Error",
         details=exc.errors()
     )
+
 
 # HTTPException
 @app.exception_handler(StarletteHTTPException)
@@ -57,6 +60,7 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
         details=None
     )
 
+
 # Unhandled Exception
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
@@ -66,31 +70,39 @@ async def global_exception_handler(request: Request, exc: Exception):
         details=str(exc)
     )
 
-# Root endpoint (For testing)
+
+# Root Endpoint
 @app.get("/")
 async def home():
     return {"msg": "Welcome to the TDTU QA System API"}
+
 
 # Thiết lập router
 # Authentication routes
 app.include_router(auth_route.router, prefix="/api")
 
+
 # User routes
 app.include_router(user_route.user_router, prefix="/api")
 app.include_router(user_route.admin_router, prefix="/api")
+
 
 # Document routes
 app.include_router(document_route.user_route, prefix="/api")
 app.include_router(document_route.admin_route, prefix="/api")
 
+
 # Question Embedding routes
 app.include_router(question_embedding_route.router, prefix="/api")
+
 
 # Prototype routes
 app.include_router(prototype_route.router, prefix="/api")
 
+
 # Potential Question routes
 app.include_router(potential_question_route.route, prefix="/api")
+
 
 # Question routes
 app.include_router(question_route.user_router, prefix="/api")

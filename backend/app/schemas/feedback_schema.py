@@ -14,6 +14,7 @@ class AnswerFeedbackCreate(BaseModel):
         from_attributes = True
         extra = "forbid"
         
+        
 # Update Feedback Status Schema
 class UpdateFeedbackStatus(BaseModel):
     status: str = Field(..., description="Status of the feedback (e.g., 'Pending', 'Valid', 'Invalid')")
@@ -21,6 +22,7 @@ class UpdateFeedbackStatus(BaseModel):
     class Config:
         from_attributes = True
         extra = "forbid"
+
 
 # Answer Feedback Response Schema
 class AnswerFeedbackResponse(BaseModel):

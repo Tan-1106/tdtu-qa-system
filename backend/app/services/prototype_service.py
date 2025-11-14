@@ -12,23 +12,31 @@ async def get_prototypes():
     prototypes = await prototype_dao.get_prototypes()
     return prototypes
 
+
 # Get a prototype by ID
 async def get_prototype_by_id(prototype_id: str):
     prototype = await prototype_dao.get_prototype_by_id(prototype_id)
     return prototype
+
 
 # Create a prototype
 async def create_prototype(prototype_data: dict):
     prototype = await prototype_dao.create_prototype(prototype_data)
     return prototype
 
+
 # Cluster question embeddings and create prototypes
 async def cluster_question_embeddings():
+    # Reset prototypes collection
+    print("- LOG: Resetting prototypes collection...")
+    await prototype_dao.reset_prototypes_collection()
+    
     # Fetch all question embeddings
-    print("- LOG: Fetching question embeddings...")
+    print("- LOG: Fetching all question embeddings...")
     question_embeddings = await question_embedding_dao.get_question_embeddings()
     if not question_embeddings or len(question_embeddings) == 0:
-        raise ValueError("No question embeddings available for clustering.")
+        print("- LOG: No question embeddings found. Skipping clustering.")
+        return False
     
     embeddings = np.array([qe['vector'] for qe in jsonable_encoder(question_embeddings)])
     embedding_ids = [qe['id'] for qe in jsonable_encoder(question_embeddings)]
@@ -74,18 +82,33 @@ async def cluster_question_embeddings():
         )
         prototypes.append(prototype)
         
+    noise_indices = np.where(cluster_labels == -1)[0]
+    if len(noise_indices) > 0:
+        noise_points = embeddings[noise_indices]
+        noise_ids = [embedding_ids[i] for i in noise_indices]
+
+        noise_centroid = noise_points.mean(axis=0).tolist()
+        noise_proto = {
+            "centroid_vector": noise_centroid,
+            "metadata": {"question_embedding_ids": noise_ids},
+        }
+        prototypes.append(noise_proto)
+        print(f"- LOG: Grouped {len(noise_indices)} unassigned embeddings into one 'remaining' cluster.")
+    
     # Create prototypes in the database
     print("- LOG: Storing prototypes in database...")
-    await prototype_dao.reset_prototypes_collection()
     for proto in prototypes:
         await prototype_dao.create_prototype(proto)
+    prototype_dao.count_embeddings_per_prototype()
     
     return True
+
 
 # Reset (Delete) prototypes collection
 async def reset_prototypes_collection():
     result = await prototype_dao.reset_prototypes_collection()
     return result
+
 
 # Semantic search prototypes
 async def semantic_search_prototypes(query_vector: List[float], top_k: int = 5):
