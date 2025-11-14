@@ -57,32 +57,6 @@ async def get_question(question_id: str):
             status_code=500,
             message=str(e)
         )
-        
-        
-# Create a new question
-@admin_router.post("/")
-async def create_question(data: question_schema.QuestionCreate, current_user = Depends(auth_service.get_current_user)):
-    try:
-        data = jsonable_encoder(data)
-        current_user = jsonable_encoder(current_user)
-        user_id = current_user["_id"]
-        
-        created_question = await question_controller.create_question(data, user_id)
-        return api_response(
-            status_code=201,
-            details=created_question,
-            message="Question created successfully."
-        )
-    except ValueError as e:
-        return api_response(
-            status_code=400,
-            message=str(e)
-        )
-    except Exception as e:
-        return api_response(
-            status_code=500,
-            message=str(e)
-        )
        
        
 # USER ROUTES 

@@ -11,7 +11,7 @@ from app.daos import user_dao, refresh_token_dao
 
 SECRET_KEY=os.getenv("SECRET_KEY")
 ALGORITHM=os.getenv("ALGORITHM")
-ACCESS_EXPIRATION_TIME_MINUTES=int(os.getenv("ACCESS_EXPIRATION_TIME_MINUTES") or 1)
+ACCESS_EXPIRATION_TIME_MINUTES=int(os.getenv("ACCESS_EXPIRATION_TIME_MINUTES") or 5)
 REFRESH_EXPIRATION_TIME_DAYS=int(os.getenv("REFRESH_EXPIRATION_TIME_DAYS") or 7)
 
 hasher = PasswordHash.recommended()
@@ -208,6 +208,7 @@ async def get_current_user(access_token: dict = Depends(verify_access_token)) ->
     user = await user_dao.get_user_by_id(user_id)
     if not user:
         raise Exception("User not found")
+    user = jsonable_encoder(user)
     return user
 
 

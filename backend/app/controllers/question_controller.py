@@ -15,14 +15,6 @@ async def get_question_by_id(question_id: str):
     return question
 
 
-# Create a new question
-async def create_question(question_data: dict, user_id: str):
-    question_data['user_id'] = user_id
-    
-    question = await question_service.create_question(question_data)
-    return question
-
-
 # Ask a question
 async def query(question_data: dict, user_id: str):
     question_data['user_id'] = user_id

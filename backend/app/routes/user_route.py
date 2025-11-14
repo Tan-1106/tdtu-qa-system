@@ -38,7 +38,7 @@ async def get_users():
 
 
 # Search user by email
-@admin_router.get("/search")
+@admin_router.post("/search")
 async def get_user_by_email(email: user_schema.EmailLookup):
     try:
         email = jsonable_encoder(email)["email"]

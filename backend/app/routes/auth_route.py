@@ -88,7 +88,7 @@ async def refresh_access_token(refresh_token: auth_schema.RefreshToken):
         tokens = await auth_controller.refresh_tokens(refresh_token)
         return api_response(
             status_code=200,
-            message="Current user fetched successfully",
+            message="Access token refreshed successfully",
             details=tokens
         )
     except ValueError as e:
