@@ -30,7 +30,7 @@ async def query(question_data: dict, lang: str = 'vi'):
         embedded_question = model_service.get_embedding(question_data['question'])
 
     # Semantic search for relevant prototypes
-    relevant_prototypes = await prototype_service.semantic_search_prototypes(embedded_question, top_k=1)
+    relevant_prototypes = await prototype_service.semantic_search_prototypes(embedded_question, top_k=3)
     
     # Collect relevant question embedding IDs from prototypes
     relevant_embedding_ids = []
@@ -42,7 +42,7 @@ async def query(question_data: dict, lang: str = 'vi'):
     
 
     # Semantic search for relevant question embeddings
-    relevant_question_embeddings = await question_embedding_service.semantic_search_question_embeddings(embedded_question, top_k=10, relevant_embedding_ids=relevant_embedding_ids)
+    relevant_question_embeddings = await question_embedding_service.semantic_search_question_embeddings(embedded_question, top_k=30, relevant_embedding_ids=relevant_embedding_ids)
     
     # Get chunks
     chunks = []
@@ -55,6 +55,7 @@ async def query(question_data: dict, lang: str = 'vi'):
         chunks.append(chunk_content)
     unique_chunks = set(chunks)
     chunks = list(unique_chunks)
+    chunks = model_service.rerank_chunks(question_data['question'], chunks, top_k=5)
     
     # Generate answer using chunks, question and LLM
     answer = await model_service.generate_answer(chunks, question_data['question'], lang)
@@ -71,7 +72,7 @@ async def update_question_status(question_id: str, answer: str, status: str = "A
 
 
 # Leave feedback for a question
-async def leave_feedback(question_id: str, user_id: str, feedback: int):
+async def leave_feedback(question_id: str, user_id: str, feedback: str):
     question = await question_dao.get_question_by_id(question_id)
     if not question:
         raise ValueError("Question not found.")
@@ -81,5 +82,5 @@ async def leave_feedback(question_id: str, user_id: str, feedback: int):
         raise PermissionError("User is not authorized to leave feedback for this question.")
     
     # Update feedback
-    updated_question = await question_dao.update_question_feedback(question_id, user_id, feedback)
+    updated_question = await question_dao.update_question_feedback(question_id, feedback)
     return updated_question

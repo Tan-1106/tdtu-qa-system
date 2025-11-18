@@ -51,7 +51,7 @@ async def update_question_status(question_id: str, answer: str, status: str) -> 
 
 
 # Leave feedback for a question
-async def update_question_feedback(question_id: str, user_id: str, feedback: int) -> question_schema.QuestionResponse:
+async def update_question_feedback(question_id: str, feedback: str) -> question_schema.QuestionResponse:
     update_result = await mongo.get_questions_collection().update_one(
         {"_id": ObjectId(question_id)},
         {

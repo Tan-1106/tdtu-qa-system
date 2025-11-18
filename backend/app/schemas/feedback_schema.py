@@ -8,7 +8,7 @@ class AnswerFeedbackCreate(BaseModel):
     user_id: str = Field(..., description="ID of the user providing feedback")
     question: str = Field(..., description="The question content")
     answer: str = Field(..., description="The answer content")
-    feedback: int = Field(..., description="Feedback on the answer (Like/Dislike | 1 for Like, -1 for Dislike)")
+    feedback: str = Field(..., description="Feedback on the answer")
 
     class Config:
         from_attributes = True
@@ -25,12 +25,12 @@ class UpdateFeedbackStatus(BaseModel):
 
 
 # Answer Feedback Response Schema
-class AnswerFeedbackResponse(BaseModel):
+class FeedbackResponse(BaseModel):
     id: str = Field(alias="_id")
     user_id: str
     question: str
     answer: str
-    feedback: int
+    feedback: str
     status: str
     created_at: datetime
 

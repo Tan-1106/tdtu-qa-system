@@ -41,6 +41,6 @@ async def query(question_data: dict, user_id: str):
 
 
 # Leave feedback for a question
-async def leave_feedback(question_id: str, user_id: str, feedback: int):
+async def leave_feedback(question_id: str, user_id: str, feedback: str):
     question = await question_service.leave_feedback(question_id, user_id, feedback)
     return question

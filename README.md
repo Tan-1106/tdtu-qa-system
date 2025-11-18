@@ -163,4 +163,4 @@ Tất cả routes đều được mount dưới prefix `/api`.
 - `GET /api/prototypes/{prototype_id}`: Lấy chi tiết một prototype.
 - `POST /api/prototypes/`: Tạo prototype (mục đích test).
 - `POST /api/prototypes/cluster`: Gom cụm embeddings thành prototypes (HDBSCAN).
-- `DELETE /api/prototypes/`: Xóa/reset toàn bộ prototypes.
+- `DELETE /api/prototypes/`: Xóa/reset toàn bộ prototypes.  

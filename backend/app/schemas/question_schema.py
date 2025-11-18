@@ -23,8 +23,8 @@ class QuestionUpdate(BaseModel):
         
         
 # Feedback Schema
-class AnswerFeedback(BaseModel):
-    feedback: Optional[Literal[1, -1]] = Field(default=None, description="Feedback on the answer (Like/Dislike | 1 for Like, -1 for Dislike)")
+class LeaveFeedback(BaseModel):
+    feedback: str = Field(..., description="User feedback on the answer")
 
     class Config:
         from_attributes = True
@@ -38,7 +38,7 @@ class QuestionResponse(BaseModel):
     question: str
     status: str
     answer: Optional[str] = None
-    feedback: Optional[int] = None
+    feedback: Optional[str] = None
     created_at: datetime
 
     class Config:

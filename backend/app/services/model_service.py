@@ -5,8 +5,8 @@ import logging
 from openai import OpenAI
 from app.utils import text_process
 from pyvi.ViTokenizer import tokenize
-from sentence_transformers import SentenceTransformer
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+from sentence_transformers import SentenceTransformer, CrossEncoder
 
 logging.getLogger("sentence_transformers").setLevel(logging.WARNING)
 
@@ -16,11 +16,14 @@ GPT_5_NANO = os.getenv("GPT_5_NANO")
 GPT_5_MINI = os.getenv("GPT_5_MINI")
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL")
 TRANSLATE_MODEL = os.getenv("TRANSLATE_MODEL")
+# CROSS_ENCODER_MODEL = os.getenv("CROSS_ENCODER_MODEL")
+CROSS_ENCODER_MODEL = "cross-encoder/mmarco-mMiniLMv2-L12-H384-v1"
 
 gpt_client = OpenAI(api_key=GPT_KEY)
 embedding_model = SentenceTransformer(EMBEDDING_MODEL)
 translate_tokenizer = AutoTokenizer.from_pretrained(TRANSLATE_MODEL)
 translate_model = AutoModelForSeq2SeqLM.from_pretrained(TRANSLATE_MODEL)
+cross_encoder_model = CrossEncoder(CROSS_ENCODER_MODEL)
 
 
 # Generate questions from a given text chunk
@@ -186,3 +189,15 @@ async def translate_to_vietnamese(text: str) -> str:
     
     result = await loop.run_in_executor(None, _translate)
     return result
+
+
+# Rerank relevant document chunks and return top k
+def rerank_chunks(question: str, chunks: list[str], top_k: int = 5) -> list[str]:
+    scored_chunks = {}
+    for chunk in chunks:
+        score = cross_encoder_model.predict([[question, chunk]])[0]
+        scored_chunks[chunk] = float(score)
+    
+    print("Scored chunks:", scored_chunks)
+    top_chunks = sorted(scored_chunks, key=scored_chunks.get, reverse=True)[:top_k]
+    return top_chunks

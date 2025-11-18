@@ -90,17 +90,19 @@ async def query(question: question_schema.QuestionCreate, current_user = Depends
 @user_router.post("/{question_id}/feedback")
 async def leave_feedback(
     question_id: str,
-    feedback_data: question_schema.AnswerFeedback,
+    feedback: question_schema.LeaveFeedback,
     current_user = Depends(auth_service.get_current_user)
 ):
     try:
         current_user = jsonable_encoder(current_user)
+        feedback = jsonable_encoder(feedback)
         user_id = current_user["_id"]
+        feedback_value = feedback["feedback"]
 
         updated_question = await question_controller.leave_feedback(
             question_id=question_id,
             user_id=user_id,
-            feedback=feedback_data.feedback
+            feedback=feedback_value
         )
         return api_response(
             status_code=200,
