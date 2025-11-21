@@ -2,7 +2,7 @@ import asyncio
 from typing import List
 
 from app.services import model_service
-from app.daos import question_embedding_dao, potential_question_dao
+from app.daos import question_embedding_dao, potential_question_dao, prototype_dao
 
 # Get all question embeddings
 async def get_question_embeddings():
@@ -48,7 +48,10 @@ async def delete_question_embeddings_by_doc_id(doc_id: str):
 
 # Reset (Delete) question embeddings collection
 async def reset_question_embeddings_collection():
-    deleted = await question_embedding_dao.reset_question_embeddings_collection()
+    deleted_question_embeddings = await question_embedding_dao.reset_question_embeddings_collection()
+    deleted_prototypes = await prototype_dao.reset_prototypes_collection()
+    
+    deleted = deleted_question_embeddings and deleted_prototypes
     return deleted
 
 

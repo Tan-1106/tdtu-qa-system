@@ -16,8 +16,8 @@ GPT_5_NANO = os.getenv("GPT_5_NANO")
 GPT_5_MINI = os.getenv("GPT_5_MINI")
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL")
 TRANSLATE_MODEL = os.getenv("TRANSLATE_MODEL")
-# CROSS_ENCODER_MODEL = os.getenv("CROSS_ENCODER_MODEL")
-CROSS_ENCODER_MODEL = "cross-encoder/mmarco-mMiniLMv2-L12-H384-v1"
+CROSS_ENCODER_MODEL = os.getenv("CROSS_ENCODER_MODEL")
+
 
 gpt_client = OpenAI(api_key=GPT_KEY)
 embedding_model = SentenceTransformer(EMBEDDING_MODEL)
@@ -64,19 +64,17 @@ def create_questions(context: str, num_questions: int = 5) -> list[str]:
 # Generate questions from a given text chunk (appendix version)
 def create_questions_appendix(context: str, num_questions: int = 3) -> list[str]:
     prompt = f"""
-    Bạn là một trợ lý tạo câu hỏi thông minh.
-
-    Nhiệm vụ:
-    Tạo ra {num_questions} câu hỏi **ngắn gọn**, **tự nhiên**, và **không trùng lặp** mà một sinh viên có thể hỏi về các **quy định hoặc quy chế của trường đại học**.  
-    Dựa trên nội dung trong đoạn văn bản dưới đây, **chỉ sử dụng phần "Content"** để tạo câu hỏi — **không dùng phần "Description"** hoặc **"Table header"** để hình thành câu hỏi.
-
-    Yêu cầu:
-    - Câu hỏi phải **rõ nghĩa**, có thể hiểu được mà **không cần đọc lại văn bản gốc**.  
-    - Chỉ tạo những câu hỏi mà **câu trả lời có thể tìm thấy** trong phần "Content" của văn bản.  
-    - Không tạo câu hỏi nếu thông tin không rõ ràng hoặc không đủ dữ kiện trong nội dung.
-    - Câu hỏi được sinh ra không được bắt đầu theo bất kỳ cụm từ nào như "Theo đoạn văn bản trên", "Dựa trên nội dung đã cho", "Theo Content", v.v.
+    Bạn là một trợ lý tạo câu hỏi tiềm năng dựa trên nội dung phụ lục quy định được cung cấp.
     
-
+    Nhiệm vụ:
+    Sinh ra đúng {num_questions} câu hỏi tiềm năng đáp ứng toàn bộ tiêu chí sau:
+    - Ngắn gọn, rõ ràng, không trùng lặp, tự nhiên.
+    - Là những câu hỏi mà một sinh viên tại Trường Đại học Tôn Đức Thắng có thể đặt ra liên quan đến quy định, quy chế của trường dựa trên đoạn văn bạn được cung cấp bên dưới bằng hệ thống Retrieval-Augmented Generation (RAG).
+    - Không được hỏi dựa theo cú pháp hoặc câu chữ cụ thể trong văn bản, chỉ dựa trên chủ đề có thể được văn bản đề cập.
+    - Không được nhắc đến bản thân văn bản hoặc vị trí văn bản (ví dụ: "Theo Description", "theo Content", “dựa trên nội dung đã cho”, “quy định này”,...).
+    - Câu hỏi phải có ý nghĩa đầy đủ, người đọc không cần xem đoạn văn bản vẫn hiểu được.
+    - Chỉ tạo những câu hỏi trong phạm vi mà phần "Content" của phụ lục đang đề cập đến.
+    
     Đoạn văn bản:
     \"\"\"{context}\"\"\"
 
@@ -86,8 +84,6 @@ def create_questions_appendix(context: str, num_questions: int = 3) -> list[str]
     - Ví dụ đầu ra:
     ["Câu hỏi 1", "Câu hỏi 2", ..., "Câu hỏi {num_questions}"]
     """
-
-
 
     response = gpt_client.responses.create(
         model=GPT_5_NANO,
@@ -198,6 +194,11 @@ def rerank_chunks(question: str, chunks: list[str], top_k: int = 5) -> list[str]
         score = cross_encoder_model.predict([[question, chunk]])[0]
         scored_chunks[chunk] = float(score)
     
-    print("Scored chunks:", scored_chunks)
-    top_chunks = sorted(scored_chunks, key=scored_chunks.get, reverse=True)[:top_k]
+    sorted_scored_chunks = sorted(scored_chunks, key=scored_chunks.get, reverse=True)
+    top_chunks = sorted_scored_chunks[:top_k]
+    
+    # Logging
+    for i, chunk in enumerate(top_chunks):
+        print(f"- Reranked Chunk {i+1} (Score: {scored_chunks[chunk]:.4f}): {chunk}")
+    
     return top_chunks

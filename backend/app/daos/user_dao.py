@@ -22,12 +22,11 @@ async def get_user_by_id(user_id: str) -> user_schema.UserResponse:
 
 
 # Get user by email
-async def get_user_by_email(email: str) -> user_schema.UserResponse:
+async def get_user_credentials_by_email(email: str) -> user_schema.Credentials:
     user = await mongo.get_users_collection().find_one({"email": email})
     if not user:
         raise ValueError("User not found")
-    return user_schema.UserResponse(**serializer.user_serialize(user))
-
+    return user_schema.Credentials(**serializer.credentials_serialize(user))
 
 # Create a new user
 async def create_user(user: dict) -> user_schema.UserResponse:

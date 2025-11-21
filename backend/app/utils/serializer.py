@@ -5,9 +5,19 @@ def user_serialize(user) -> dict:
         "full_name": user.get("full_name"),
         "username": user.get("username"),
         "email": user.get("email"),
-        "password": user.get("password"),
         "role": user.get("role"),
         "created_at": user.get("created_at").isoformat() if user.get("created_at") else None,
+    }
+    
+
+# Credentials
+def credentials_serialize(credentials) -> dict:
+    return {
+        "id": str(credentials["_id"]),
+        "full_name": credentials.get("full_name"),
+        "email": credentials.get("email"),
+        "password": credentials.get("password"),
+        "role": credentials.get("role")
     }
 
 

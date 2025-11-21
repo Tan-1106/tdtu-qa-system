@@ -55,13 +55,10 @@ async def query(question_data: dict, lang: str = 'vi'):
         chunks.append(chunk_content)
     unique_chunks = set(chunks)
     chunks = list(unique_chunks)
-    chunks = model_service.rerank_chunks(question_data['question'], chunks, top_k=5)
+    chunks = model_service.rerank_chunks(question_data['question'], chunks, top_k=10)
     
     # Generate answer using chunks, question and LLM
     answer = await model_service.generate_answer(chunks, question_data['question'], lang)
-        
-    print("- Chunks: ", chunks)
-    print("- Answer: ", answer)
     return answer[0]
 
 

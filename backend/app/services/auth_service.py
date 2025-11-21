@@ -46,20 +46,20 @@ async def generate_token(user: dict) -> str:
 
 
 # Verify Access Token
-def verify_access_token(token: str = Depends(oauth2_access_scheme)) -> dict:
+async def verify_access_token(token: str = Depends(oauth2_access_scheme)) -> dict:
     if not token:
         raise ValueError("Access token missing")
-    
+
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         if payload.get("type") != "access":
             raise ValueError("Invalid token type")
-        
+
         user_id = payload.get("sub")
-        user = user_dao.get_user_by_id(user_id)
+        user = await user_dao.get_user_by_id(user_id)
         if user is None:
-            raise ValueError("User not found")  
-        
+            raise ValueError("User not found")
+
         return {
             "token": token,
             "payload": payload
@@ -169,19 +169,19 @@ async def login(request: dict) -> dict:
     email = request["email"]
     password = request["password"]
         
-    user = await user_dao.get_user_by_email(email)
-    user = jsonable_encoder(user)
+    user_credentials = await user_dao.get_user_credentials_by_email(email)
+    user_credentials = jsonable_encoder(user_credentials)
     try:
-        if not hasher.verify(password, user["password"]):
+        if not hasher.verify(password, user_credentials["password"]):
             raise ValueError("Wrong password")
     except ValueError as e:
         raise ValueError("Wrong password or unsupported hash format") from e
 
-    access_token, refresh_token = await generate_token(user)
+    access_token, refresh_token = await generate_token(user_credentials)
     
     success = await refresh_token_dao.store_refresh_token(
         {
-            "user_id": str(user["_id"]),
+            "user_id": str(user_credentials["_id"]),
             "hashed_token": hasher.hash(refresh_token)
         }
     )
@@ -195,9 +195,9 @@ async def login(request: dict) -> dict:
             "token_type": "bearer"
         },
         "user": {
-            "full_name": user["full_name"],
-            "email": user["email"],
-            "role": user["role"]
+            "full_name": user_credentials["full_name"],
+            "email": user_credentials["email"],
+            "role": user_credentials["role"]
         }
     }
 

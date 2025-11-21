@@ -16,7 +16,7 @@ async def get_user_by_id(user_id: str):
 
 # Get a user by email
 async def get_user_by_email(email: str):
-    user = await user_dao.get_user_by_email(email)
+    user = await user_dao.get_user_credentials_by_email(email)
     if not user:
         raise ValueError(f"User with email {email} not found")
     return user

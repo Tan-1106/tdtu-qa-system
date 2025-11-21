@@ -26,9 +26,22 @@ class UserResponse(BaseModel):
     id: str = Field(alias="_id")
     full_name: str
     email: EmailStr
-    password: str
     role: str
     created_at: datetime
+
+    class Config:
+        from_attributes = True
+        populate_by_name = True
+        json_encoders = { ObjectId: str }
+        
+        
+# Credentials Schema
+class Credentials(BaseModel):
+    id: str = Field(alias="_id")
+    full_name: str
+    email: EmailStr
+    password: str
+    role: str
 
     class Config:
         from_attributes = True
