@@ -59,24 +59,17 @@ async def upload_document(
     language: Optional[str] = Form('["vi"]'),
     file_url: str = Form(...)
 ):
-    print("-"*50)
-    print(f"- LOG: Uploading document: {file.filename}")
-    
     # Extract text from PDF
-    print("- LOG: Extracting text from PDF...")
     document_content = await text_process.extract_pdf_document_content(file)
     await file.seek(0)
     
     # Split text into chunks
-    print("- LOG: Splitting text into chunks...")
     chunks = await text_process.split_text_into_chunks(document_content, words_per_chunk=800, overlap=200)
     
     # Save document to disk
-    print("- LOG: Saving document to disk...")
     file_path = await document_service.save_document_file(file)
     
     # Create document record in DB
-    print("- LOG: Creating document record in DB...")
     base_filename = os.path.splitext(file.filename)[0]
     doc = await document_service.create_document({
         "title": base_filename,
@@ -105,7 +98,6 @@ async def upload_document(
         response["questions"].append(questions_data)
         
     # Cluster question embeddings
-    print("- LOG: Clustering question embeddings...")
     await prototype_service.cluster_question_embeddings()
 
     return response
@@ -121,22 +113,18 @@ async def upload_appendix_document(
     file_url: str = Form(...)
 ):
     # Extract text and tables from PDF
-    print("- LOG: Extracting text and tables from PDF appendix...")
     file_content = await text_process.extract_pdf_appendix_content(file)
     await file.seek(0)
 
     # Split appendix into chunks
-    print("- LOG: Splitting appendix into chunks...")
     appendix_description = file_content["description"]
     tables = file_content["tables"]
     chunks = await text_process.split_appendix_into_chunks(appendix_description, tables, table_header_rows=2)
     
     # Save document to disk
-    print("- LOG: Saving appendix document to disk...")
     file_path = await document_service.save_document_file(file)
     
     # Create document record in DB
-    print("- LOG: Creating document record in DB...")
     base_filename = os.path.splitext(file.filename)[0]
     doc = await document_service.create_document({
         "title": base_filename,
@@ -165,7 +153,6 @@ async def upload_appendix_document(
         response["questions"].append(questions_data)
         
     # Cluster question embeddings
-    print("- LOG: Clustering question embeddings...")
     await prototype_service.cluster_question_embeddings()
         
     return response

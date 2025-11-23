@@ -100,10 +100,9 @@ async def semantic_search_prototypes(query_vector: list[float], top_k: int = 3) 
 
 # Iterate all prototypes and count how many question embeddings were clustered into each
 def count_embeddings_per_prototype(batch_size: int = 1000, verbose: bool = True):
-    counts = []
+    counts: list[dict] = []
     try:
         offset = 0
-        total_seen = 0
         while True:
             res = chroma.prototypes_collection.get(include=["metadatas"], limit=batch_size, offset=offset)
             ids = res.get("ids", []) or []
@@ -130,19 +129,22 @@ def count_embeddings_per_prototype(batch_size: int = 1000, verbose: bool = True)
                         n = 0
 
                 counts.append({"id": pid, "count": n})
+                if verbose:
+                    print(f"- Prototype {pid}: {n} clustered embeddings")
 
-            seen = len(ids)
-            total_seen += seen
-            offset += seen
+            offset += len(ids)
 
         if verbose:
             total = sum(c["count"] for c in counts)
             num = len(counts)
             if num:
                 avg = total / num
-                print(f"Prototypes: {num}, Total clustered embeddings: {total}, Avg per prototype: {avg:.2f}")
+                print(f"Summary -> Prototypes: {num}, Total clustered embeddings: {total}, Avg per prototype: {avg:.2f}")
             else:
                 print("No prototypes found.")
 
     except Exception as e:
-        print(f"Error counting embeddings per prototype: {e}")
+        if verbose:
+            print(f"Error counting embeddings per prototype: {e}")
+
+    return counts

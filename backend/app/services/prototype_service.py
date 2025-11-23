@@ -27,32 +27,29 @@ async def create_prototype(prototype_data: dict):
 
 # Cluster question embeddings and create prototypes
 async def cluster_question_embeddings():
+    print("- LOG: Clustering question embeddings to create prototypes...")
+    
     # Reset prototypes collection
-    print("- LOG: Resetting prototypes collection...")
     await prototype_dao.reset_prototypes_collection()
     
     # Fetch all question embeddings
-    print("- LOG: Fetching all question embeddings...")
     question_embeddings = await question_embedding_dao.get_question_embeddings()
     if not question_embeddings or len(question_embeddings) == 0:
-        print("- LOG: No question embeddings found. Skipping clustering.")
         return False
     
     embeddings = np.array([qe['vector'] for qe in jsonable_encoder(question_embeddings)])
     embedding_ids = [qe['id'] for qe in jsonable_encoder(question_embeddings)]
     
     # Normalize embeddings to unit length if not already
-    print("- LOG: Normalizing embeddings...")
     norms = np.linalg.norm(embeddings, axis=1)
     mean_norm = norms.mean()
     if mean_norm < 0.9 or mean_norm > 1.1:
         embeddings = normalize(embeddings, norm="l2")
 
     # Cluster embeddings using HDBSCAN
-    print("- LOG: Clustering embeddings...")
     clusterer = hdbscan.HDBSCAN(
-        min_cluster_size=30,
-        min_samples=3,
+        min_cluster_size=500,
+        min_samples=10,
         metric='euclidean',
         cluster_selection_epsilon=0.1
     )
@@ -65,7 +62,6 @@ async def cluster_question_embeddings():
     prototypes: List[prototype_schema.PrototypeCreate] = []
     
     # Create prototypes for each cluster
-    print("- LOG: Creating prototypes...")
     for label in unique_labels:
         cluster_indices = np.where(cluster_labels == label)[0]
         cluster_points = embeddings[cluster_indices]
@@ -96,7 +92,6 @@ async def cluster_question_embeddings():
         print(f"- LOG: Grouped {len(noise_indices)} unassigned embeddings into one 'remaining' cluster.")
     
     # Create prototypes in the database
-    print("- LOG: Storing prototypes in database...")
     for proto in prototypes:
         await prototype_dao.create_prototype(proto)
     prototype_dao.count_embeddings_per_prototype()
