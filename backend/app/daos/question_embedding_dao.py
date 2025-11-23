@@ -5,7 +5,8 @@ from fastapi.encoders import jsonable_encoder
 from app.databases import chroma
 from app.schemas import question_embedding_schema
 
-# Read all question embeddings
+
+# Lấy tất cả các embedding câu hỏi
 async def get_question_embeddings() -> list[question_embedding_schema.QuestionEmbeddingResponse]:
     results = chroma.question_embeddings_collection.get(include=["embeddings", "metadatas"])
     if not results or 'ids' not in results:
@@ -23,11 +24,11 @@ async def get_question_embeddings() -> list[question_embedding_schema.QuestionEm
     return embeddings
 
 
-# Read a question embedding by ID
+# Lấy một embedding câu hỏi theo ID
 async def get_question_embedding_by_id(embedding_id: str) -> question_embedding_schema.QuestionEmbeddingResponse:
     results = chroma.question_embeddings_collection.get(ids=[embedding_id], include=["embeddings", "metadatas"])
     if not results or 'ids' not in results or len(results['ids']) == 0:
-        raise ValueError("Question embedding not found.")
+        raise ValueError("Không tìm thấy embedding câu hỏi.")
     
     return question_embedding_schema.QuestionEmbeddingResponse(
         id=results['ids'][0],
@@ -36,7 +37,7 @@ async def get_question_embedding_by_id(embedding_id: str) -> question_embedding_
     )
 
 
-# Create a new question embedding
+# Tạo một embedding câu hỏi mới
 async def create_question_embedding(embedding: question_embedding_schema.QuestionEmbeddingCreate) -> question_embedding_schema.QuestionEmbeddingResponse:
     embedding = jsonable_encoder(embedding)
     embedding_id = str(uuid.uuid4())
@@ -54,7 +55,7 @@ async def create_question_embedding(embedding: question_embedding_schema.Questio
     )
     
     
-# Import question embeddings from uploaded JSON file
+# Nhập embedding câu hỏi từ file JSON
 async def import_question_embeddings_file(file):
     content = await file.read()
     data = json.loads(content)
@@ -79,14 +80,14 @@ async def import_question_embeddings_file(file):
     return imported_embeddings
     
     
-# Update a question embedding by ID
+# Cập nhật một embedding câu hỏi theo ID
 async def update_question_embedding(embedding_id: str, embedding_update: question_embedding_schema.QuestionEmbeddingCreate) -> question_embedding_schema.QuestionEmbeddingResponse:
     updated_data = jsonable_encoder(embedding_update)
     
-    # Delete the old embedding
+    # Xóa embedding cũ
     chroma.question_embeddings_collection.delete(ids=[embedding_id])
     
-    # Add the updated embedding
+    # Thêm embedding đã cập nhật
     chroma.question_embeddings_collection.add(
         ids=[embedding_id],
         embeddings=[updated_data["vector"]],
@@ -100,19 +101,19 @@ async def update_question_embedding(embedding_id: str, embedding_update: questio
     )
 
 
-# Delete a question embedding by ID
+# Xóa một embedding câu hỏi theo ID
 async def delete_question_embedding(embedding_id: str) -> bool:
     try:
         chroma.question_embeddings_collection.delete(ids=[embedding_id])
         return True
     
     except ValueError as e:
-        raise ValueError("Question embedding not found: " + str(e))
+        raise ValueError("Không tìm thấy embedding câu hỏi: " + str(e))
     except Exception as e:
-        raise Exception("Error deleting question embedding: " + str(e))
+        raise Exception("Lỗi khi xóa embedding câu hỏi: " + str(e))
     
     
-# Delete question embeddings by document ID
+# Xóa các embedding câu hỏi theo ID tài liệu
 async def delete_question_embeddings_by_doc_id(doc_id: str) -> bool:
     try:
         chroma.question_embeddings_collection.delete(
@@ -120,20 +121,20 @@ async def delete_question_embeddings_by_doc_id(doc_id: str) -> bool:
         )
         return True
     except Exception as e:
-        raise Exception("Error deleting question embeddings for document ID " + doc_id + ": " + str(e))
+        raise Exception("Lỗi khi xóa các embedding câu hỏi cho ID tài liệu " + doc_id + ": " + str(e))
     
     
-# Reset (Delete) question embeddings collection
+# Đặt lại (reset) collection question_embeddings
 async def reset_question_embeddings_collection() -> bool:
     try:
         chroma.client.delete_collection("question_embeddings")
         chroma.question_embeddings_collection = chroma.client.create_collection("question_embeddings")
         return True
     except Exception as e:
-        raise Exception("Error deleting all question embeddings: " + str(e))
+        raise Exception("Lỗi khi xóa tất cả các embedding câu hỏi: " + str(e))
     
     
-# Semantic search question embeddings
+# Tìm kiếm ngữ nghĩa embedding câu hỏi
 async def semantic_search_question_embeddings(
     query_vector: list[float],
     top_k: int,

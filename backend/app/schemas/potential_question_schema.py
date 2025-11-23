@@ -2,6 +2,7 @@ from bson import ObjectId
 from typing import List, Optional
 from pydantic import BaseModel, Field
 
+
 # Create Potential Questions Schema
 class PotentialQuestionCreate(BaseModel):
     doc_id: str = Field(..., description="ID of the associated document")

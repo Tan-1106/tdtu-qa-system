@@ -1,36 +1,42 @@
 import logging
 from fastapi import FastAPI, Request
 from contextlib import asynccontextmanager
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
-from fastapi.middleware.cors import CORSMiddleware
 
 from app.utils.api_response import api_response
 from app.databases.mongo import connect_to_mongo, close_mongo_connection
 from app.routes import document_route, question_embedding_route, user_route, prototype_route, auth_route, question_route, potential_question_route
 
+# --- FILTER OUT HEALTH CHECK LOGS ---
 class HealthCheckFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
         return record.getMessage().find("GET / ") == -1
 logging.getLogger("uvicorn.access").addFilter(HealthCheckFilter())
 
+
+# --- LIFESPAN EVENT ---
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await connect_to_mongo()
     yield
     await close_mongo_connection()
-    
+
+
+# --- FASTAPI APP ---
 app = FastAPI(
     title="Question-Answering System for TDTU Students",
     lifespan=lifespan
 )
     
     
-# CORS Middleware
+# --- CORS MIDDLEWARE ---
 origins = [
     "http://localhost:5173",  
     "http://localhost",
 ]
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -41,6 +47,7 @@ app.add_middleware(
 )
 
 
+# --- EXCEPTION HANDLERS ---
 # Validation Error
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
@@ -71,13 +78,13 @@ async def global_exception_handler(request: Request, exc: Exception):
     )
 
 
-# Root Endpoint
+# --- ROOT ENDPOINT ---
 @app.get("/")
 async def home():
     return {"msg": "Welcome to the TDTU QA System API"}
 
 
-# Thiết lập router
+# --- ROUTES ---
 # Authentication routes
 app.include_router(auth_route.router, prefix="/api")
 

@@ -2,6 +2,7 @@ from datetime import datetime
 from pydantic import BaseModel
 from pydantic import Field, EmailStr
 
+
 # Token Response Schema
 class TokenResponse(BaseModel):
     access_token: str = Field(..., description="JWT access token")    

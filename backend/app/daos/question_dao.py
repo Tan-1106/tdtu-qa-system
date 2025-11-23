@@ -5,7 +5,8 @@ from app.databases import mongo
 from app.utils import serializer
 from app.schemas import question_schema
 
-# Read all questions
+
+# Lấy tất cả các câu hỏi
 async def get_questions() -> list[question_schema.QuestionResponse]:
     questions = []
     async for question in mongo.get_questions_collection().find():
@@ -13,15 +14,15 @@ async def get_questions() -> list[question_schema.QuestionResponse]:
     return questions
 
 
-# Read a question by ID
+# Lấy một câu hỏi theo ID
 async def get_question_by_id(question_id: str) -> question_schema.QuestionResponse:
     question = await mongo.get_questions_collection().find_one({"_id": ObjectId(question_id)})
     if not question:
-        raise ValueError("Question not found")
+        raise ValueError("Không tìm thấy câu hỏi.")
     return question_schema.QuestionResponse(**serializer.question_serialize(question))
 
 
-# Create a new question
+# Tạo một câu hỏi mới
 async def create_question(question: dict) -> question_schema.QuestionResponse:
     question["created_at"] = datetime.now(timezone.utc)
     question["status"] = "Pending"
@@ -32,7 +33,7 @@ async def create_question(question: dict) -> question_schema.QuestionResponse:
     return question_schema.QuestionResponse(**serializer.question_serialize(created_question))
 
 
-# Update question status with answer
+# Cập nhật trạng thái câu hỏi kèm theo câu trả lời
 async def update_question_status(question_id: str, answer: str, status: str) -> question_schema.QuestionResponse:
     update_result = await mongo.get_questions_collection().update_one(
         {"_id": ObjectId(question_id)},
@@ -44,13 +45,13 @@ async def update_question_status(question_id: str, answer: str, status: str) -> 
         }
     )
     if update_result.matched_count == 0:
-        raise ValueError("Question not found")
+        raise ValueError("Không tìm thấy câu hỏi.")
     
     updated_question = await mongo.get_questions_collection().find_one({"_id": ObjectId(question_id)})
     return question_schema.QuestionResponse(**serializer.question_serialize(updated_question))
 
 
-# Leave feedback for a question
+# Gửi phản hồi cho một câu hỏi
 async def update_question_feedback(question_id: str, feedback: str) -> question_schema.QuestionResponse:
     update_result = await mongo.get_questions_collection().update_one(
         {"_id": ObjectId(question_id)},
@@ -61,7 +62,7 @@ async def update_question_feedback(question_id: str, feedback: str) -> question_
         }
     )
     if update_result.matched_count == 0:
-        raise ValueError("Question not found")
+        raise ValueError("Không tìm thấy câu hỏi.")
     
     updated_question = await mongo.get_questions_collection().find_one({"_id": ObjectId(question_id)})
     return question_schema.QuestionResponse(**serializer.question_serialize(updated_question))

@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import List, Optional
 from pydantic import BaseModel, Field, HttpUrl
 
+
 # Create Document Schema
 class DocumentCreate(BaseModel):
     chunks: List[str] = Field(..., description="Text chunks of the document")

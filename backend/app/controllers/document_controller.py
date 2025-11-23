@@ -6,34 +6,34 @@ from fastapi import UploadFile, Form
 from fastapi.responses import StreamingResponse
 
 from app.utils import text_process
-from app.schemas import document_schema
 from app.services import document_service, prototype_service, question_embedding_service
 
-# Get all documents
+
+# Lấy danh sách tài liệu
 async def get_documents(filters: dict, skip: int, limit: int):
     docs = await document_service.get_documents(filters=filters, skip=skip, limit=limit)
     return docs
 
 
-# Get a document by ID
+# Lấy tài liệu theo ID
 async def get_document_by_id(doc_id: str):
     doc = await document_service.get_document_by_id(doc_id)
     return doc
 
 
-# Get a document chunk by doc_id and chunk_index
+# Lấy chunk tài liệu theo document ID và chunk index
 async def get_document_chunk(doc_id: str, chunk_index: int):
     chunk = await document_service.get_document_chunk(doc_id, chunk_index)
     return chunk
 
 
-# Get documents count
+# Đếm số lượng tài liệu
 async def count_documents(filters: dict):
     count = await document_service.count_documents(filters=filters)
     return count
 
 
-# Update an existing document
+# Cập nhật tài liệu theo ID
 async def update_document(doc_id: str, doc_update: dict, edited_by: str):
     update_data = {k: v for k, v in doc_update.items() if v is not None}
     if not update_data:
@@ -44,13 +44,13 @@ async def update_document(doc_id: str, doc_update: dict, edited_by: str):
     return response
 
 
-# Delete a document by ID
+# Xóa tài liệu theo ID
 async def delete_document(doc_id: str):
     result = await document_service.delete_document(doc_id)
     return result
 
 
-# Upload a document
+# Tải tài liệu
 async def upload_document(
     file: UploadFile,
     doc_type: str,
@@ -59,17 +59,17 @@ async def upload_document(
     language: Optional[str] = Form('["vi"]'),
     file_url: str = Form(...)
 ):
-    # Extract text from PDF
+    # Trích xuất nội dung văn bản từ PDF
     document_content = await text_process.extract_pdf_document_content(file)
     await file.seek(0)
     
-    # Split text into chunks
+    # Chia văn bản thành các đoạn nhỏ
     chunks = await text_process.split_text_into_chunks(document_content, words_per_chunk=800, overlap=200)
     
-    # Save document to disk
+    # Lưu tài liệu vào đĩa
     file_path = await document_service.save_document_file(file)
     
-    # Create document record in DB
+    # Tạo bản ghi tài liệu trong DB
     base_filename = os.path.splitext(file.filename)[0]
     doc = await document_service.create_document({
         "title": base_filename,
@@ -82,7 +82,7 @@ async def upload_document(
         "uploaded_by": uploaded_by,
     })
     
-    # Prepare response and process document (generate questions, get embeddings, store embeddings in ChromaDB)
+    # Chuẩn bị phản hồi
     response = {
         "doc_id": str(doc.id),
         "file_path": file_path,
@@ -91,19 +91,19 @@ async def upload_document(
         "questions": []
     }
     
-    # Generate questions
+    # Tạo câu hỏi, lấy embeddings, lưu embeddings vào ChromaDB
     for idx, chunk in enumerate(chunks):
         print("- LOG: Generating questions for chunk", idx + 1, "/", len(chunks), "...")
         questions_data = await question_embedding_service.create_question_embeddings(str(doc.id), idx, chunk, num_questions=5)
         response["questions"].append(questions_data)
         
-    # Cluster question embeddings
+    # Phân cụm embeddings câu hỏi
     await prototype_service.cluster_question_embeddings()
 
     return response
 
 
-# Upload appendix document
+# Tải tài liệu phụ lục
 async def upload_appendix_document(
     file: UploadFile,
     doc_type: str,
@@ -112,19 +112,19 @@ async def upload_appendix_document(
     language: Optional[str] = Form('["vi"]'),
     file_url: str = Form(...)
 ):
-    # Extract text and tables from PDF
+    # Trích xuất văn bản và bảng từ PDF phụ lục
     file_content = await text_process.extract_pdf_appendix_content(file)
     await file.seek(0)
 
-    # Split appendix into chunks
+    # Chia phụ lục thành các đoạn nhỏ
     appendix_description = file_content["description"]
     tables = file_content["tables"]
     chunks = await text_process.split_appendix_into_chunks(appendix_description, tables, table_header_rows=2)
     
-    # Save document to disk
+    # Lưu tài liệu vào đĩa
     file_path = await document_service.save_document_file(file)
     
-    # Create document record in DB
+    # Tạo bản ghi tài liệu trong DB
     base_filename = os.path.splitext(file.filename)[0]
     doc = await document_service.create_document({
         "title": base_filename,
@@ -137,7 +137,7 @@ async def upload_appendix_document(
         "uploaded_by": uploaded_by,
     })
 
-    # Prepare response and process document (generate questions, get embeddings, store embeddings in ChromaDB)
+    # Chuẩn bị phản hồi
     response = {
         "doc_id": str(doc.id),
         "file_path": file_path,
@@ -146,19 +146,19 @@ async def upload_appendix_document(
         "questions": []
     }
     
-    # Generate questions
+    # Tạo câu hỏi, lấy embeddings, lưu embeddings vào ChromaDB
     for idx, chunk in enumerate(chunks):
         print("- LOG: Generating questions for chunk", idx + 1, "/", len(chunks), "...")
         questions_data = await question_embedding_service.create_question_embeddings(str(doc.id), idx, chunk, num_questions=3, is_appendix=True)
         response["questions"].append(questions_data)
         
-    # Cluster question embeddings
+    # Phân cụm embeddings câu hỏi
     await prototype_service.cluster_question_embeddings()
         
     return response
 
 
-# View a document
+# Xem tài liệu
 async def view_document_file(doc_id: str):
     file_name, file_content = await document_service.view_document_file(doc_id)
     base_name = os.path.splitext(file_name)[0]

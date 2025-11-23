@@ -8,9 +8,12 @@ from pyvi.ViTokenizer import tokenize
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 from sentence_transformers import SentenceTransformer, CrossEncoder
 
+
 logging.getLogger("sentence_transformers").setLevel(logging.WARNING)
 
-# Environment variables
+
+# --- Configuration ---
+# Biến môi trường
 GPT_KEY = os.getenv("GPT_KEY")
 GPT_5_NANO = os.getenv("GPT_5_NANO")
 GPT_5_MINI = os.getenv("GPT_5_MINI")
@@ -19,6 +22,7 @@ TRANSLATE_MODEL = os.getenv("TRANSLATE_MODEL")
 CROSS_ENCODER_MODEL = os.getenv("CROSS_ENCODER_MODEL")
 
 
+# Khởi tạo client và mô hình
 gpt_client = OpenAI(api_key=GPT_KEY)
 embedding_model = SentenceTransformer(EMBEDDING_MODEL)
 translate_tokenizer = AutoTokenizer.from_pretrained(TRANSLATE_MODEL)
@@ -26,8 +30,10 @@ translate_model = AutoModelForSeq2SeqLM.from_pretrained(TRANSLATE_MODEL)
 cross_encoder_model = CrossEncoder(CROSS_ENCODER_MODEL)
 
 
-# Generate questions from a given text chunk
+# --- Service Functions ---
+# Tạo bộ câu hỏi tiềm năng từ đoạn văn bản với prompt và LLM
 def create_questions(context: str, num_questions: int = 5) -> list[str]:
+    # Tạo prompt
     prompt = f"""
     Bạn là một trợ lý tạo câu hỏi thông minh.
 
@@ -57,12 +63,19 @@ def create_questions(context: str, num_questions: int = 5) -> list[str]:
 
     output_text = response.output_text
     output_text = text_process.normalize_text(output_text)
-    print("LOG: Generated questions:", output_text)
+    
+    # Logging
+    print("- LOG: Generated questions for context:")
+    print(context)
+    for i in output_text:
+        print(f"  - {i}")
+    
     return output_text
 
 
-# Generate questions from a given text chunk (appendix version)
+# Tạo bộ câu hỏi tiềm năng từ đoạn văn bản phụ lục với prompt và LLM
 def create_questions_appendix(context: str, num_questions: int = 3) -> list[str]:
+    # Tạo prompt
     prompt = f"""
     Bạn là một trợ lý tạo câu hỏi tiềm năng dựa trên nội dung phụ lục quy định được cung cấp.
     
@@ -93,12 +106,18 @@ def create_questions_appendix(context: str, num_questions: int = 3) -> list[str]
 
     output_text = response.output_text
     output_text = text_process.normalize_text(output_text)
-    print("LOG: Generated appendix questions:", output_text)
+    
+    print("- LOG: Generated appendix questions for context:")
+    print(context)
+    for i in output_text:
+        print(f"  - {i}")
+        
     return output_text
 
 
-# Generate answer using provided chunks and question
+# Tạo câu trả lời cho câu hỏi dựa trên các đoạn văn bản liên quan
 async def generate_answer(chunks: list[str], question: str, lang: str) -> str:
+    # Tạo prompt
     context = "\n\n".join([f"Đoạn {i+1}: {chunk}" for i, chunk in enumerate(chunks)])
     if lang == 'vi':
         prompt = f"""
@@ -143,6 +162,7 @@ async def generate_answer(chunks: list[str], question: str, lang: str) -> str:
         Output format:
         - Return exactly **one string** containing the complete answer, which may include a "References:" section if applicable.
         """
+        
     response = gpt_client.responses.create(
         model=GPT_5_MINI,
         input=prompt,
@@ -151,10 +171,11 @@ async def generate_answer(chunks: list[str], question: str, lang: str) -> str:
 
     answer = response.output_text.strip()
     answer = text_process.normalize_text(answer)
+    
     return answer
 
 
-# Get embedding for a given text
+# Lấy embedding của văn bản
 def get_embedding(text: str):
     text = text.strip()
     text = re.sub(r'\s+', ' ', text)
@@ -165,7 +186,7 @@ def get_embedding(text: str):
     return embedding
 
 
-# Translate text from English to Vietnamese
+# Dịch văn bản từ tiếng Anh sang tiếng Việt
 async def translate_to_vietnamese(text: str) -> str:
     loop = asyncio.get_event_loop()
     
@@ -187,7 +208,7 @@ async def translate_to_vietnamese(text: str) -> str:
     return result
 
 
-# Rerank relevant document chunks and return top k
+# Rerank các đoạn văn bản dựa trên điểm số từ Cross-Encoder và lấy top_k đoạn
 def rerank_chunks(question: str, chunks: list[str], top_k: int = 5) -> list[str]:
     scored_chunks = {}
     for chunk in chunks:
@@ -198,7 +219,8 @@ def rerank_chunks(question: str, chunks: list[str], top_k: int = 5) -> list[str]
     top_chunks = sorted_scored_chunks[:top_k]
     
     # Logging
+    print("- LOG: Reranked chunks:")
     for i, chunk in enumerate(top_chunks):
-        print(f"- Reranked Chunk {i+1} (Score: {scored_chunks[chunk]:.4f}): {chunk}")
+        print(f"  {i+1}. (score: {scored_chunks[chunk]:.4f}) {chunk}")
     
     return top_chunks

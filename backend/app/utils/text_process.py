@@ -11,10 +11,12 @@ from tiktoken import get_encoding
 from pdf2image import convert_from_path
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-# Initialize tokenizer
+
+# Token encoder
 enc = get_encoding("cl100k_base")
 
-# Normalize content
+
+# Chuẩn hóa văn bản
 def normalize_text(text: str):
     if isinstance(text, str):
         try:
@@ -45,7 +47,7 @@ def normalize_text(text: str):
     return data
 
 
-# Normalize individual table cell content
+# Chuẩn hóa ô trong bảng
 def normalize_cell(x):
     x = str(x)
     x = re.sub(r'[\n\r\t]+', '', x)
@@ -53,7 +55,7 @@ def normalize_cell(x):
     return x.strip()
 
 
-# Check if a PDF is text-based
+# Kiểm tra PDF có phải là text-based không
 def is_text_based_pdf(file_path: str) -> bool:
     try:
         doc = fitz.open(file_path)
@@ -68,7 +70,7 @@ def is_text_based_pdf(file_path: str) -> bool:
         raise RuntimeError("Failed to process PDF file.") from e
 
 
-# Extract text content from a PDF document (both text-based and scanned, not appendix)
+# Truy xuất nội dung từ PDF document (text-based và scanned)
 async def extract_pdf_document_content(file: UploadFile):
     document_content = ""
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
@@ -101,7 +103,7 @@ async def extract_pdf_document_content(file: UploadFile):
     return document_content
 
 
-# Extract text and tables from a text-based PDF appendix
+# Truy xuất nội dung từ PDF appendix
 async def extract_pdf_appendix_content(file: UploadFile):
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
         shutil.copyfileobj(file.file, tmp)
@@ -111,11 +113,11 @@ async def extract_pdf_appendix_content(file: UploadFile):
         raise RuntimeError("Appendix must be a text-based PDF.")
     
     try: 
-        # Extract appendix description
+        # Trích xuất phần mô tả phụ lục
         appendix_description = extract_appendix_description(tmp_path)
         appendix_description = normalize_text(appendix_description)
         
-        # Extract tables using Camelot
+        # Trích xuất bảng sử dụng Camelot
         tables_data = []
         tables = camelot.read_pdf(tmp_path, pages='all', flavor='lattice')
         for table in tables:
@@ -124,7 +126,7 @@ async def extract_pdf_appendix_content(file: UploadFile):
             tables_data.append(df.values.tolist())
         flattened_tables = [row for table in tables_data for row in table]
         
-        # Delete duplicate
+        # Xóa các hàng trùng lặp
         unique_rows = []
         seen = set()
         
@@ -139,10 +141,10 @@ async def extract_pdf_appendix_content(file: UploadFile):
             "tables": unique_rows
         }
     except Exception as e:
-        raise Exception("Failed to extract text and tables from appendix PDF.") from e
+        raise Exception("Lỗi khi trích xuất văn bản và bảng từ PDF phụ lục.") from e
 
 
-# Extract appendix description (text before the first table)
+# Trích xuất phần mô tả phụ lục (văn bản trước bảng đầu tiên)
 def extract_appendix_description(path: str) -> str:
     tables = camelot.read_pdf(path, pages='all', flavor='lattice')
     
@@ -177,7 +179,7 @@ def extract_appendix_description(path: str) -> str:
     return full_description
 
 
-# Split appendix into chunks
+# Chia phụ lục thành các chunks
 async def split_appendix_into_chunks(description: str, tables: list[list[str]], table_header_rows: int) -> list[str]:
     chunks = []
     chunk_format = f"Description: {description}. Table header: "
@@ -191,7 +193,7 @@ async def split_appendix_into_chunks(description: str, tables: list[list[str]], 
     return chunks
 
 
-# Split text into chunks
+# Chia văn bản thành các chunks
 async def split_text_into_chunks(text: str, words_per_chunk: int, overlap: int) -> list[str]:
     text = text.strip()
     chunks = []
@@ -214,15 +216,15 @@ async def split_text_into_chunks(text: str, words_per_chunk: int, overlap: int) 
     
     chunks = splitter.split_text(text)
     
-    # Merge small chunks
+    # Gộp các chunks nhỏ
     merged_chunks = await merge_chunks(chunks, target_max_length=words_per_chunk)
         
     return merged_chunks
 
 
-# Merge chunks
+# Gộp các chunks
 async def merge_chunks(chunks: list[str], target_max_length: int) -> list[str]:
-    # First pass: merge small chunks
+    # Lần đầu: gộp các chunks nhỏ
     merged_chunks = []
     current_chunk = ""
 
@@ -240,7 +242,7 @@ async def merge_chunks(chunks: list[str], target_max_length: int) -> list[str]:
     if current_chunk:
         merged_chunks.append(current_chunk.strip())
 
-    # Second pass: ensure no very small chunks
+    # Lần hai: đảm bảo không có các chunks quá nhỏ
     final_chunks = []
     buffer = ""
     for chunk in merged_chunks:
@@ -259,4 +261,3 @@ async def merge_chunks(chunks: list[str], target_max_length: int) -> list[str]:
         final_chunks.append(buffer.strip())
 
     return final_chunks
-

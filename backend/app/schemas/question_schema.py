@@ -1,7 +1,8 @@
 from bson import ObjectId
+from typing import Optional
 from datetime import datetime
-from typing import Literal, Optional
 from pydantic import BaseModel, Field
+
 
 # Create Question Schema
 class QuestionCreate(BaseModel):

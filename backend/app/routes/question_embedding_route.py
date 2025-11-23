@@ -8,6 +8,8 @@ from app.utils.api_response import api_response
 from app.schemas import question_embedding_schema
 from app.controllers import question_embedding_controller
 
+
+# --- ROUTER ---
 router = APIRouter(
     prefix="/question-embeddings",
     tags=["Question Embeddings"],
@@ -15,7 +17,8 @@ router = APIRouter(
 )
 
 
-# Get all question embeddings
+# --- ROUTES ---
+# Lấy tất cả embeddings câu hỏi tiềm năng
 @router.get("/")
 async def get_question_embeddings():
     try:
@@ -23,21 +26,23 @@ async def get_question_embeddings():
         return api_response(
             status_code=200,
             details=embeddings,
-            message="Question embeddings retrieved successfully."
+            message="Lấy tất cả embeddings câu hỏi tiềm năng thành công."
         )
     except ValueError as e:
         return api_response(
             status_code=400,
-            message=str(e)
+            message="Lỗi khi lấy embeddings câu hỏi tiềm năng.",
+            details=str(e)
         )
     except Exception as e:
         return api_response(
             status_code=500,
-            message=str(e)
+            message="Lỗi máy chủ.",
+            details=str(e)
         )
         
         
-# Export all question embeddings as downloadable JSON
+# Xuất embeddings câu hỏi tiềm năng ra file JSON
 @router.get("/export")
 async def export_question_embeddings():
     try:
@@ -55,33 +60,36 @@ async def export_question_embeddings():
     except Exception as e:
         return api_response(
             status_code=500,
-            message=str(e)
+            message="Lỗi máy chủ.",
+            details=str(e)
         )
        
         
-# Import question embeddings from uploaded JSON file
+# Nhập embeddings câu hỏi tiềm năng từ file JSON
 @router.post("/import")
 async def import_question_embeddings(file: UploadFile):
     try:
         result = await question_embedding_controller.import_question_embeddings_file(file=file)
         return api_response(
             status_code=200,
-            message="Question embeddings imported successfully.",
+            message="Nhập embeddings câu hỏi tiềm năng thành công.",
             details=result
         )
     except ValueError as e:
         return api_response(
             status_code=400,
-            message=str(e)
+            message="Dữ liệu không hợp lệ.",
+            details=str(e)
         )
     except Exception as e:
         return api_response(
             status_code=500,
-            message=str(e)
+            message="Lỗi máy chủ.",
+            details=str(e)
         )
 
 
-# Get a question embedding by ID
+# Lấy embedding câu hỏi theo ID
 @router.get("/{embedding_id}")
 async def get_question_embedding(embedding_id: str):
     try:
@@ -89,21 +97,23 @@ async def get_question_embedding(embedding_id: str):
         return api_response(
                 status_code=200,
                 details=embedding,
-                message="Question embedding retrieved successfully."
+                message="Lấy embedding câu hỏi thành công."
             )
     except ValueError as e:
         return api_response(
             status_code=404,
-            message=str(e)
+            message="Không tìm thấy embedding câu hỏi.",
+            details=str(e)
         )
     except Exception as e:
         return api_response(
             status_code=500,
-            message=str(e)
+            message="Lỗi máy chủ.",
+            details=str(e)
         )
 
 
-# Create a new question embedding (JUST FOR TESTING)
+# Tạo embedding câu hỏi mới
 @router.post("/")
 async def create_question_embedding(data: question_embedding_schema.QuestionEmbeddingCreate):
     try:
@@ -111,54 +121,61 @@ async def create_question_embedding(data: question_embedding_schema.QuestionEmbe
         created_question_embedding = await question_embedding_controller.create_question_embedding(data)
         return api_response(
             status_code=201,
-            message="Question embedding created successfully.",
+            message="Tạo embedding câu hỏi thành công.",
             details=created_question_embedding
         )
     except ValueError as e:
         return api_response(
             status_code=400,
-            message=str(e)
+            message="Dữ liệu không hợp lệ.",
+            details=str(e)
         )
     except Exception as e:
         return api_response(
             status_code=500,
-            message=str(e)
+            message="Lỗi máy chủ.",
+            details=str(e)
         )
     
     
-# Delete a question embedding by ID
+# Xóa embedding câu hỏi theo ID
 @router.delete("/{embedding_id}")
 async def delete_question_embedding(embedding_id: str):
     try:
         await question_embedding_controller.delete_question_embedding(embedding_id)
         return api_response(
             status_code=200,
-            message="Question embedding deleted successfully."
+            message="Xóa embedding câu hỏi thành công.",
+            details=None
         )
     except ValueError as e:
         return api_response(
             status_code=404,
-            message=str(e)
+            message="Không tìm thấy embedding câu hỏi.",
+            details=str(e)
         )
     except Exception as e:
         return api_response(
             status_code=500,
-            message=str(e)
+            message="Lỗi máy chủ.",
+            details=str(e)
         )
     
     
-# Reset (Delete) question embeddings collection
+# Đặt lại (Xóa) toàn bộ embeddings câu hỏi
 @router.delete("/")
 async def reset_question_embeddings_collection():
     try:
         await question_embedding_controller.reset_question_embeddings_collection()
         return api_response(
             status_code=200,
-            message="All question embeddings deleted successfully."
+            message="Đặt lại toàn bộ embeddings câu hỏi thành công.",
+            details=None
         )
     except Exception as e:
         return api_response(
             status_code=500,
-            message=str(e)
+            message="Lỗi máy chủ.",
+            details=str(e)
         )
         

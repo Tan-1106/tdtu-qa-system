@@ -3,6 +3,7 @@ from typing import Optional, Any
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 
+
 class ApiResponse(BaseModel):
     status_code: int
     message: str

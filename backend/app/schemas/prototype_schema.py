@@ -2,6 +2,7 @@ from typing import List
 from bson import ObjectId
 from pydantic import BaseModel, Field
 
+
 # Prototype Metadata Schema
 class PrototypeMetadata(BaseModel):
     question_embedding_ids: List[str] = Field(..., description="List of question embedding IDs clustered in this prototype")

@@ -2,37 +2,38 @@ from fastapi import UploadFile
 
 from app.services import question_embedding_service
 
-# Get all question embeddings
+
+# Lấy tất cả embeddings câu hỏi
 async def get_question_embeddings():
     question_embeddings = await question_embedding_service.get_question_embeddings()
     return question_embeddings
 
 
-# Get a question embedding by ID
+# Lấy embedding câu hỏi theo ID
 async def get_question_embedding_by_id(embedding_id: str):
     question_embedding = await question_embedding_service.get_question_embedding_by_id(embedding_id)
     return question_embedding
 
 
-# Import question embeddings from uploaded JSON file
+# Nhập embeddings câu hỏi từ file JSON
 async def import_question_embeddings_file(file: UploadFile):
     result = await question_embedding_service.import_question_embeddings_file(file=file)
     return result
 
 
-# Create a new question embedding
+# Tạo embedding câu hỏi mới
 async def create_question_embedding(embedding_data: dict):
     question_embedding = await question_embedding_service.create_question_embedding(embedding_data)
     return question_embedding
 
 
-# Delete a question embedding by ID
+# Xóa embedding câu hỏi theo ID
 async def delete_question_embedding(embedding_id: str):
     deleted = await question_embedding_service.delete_question_embedding(embedding_id)
     return deleted
 
 
-# Reset (Delete) question embeddings collection
+# Đặt lại collection embeddings câu hỏi
 async def reset_question_embeddings_collection():
     result = await question_embedding_service.reset_question_embeddings_collection()
     return result

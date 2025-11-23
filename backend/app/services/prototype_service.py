@@ -7,32 +7,30 @@ from fastapi.encoders import jsonable_encoder
 from app.schemas import prototype_schema
 from app.daos import question_embedding_dao, prototype_dao
 
-# Get all prototypes
+
+# Lấy tất cả các prototype
 async def get_prototypes():
     prototypes = await prototype_dao.get_prototypes()
     return prototypes
 
 
-# Get a prototype by ID
+# Lấy một prototype theo ID
 async def get_prototype_by_id(prototype_id: str):
     prototype = await prototype_dao.get_prototype_by_id(prototype_id)
     return prototype
 
 
-# Create a prototype
+# Tạo một prototype
 async def create_prototype(prototype_data: dict):
     prototype = await prototype_dao.create_prototype(prototype_data)
     return prototype
 
 
-# Cluster question embeddings and create prototypes
+# Phân cụm các embedding của câu hỏi để tạo prototypes
 async def cluster_question_embeddings():
-    print("- LOG: Clustering question embeddings to create prototypes...")
-    
-    # Reset prototypes collection
     await prototype_dao.reset_prototypes_collection()
     
-    # Fetch all question embeddings
+    # Lấy tất cả các embedding của câu hỏi
     question_embeddings = await question_embedding_dao.get_question_embeddings()
     if not question_embeddings or len(question_embeddings) == 0:
         return False
@@ -40,13 +38,13 @@ async def cluster_question_embeddings():
     embeddings = np.array([qe['vector'] for qe in jsonable_encoder(question_embeddings)])
     embedding_ids = [qe['id'] for qe in jsonable_encoder(question_embeddings)]
     
-    # Normalize embeddings to unit length if not already
+    # Chuẩn hóa các embedding về độ dài đơn vị nếu chưa được chuẩn hóa
     norms = np.linalg.norm(embeddings, axis=1)
     mean_norm = norms.mean()
     if mean_norm < 0.9 or mean_norm > 1.1:
         embeddings = normalize(embeddings, norm="l2")
 
-    # Cluster embeddings using HDBSCAN
+    # Phân cụm các embedding sử dụng HDBSCAN
     clusterer = hdbscan.HDBSCAN(
         min_cluster_size=500,
         min_samples=10,
@@ -54,23 +52,23 @@ async def cluster_question_embeddings():
         cluster_selection_epsilon=0.1
     )
     
-    # Cluster and create prototypes
+    # Phân cụm và tạo prototypes
     cluster_labels = clusterer.fit_predict(embeddings)
     print(f"- LOG: Found {len(set(cluster_labels)) - (1 if -1 in cluster_labels else 0)} clusters.")
     unique_labels = [l for l in np.unique(cluster_labels) if l != -1]
     
     prototypes: List[prototype_schema.PrototypeCreate] = []
     
-    # Create prototypes for each cluster
+    # Tạo prototypes cho mỗi cụm
     for label in unique_labels:
         cluster_indices = np.where(cluster_labels == label)[0]
         cluster_points = embeddings[cluster_indices]
         cluster_ids = [embedding_ids[i] for i in cluster_indices]
         
-        # Calculate centroid
+        # Tính centroid
         centroid_vector = cluster_points.mean(axis=0).tolist()
         
-        # Create prototype schema
+        # Tạo prototype schema
         metadata = prototype_schema.PrototypeMetadata(question_embedding_ids=cluster_ids)
         prototype = prototype_schema.PrototypeCreate(
             centroid_vector=centroid_vector,
@@ -89,9 +87,9 @@ async def cluster_question_embeddings():
             "metadata": {"question_embedding_ids": noise_ids},
         }
         prototypes.append(noise_proto)
-        print(f"- LOG: Grouped {len(noise_indices)} unassigned embeddings into one 'remaining' cluster.")
+        print(f"- LOG: Đã nhóm {len(noise_indices)} embedding chưa được gán vào một cụm còn lại.")
     
-    # Create prototypes in the database
+    # Tạo prototypes trong cơ sở dữ liệu
     for proto in prototypes:
         await prototype_dao.create_prototype(proto)
     prototype_dao.count_embeddings_per_prototype()
@@ -99,13 +97,13 @@ async def cluster_question_embeddings():
     return True
 
 
-# Reset (Delete) prototypes collection
+# Đặt lại collection prototypes
 async def reset_prototypes_collection():
     result = await prototype_dao.reset_prototypes_collection()
     return result
 
 
-# Semantic search prototypes
+# Tìm kiếm ngữ nghĩa cho prototypes
 async def semantic_search_prototypes(query_vector: List[float], top_k: int = 5):
     prototypes = await prototype_dao.semantic_search_prototypes(query_vector, top_k)
     return prototypes

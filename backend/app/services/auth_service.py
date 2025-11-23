@@ -1,28 +1,30 @@
 import os
 import jwt
-from typing import Annotated
+from fastapi import Depends
 from pwdlib import PasswordHash
 from fastapi.encoders import jsonable_encoder
 from fastapi.security import OAuth2PasswordBearer
 from datetime import datetime, timedelta, timezone
-from fastapi import Depends, HTTPException, status
 
 from app.daos import user_dao, refresh_token_dao
+
 
 SECRET_KEY=os.getenv("SECRET_KEY")
 ALGORITHM=os.getenv("ALGORITHM")
 ACCESS_EXPIRATION_TIME_MINUTES=int(os.getenv("ACCESS_EXPIRATION_TIME_MINUTES") or 5)
 REFRESH_EXPIRATION_TIME_DAYS=int(os.getenv("REFRESH_EXPIRATION_TIME_DAYS") or 7)
 
+
 hasher = PasswordHash.recommended()
 oauth2_access_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
+
 # --- TOKEN ---
-# Generate JWT Token
-async def generate_token(user: dict) -> str:
+# Tạo JWT Tokens
+async def generate_tokens(user: dict) -> str:
     now = datetime.now(timezone.utc)
     
-    # Access token
+    # Access Token
     access_payload = {
         "sub": str(user["_id"]),
         "email": user["email"],
@@ -33,7 +35,7 @@ async def generate_token(user: dict) -> str:
     }
     access_token = jwt.encode(access_payload, SECRET_KEY, algorithm=ALGORITHM)
     
-    # Refresh token
+    # Refresh Token
     refresh_payload = {
         "sub": str(user["_id"]),
         "type": "refresh",
@@ -45,77 +47,72 @@ async def generate_token(user: dict) -> str:
     return access_token, refresh_token
 
 
-# Verify Access Token
+# Xác thực Access Token
 async def verify_access_token(token: str = Depends(oauth2_access_scheme)) -> dict:
     if not token:
-        raise ValueError("Access token missing")
+        raise ValueError("Không tìm thấy access token.")
 
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         if payload.get("type") != "access":
-            raise ValueError("Invalid token type")
+            raise ValueError("Loại token không hợp lệ.")
 
         user_id = payload.get("sub")
         user = await user_dao.get_user_by_id(user_id)
         if user is None:
-            raise ValueError("User not found")
+            raise ValueError("Không tìm thấy người dùng.")
 
         return {
             "token": token,
             "payload": payload
         }
     except jwt.ExpiredSignatureError:
-        raise Exception("Access token has expired")
+        raise Exception("Access token đã hết hạn.")
     except jwt.InvalidTokenError:
-        raise Exception("Could not validate credentials")
+        raise Exception("Không thể xác thực thông tin đăng nhập.")
         
         
-# Verify Refresh Token
+# Xác thực Refresh Token
 async def verify_refresh_token(refresh_token: str) -> dict:
     if not refresh_token:
-        raise ValueError("Refresh token missing")
+        raise ValueError("Không tìm thấy refresh token.")
         
     try:
-        print("Decoding refresh token...")
         payload = jwt.decode(refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
         if payload.get("type") != "refresh":
-            raise Exception("Invalid token type")
+            raise Exception("Loại token không hợp lệ.")
         
-        print("Refresh token payload decoded successfully.")
         user_id = payload.get("sub")
-        print("User ID from refresh token payload:", user_id)
         user = await user_dao.get_user_by_id(user_id)
         if not user:
-            raise Exception("User not found")
+            raise Exception("Không tìm thấy người dùng.")
             
         return {
             "token": refresh_token,
             "payload": payload
         }
     except jwt.ExpiredSignatureError:
-        raise Exception("Refresh token has expired")
+        raise Exception("Refresh token đã hết hạn.")
     except jwt.InvalidTokenError:
-        raise Exception("Could not validate credentials")
+        raise Exception("Không thể xác thực thông tin đăng nhập.")
 
 
-# Refresh Access Token And Refresh Token
+# Làm mới Tokens
 async def refresh_tokens(refresh_token: str) -> str:
-    print("Verifying refresh token...")
     refresh_token = await verify_refresh_token(refresh_token)
     now = datetime.now(timezone.utc)
     
-    print("Refresh token verified. Checking revocation status...")
     user_id = refresh_token["payload"]["sub"]
     user = await user_dao.get_user_by_id(user_id)
     user = jsonable_encoder(user)
     if not user:
-        raise Exception("User not found")
+        raise Exception("Không tìm thấy người dùng.")
         
     revoked_refresh_token = await refresh_token_dao.is_refresh_token_revoked(user_id, refresh_token["token"])
     if revoked_refresh_token:
-        raise Exception("Refresh token has been revoked")
+        raise Exception("Refresh token đã bị thu hồi.")
         
-    # New Access Token
+    # Access Token mới
     new_access_payload = {
         "sub": user_id,
         "email": user["email"],
@@ -127,11 +124,11 @@ async def refresh_tokens(refresh_token: str) -> str:
     new_access_token = jwt.encode(new_access_payload, SECRET_KEY, algorithm=ALGORITHM)
     print("new_access_token:", new_access_token)
     
-    # New Refresh Token
+    # Refresh Token mới
     rt_revoked = await refresh_token_dao.revoke_refresh_token(user_id, refresh_token["token"])
     print("rt_revoked:", rt_revoked)
     if not rt_revoked:
-        raise Exception("Failed to revoke refresh token")
+        raise Exception("Không thể thu hồi refresh token.")
         
     new_refresh_payload = {
         "sub": user_id,
@@ -147,7 +144,7 @@ async def refresh_tokens(refresh_token: str) -> str:
         }
     )
     if not success:
-        raise Exception("Failed to store new refresh token")
+        raise Exception("Không thể lưu refresh token mới.")
     
     return {
         "access_token": new_access_token,
@@ -156,7 +153,7 @@ async def refresh_tokens(refresh_token: str) -> str:
         
         
 # --- AUTHENTICATION ---
-# Register
+# Đăng ký người dùng mới
 async def register_user(user_data: dict) -> dict:
     user_data["password"] = hasher.hash(user_data["password"])
     user_data["role"] = "User"
@@ -164,7 +161,7 @@ async def register_user(user_data: dict) -> dict:
     return user
 
 
-# Login And Generate Tokens
+# Đăng nhập và tạo tokens
 async def login(request: dict) -> dict:    
     email = request["email"]
     password = request["password"]
@@ -173,11 +170,11 @@ async def login(request: dict) -> dict:
     user_credentials = jsonable_encoder(user_credentials)
     try:
         if not hasher.verify(password, user_credentials["password"]):
-            raise ValueError("Wrong password")
+            raise ValueError("Sai mật khẩu.")
     except ValueError as e:
-        raise ValueError("Wrong password or unsupported hash format") from e
+        raise ValueError("Không thể xác thực mật khẩu.") from e
 
-    access_token, refresh_token = await generate_token(user_credentials)
+    access_token, refresh_token = await generate_tokens(user_credentials)
     
     success = await refresh_token_dao.store_refresh_token(
         {
@@ -186,7 +183,7 @@ async def login(request: dict) -> dict:
         }
     )
     if not success:
-        raise Exception("Authentication failed")
+        raise Exception("Xác thực đăng nhập không thành công.")
     
     return {
         "token": {
@@ -202,31 +199,31 @@ async def login(request: dict) -> dict:
     }
 
 
-# Get Current User
+# Lấy người dùng hiện tại từ Access Token
 async def get_current_user(access_token: dict = Depends(verify_access_token)) -> dict:
     user_id = access_token["payload"]["sub"]
     user = await user_dao.get_user_by_id(user_id)
     if not user:
-        raise Exception("User not found")
+        raise Exception("Không tìm thấy người dùng.")
     user = jsonable_encoder(user)
     return user
 
 
-# Role-based Access Control
+# Kiểm tra vai trò người dùng
 def require_role(required_role: list[str]):
     async def role_checker(current_user: dict = Depends(get_current_user)):
         current_user = jsonable_encoder(current_user)
         if current_user["role"] not in required_role:
-            raise Exception("Operation not permitted")
+            raise Exception("Không có quyền truy cập.")
         return current_user
     return role_checker
     
     
-# Verify Self Action or Admin
+# Xác minh hành động của chính người dùng hoặc Admin
 def require_self_or_admin():
     async def self_or_admin_checker(user_id: str, current_user: dict = Depends(get_current_user)):
         current_user = jsonable_encoder(current_user)
         if current_user["role"] != "Admin" and str(current_user["_id"]) != user_id:
-            raise Exception("Operation not permitted")
+            raise Exception("Không có quyền truy cập.")
         return current_user
     return self_or_admin_checker 

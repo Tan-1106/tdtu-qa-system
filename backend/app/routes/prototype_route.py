@@ -6,6 +6,8 @@ from app.schemas import prototype_schema
 from app.utils.api_response import api_response
 from app.controllers import prototype_controller
 
+
+# --- ROUTER ---
 router = APIRouter(
     prefix="/prototypes",
     tags=["Prototypes"],
@@ -13,46 +15,50 @@ router = APIRouter(
 )
 
 
-# Get all prototypes
+# --- ROUTES ---
+# Lấy tất cả prototypes
 @router.get("/")
 async def get_prototypes():
     try:
         prototypes = await prototype_controller.get_prototypes()
         return api_response(
             status_code=200,
-            details=prototypes,
-            message="Prototypes retrieved successfully."
+            message="Lấy tất cả prototypes thành công.",
+            details=prototypes
         )
     except Exception as e:
         return api_response(
             status_code=500,
-            message=str(e)
+            message="Lỗi máy chủ",
+            details=str(e)
         )
 
 
-# Get a prototype by ID
+# Lấy prototype theo ID
 @router.get("/{prototype_id}")
 async def get_prototype(prototype_id: str):
     try:
         prototype = await prototype_controller.get_prototype_by_id(prototype_id)
         return api_response(
             status_code=200,
-            details=prototype,
-            message="Prototype retrieved successfully."
+            message="Lấy prototype thành công.",
+            details=prototype
         )
     except ValueError as e:
         return api_response(
             status_code=404,
-            message=str(e)
+            message="Không tìm thấy prototype.",
+            details=str(e)
         )
     except Exception as e:
         return api_response(
             status_code=500,
-            message=str(e)
+            message="Lỗi máy chủ.",
+            details=str(e)
         )
 
 
-# Create a prototype (JUST FOR TESTING)
+# Tạo prototype mới
 @router.post("/")
 async def create_prototype(data: prototype_schema.PrototypeCreate):
     try:
@@ -60,43 +66,48 @@ async def create_prototype(data: prototype_schema.PrototypeCreate):
         created_prototype = await prototype_controller.create_prototype(data)
         return api_response(
             status_code=200,
-            details=created_prototype,
-            message="Prototype created successfully."
+            message="Tạo prototype thành công.",
+            details=created_prototype
         )
     except Exception as e:
         return api_response(
             status_code=500,
-            message=str(e)
+            message="Lỗi máy chủ.",
+            details=str(e)
         )
       
         
-# Cluster question embeddings into prototypes
+# Phân cụm embeddings câu hỏi thành prototypes
 @router.post("/cluster")
 async def cluster_question_embeddings():
     try:
         await prototype_controller.cluster_question_embeddings()
         return api_response(
             status_code=200,
-            message="Question embeddings clustered into prototypes successfully."
+            message="Phân cụm embeddings câu hỏi thành prototypes thành công.",
+            details=None
         )
     except Exception as e:
         return api_response(
             status_code=500,
-            message=str(e)
+            message="Lỗi máy chủ.",
+            details=str(e)
         )
 
 
-# Reset (delete) prototypes collection
+# Đặt lại (Xóa) toàn bộ prototypes
 @router.delete("/")
 async def reset_prototypes_collection():
     try:
         await prototype_controller.reset_prototypes_collection()
         return api_response(
             status_code=200,
-            message="Prototypes collection reset successfully."
+            message="Đặt lại collection prototypes thành công.",
+            details=None
         )
     except Exception as e:
         return api_response(
             status_code=500,
-            message=str(e)
+            message="Lỗi máy chủ.",
+            details=str(e)
         )

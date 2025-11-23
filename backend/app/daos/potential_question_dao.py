@@ -6,7 +6,8 @@ from app.databases import mongo
 from app.utils import serializer
 from app.schemas import potential_question_schema
 
-# Create potential questions for a chunk
+
+# Tạo các câu hỏi tiềm năng cho một đoạn văn bản
 async def create_potential_questions(potential_question_data: potential_question_schema.PotentialQuestionCreate) -> potential_question_schema.PotentialQuestionResponse:
     potential_question_data = jsonable_encoder(potential_question_data)
     potential_question_data["created_at"] = datetime.now(timezone.utc)
@@ -15,7 +16,7 @@ async def create_potential_questions(potential_question_data: potential_question
     return potential_question_schema.PotentialQuestionResponse(**serializer.potential_question_serialize(created_pq))
 
 
-# Read all potential questions
+# Lấy tất cả các câu hỏi tiềm năng
 async def get_potential_questions() -> List[potential_question_schema.PotentialQuestionResponse]:
     pq_list = []
     async for pq in mongo.get_potential_questions_collection().find({}):
@@ -23,14 +24,14 @@ async def get_potential_questions() -> List[potential_question_schema.PotentialQ
     return pq_list
 
 
-# Read potential questions by doc_id and chunk_index
+# Lấy các câu hỏi tiềm năng theo doc_id và chunk_index
 async def get_potential_questions_by_chunk(doc_id: str, chunk_index: int) -> potential_question_schema.PotentialQuestionResponse:
     query = {"doc_id": doc_id, "chunk_index": chunk_index}
     async for pq in mongo.get_potential_questions_collection().find(query):
         return potential_question_schema.PotentialQuestionResponse(**serializer.potential_question_serialize(pq))
-    raise ValueError("Potential questions not found for the specified chunk.")
+    raise ValueError("Không tìm thấy câu hỏi tiềm năng cho đoạn văn bản được chỉ định.")
 
-# Add a potential question for a chunk
+# Thêm một câu hỏi tiềm năng cho một đoạn văn bản
 async def add_potential_question(question_data: dict) -> potential_question_schema.PotentialQuestionResponse:
     query = {"doc_id": question_data["doc_id"], "chunk_index": question_data["chunk_index"]}
     pq = await mongo.get_potential_questions_collection().find_one(query)
@@ -53,19 +54,19 @@ async def add_potential_question(question_data: dict) -> potential_question_sche
         updated_pq = await mongo.get_potential_questions_collection().find_one(query)
         return potential_question_schema.PotentialQuestionResponse(**serializer.potential_question_serialize(updated_pq))
     else:
-        raise ValueError("Chunk not found. Cannot add potential question.")
+        raise ValueError("Không tìm thấy đoạn văn bản. Không thể thêm câu hỏi tiềm năng.")
 
 
-# Update a potential question of a chunk
+# Cập nhật một câu hỏi tiềm năng của một đoạn văn bản
 async def update_potential_question(doc_id: str, chunk_index: int, question_index: int, new_question: str) -> potential_question_schema.PotentialQuestionResponse:
     query = {"doc_id": doc_id, "chunk_index": chunk_index}
     pq = await mongo.get_potential_questions_collection().find_one(query)
     if not pq:
-        raise Exception("Potential question not found.")
+        raise Exception("Không tìm thấy câu hỏi tiềm năng.")
     
     potential_questions = pq.get("potential_questions", [])
     if question_index < 0 or question_index >= len(potential_questions):
-        raise Exception("Question index out of range.")
+        raise Exception("Chỉ số câu hỏi không hợp lệ.")
     
     potential_questions[question_index] = new_question
     
@@ -80,16 +81,16 @@ async def update_potential_question(doc_id: str, chunk_index: int, question_inde
     return potential_question_schema.PotentialQuestionResponse(**serializer.potential_question_serialize(updated_pq))
 
 
-# Delete a potential question of a chunk
+# Xóa một câu hỏi tiềm năng của một đoạn văn bản
 async def delete_potential_question(doc_id: str, chunk_index: int, question_index: int) -> dict:
     query = {"doc_id": doc_id, "chunk_index": chunk_index}
     pq = await mongo.get_potential_questions_collection().find_one(query)
     if not pq:
-        raise Exception("Potential question not found.")
+        raise Exception("Không tìm thấy câu hỏi tiềm năng.")
     
     potential_questions = pq.get("potential_questions", [])
     if question_index < 0 or question_index >= len(potential_questions):
-        raise Exception("Question index out of range.")
+        raise Exception("Chỉ số câu hỏi không hợp lệ.")
     
     deleted_question = potential_questions.pop(question_index)
     
@@ -108,7 +109,7 @@ async def delete_potential_question(doc_id: str, chunk_index: int, question_inde
     return {"deleted_question": deleted_question}
 
 
-# Delete potential questions by doc_id
+# Xóa các câu hỏi tiềm năng theo doc_id
 async def delete_potential_questions_by_doc_id(doc_id: str) -> dict:
     result = await mongo.get_potential_questions_collection().delete_many({"doc_id": doc_id})
     return {"deleted_count": result.deleted_count}

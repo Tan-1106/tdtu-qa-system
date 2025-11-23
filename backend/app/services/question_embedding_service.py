@@ -4,49 +4,50 @@ from typing import List
 from app.services import model_service
 from app.daos import question_embedding_dao, potential_question_dao, prototype_dao
 
-# Get all question embeddings
+
+# Lấy tất cả các embedding của câu hỏi tiềm năng
 async def get_question_embeddings():
     question_embeddings = await question_embedding_dao.get_question_embeddings()
     return question_embeddings
 
 
-# Get a question embedding by ID
+# Lấy một embedding của câu hỏi theo ID
 async def get_question_embedding_by_id(embedding_id: str):
     question_embedding = await question_embedding_dao.get_question_embedding_by_id(embedding_id)
     return question_embedding
 
 
-# Create a new question embedding
+# Tạo một embedding của câu hỏi mới
 async def create_question_embedding(embedding: dict):
     created_embedding = await question_embedding_dao.create_question_embedding(embedding)
     return created_embedding
 
 
-# Import question embeddings from uploaded JSON file
+# Nhập file các embedding của câu hỏi
 async def import_question_embeddings_file(file):
     result = await question_embedding_dao.import_question_embeddings_file(file=file)
     return result
 
 
-# Update a question embedding by ID
+# Cập nhật một embedding của câu hỏi theo ID
 async def update_question_embedding(embedding_id: str, embedding_update: dict):
     updated_embedding = await question_embedding_dao.update_question_embedding(embedding_id, embedding_update)
     return updated_embedding
 
 
-# Delete a question embedding by ID
+# Xóa một embedding của câu hỏi theo ID
 async def delete_question_embedding(embedding_id: str):
     deleted = await question_embedding_dao.delete_question_embedding(embedding_id)
     return deleted
 
 
-# Delete question embeddings by document ID
+# Xóa các embedding của câu hỏi theo document ID
 async def delete_question_embeddings_by_doc_id(doc_id: str):
     deleted = await question_embedding_dao.delete_question_embeddings_by_doc_id(doc_id)
     return deleted
 
 
-# Reset (Delete) question embeddings collection
+# Đặt lại collection embeddings của câu hỏi tiềm năng
 async def reset_question_embeddings_collection():
     deleted_question_embeddings = await question_embedding_dao.reset_question_embeddings_collection()
     deleted_prototypes = await prototype_dao.reset_prototypes_collection()
@@ -55,13 +56,13 @@ async def reset_question_embeddings_collection():
     return deleted
 
 
-# Semantic search question embeddings
+# Tìm kiếm ngữ nghĩa cho embeddings của câu hỏi tiềm năng
 async def semantic_search_question_embeddings(query_vector: List[float], top_k: int, relevant_embedding_ids: List[str] = None):
     question_embeddings = await question_embedding_dao.semantic_search_question_embeddings(query_vector, top_k, relevant_embedding_ids)
     return question_embeddings
 
 
-# Generate potential questions for a text chunk
+# Tạo các câu hỏi tiềm năng cho một đoạn văn bản
 async def create_question_embeddings(doc_id: str, chunk_idx: int, chunk: str, num_questions: int = 5, is_appendix: bool = False):
     loop = asyncio.get_event_loop()
     

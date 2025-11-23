@@ -5,7 +5,8 @@ from fastapi.encoders import jsonable_encoder
 from app.databases import chroma
 from app.schemas import prototype_schema
 
-# Read all prototypes
+
+# Lấy tất cả các prototype
 async def get_prototypes() -> list[prototype_schema.PrototypeResponse]:
     results = chroma.prototypes_collection.get(include=["embeddings", "metadatas"])
     if not results or 'ids' not in results:
@@ -26,11 +27,11 @@ async def get_prototypes() -> list[prototype_schema.PrototypeResponse]:
     return prototypes
 
 
-# Read a prototype by ID
+# Lấy một prototype theo ID
 async def get_prototype_by_id(prototype_id: str) -> prototype_schema.PrototypeResponse:
     results = chroma.prototypes_collection.get(ids=[prototype_id], include=["embeddings", "metadatas"])
     if not results or 'ids' not in results or len(results['ids']) == 0:
-        raise ValueError("Prototype not found.")
+        raise ValueError("Không tìm thấy prototype.")
     
     metadata = {k: json.loads(v) for k, v in results['metadatas'][0].items()}
     
@@ -40,8 +41,7 @@ async def get_prototype_by_id(prototype_id: str) -> prototype_schema.PrototypeRe
         metadata=metadata
     )
     
-    
-# Create a new prototype
+# Tạo một prototype mới
 async def create_prototype(prototype_data: prototype_schema.PrototypeCreate) -> prototype_schema.PrototypeResponse:
     prototype_data = jsonable_encoder(prototype_data)    
     prototype_id = str(uuid.uuid4())
@@ -61,7 +61,7 @@ async def create_prototype(prototype_data: prototype_schema.PrototypeCreate) -> 
     )
     
     
-# Reset (delete) prototypes collection
+# Đăng ký lại (reset) collection prototypes
 async def reset_prototypes_collection() -> bool:
     try:
         chroma.client.delete_collection("prototypes")
@@ -72,7 +72,7 @@ async def reset_prototypes_collection() -> bool:
         return False
     
     
-# Semantic search for prototypes
+# Tìm kiếm ngữ nghĩa cho prototypes
 async def semantic_search_prototypes(query_vector: list[float], top_k: int = 3) -> list[prototype_schema.PrototypeResponse]:
     results = chroma.prototypes_collection.query(
         query_embeddings=[query_vector],
@@ -98,7 +98,8 @@ async def semantic_search_prototypes(query_vector: list[float], top_k: int = 3) 
     return prototypes
 
 
-# Iterate all prototypes and count how many question embeddings were clustered into each
+# (Hàm hỗ trợ)
+# Duyệt tất cả các prototype và đếm có bao nhiêu embedding câu hỏi được phân cụm vào mỗi prototype
 def count_embeddings_per_prototype(batch_size: int = 1000, verbose: bool = True):
     counts: list[dict] = []
     try:
@@ -130,7 +131,7 @@ def count_embeddings_per_prototype(batch_size: int = 1000, verbose: bool = True)
 
                 counts.append({"id": pid, "count": n})
                 if verbose:
-                    print(f"- Prototype {pid}: {n} clustered embeddings")
+                    print(f"- Prototype {pid}: {n} embeddings được phân cụm")
 
             offset += len(ids)
 
@@ -139,12 +140,11 @@ def count_embeddings_per_prototype(batch_size: int = 1000, verbose: bool = True)
             num = len(counts)
             if num:
                 avg = total / num
-                print(f"Summary -> Prototypes: {num}, Total clustered embeddings: {total}, Avg per prototype: {avg:.2f}")
+                print(f"Tóm tắt -> Prototypes: {num}, Tổng số embeddings được phân cụm: {total}, Trung bình mỗi prototype: {avg:.2f}")
             else:
-                print("No prototypes found.")
+                print("Không tìm thấy prototype nào.")
 
     except Exception as e:
         if verbose:
-            print(f"Error counting embeddings per prototype: {e}")
-
+            print(f"Lỗi khi đếm embeddings cho mỗi prototype: {e}")
     return counts

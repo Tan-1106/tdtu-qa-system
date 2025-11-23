@@ -3,36 +3,37 @@ from fastapi.encoders import jsonable_encoder
 from app.daos import question_dao
 from app.services import model_service, prototype_service, question_embedding_service, document_service
 
-# Get all questions
+
+# Lấy tất cả các câu hỏi
 async def get_questions():
     questions = await question_dao.get_questions()
     return questions
 
 
-# Get a question by ID
+# Lấy một câu hỏi theo ID
 async def get_question_by_id(question_id: str):
     question = await question_dao.get_question_by_id(question_id)
     return question
 
 
-# Create a new question
+# Tạo một câu hỏi mới
 async def create_question(question: dict):
     created_question = await question_dao.create_question(question)
     return created_question
 
 
-# Ask a question and get an answer
+# Hỏi một câu hỏi và nhận câu trả lời
 async def query(question_data: dict, lang: str = 'vi'):
-    # Get embedding for the question
+    # Lấy embedding cho câu hỏi
     if lang == 'en':
         embedded_question = model_service.get_embedding(question_data['translated_question'])
     else:
         embedded_question = model_service.get_embedding(question_data['question'])
 
-    # Semantic search for relevant prototypes
+    # Tìm kiếm ngữ nghĩa cho prototypes liên quan
     relevant_prototypes = await prototype_service.semantic_search_prototypes(embedded_question, top_k=3)
     
-    # Collect relevant question embedding IDs from prototypes
+    # Thu thập các ID embedding câu hỏi tiềm năng liên quan từ prototypes
     relevant_embedding_ids = []
     for proto in jsonable_encoder(relevant_prototypes):
         metadata = proto['metadata']
@@ -41,10 +42,10 @@ async def query(question_data: dict, lang: str = 'vi'):
                 relevant_embedding_ids.append(emb_id)
     
 
-    # Semantic search for relevant question embeddings
+    # Tìm kiếm ngữ nghĩa cho các embedding câu hỏi tiềm năng liên quan
     relevant_question_embeddings = await question_embedding_service.semantic_search_question_embeddings(embedded_question, top_k=30, relevant_embedding_ids=relevant_embedding_ids)
     
-    # Get chunks
+    # Lấy các đoạn văn bản
     chunks = []
     for qe in jsonable_encoder(relevant_question_embeddings):
         metadata = qe['metadata']
@@ -57,18 +58,18 @@ async def query(question_data: dict, lang: str = 'vi'):
     chunks = list(unique_chunks)
     chunks = model_service.rerank_chunks(question_data['question'], chunks, top_k=10)
     
-    # Generate answer using chunks, question and LLM
+    # Tạo câu trả lời sử dụng các đoạn văn bản, câu hỏi và LLM
     answer = await model_service.generate_answer(chunks, question_data['question'], lang)
     return answer[0]
 
 
-# Update question status with answer
+# Cập nhật trạng thái câu hỏi với câu trả lời
 async def update_question_status(question_id: str, answer: str, status: str = "Answered"):
     updated_question = await question_dao.update_question_status(question_id, answer, status)
     return updated_question
 
 
-# Leave feedback for a question
+# Để lại phản hồi cho một câu hỏi
 async def leave_feedback(question_id: str, user_id: str, feedback: str):
     question = await question_dao.get_question_by_id(question_id)
     if not question:
@@ -76,8 +77,8 @@ async def leave_feedback(question_id: str, user_id: str, feedback: str):
     
     question = jsonable_encoder(question)
     if question['user_id'] != user_id:
-        raise PermissionError("User is not authorized to leave feedback for this question.")
+        raise PermissionError("Người dùng không được phép để lại phản hồi cho câu hỏi này.")
     
-    # Update feedback
+    # Cập nhật phản hồi
     updated_question = await question_dao.update_question_feedback(question_id, feedback)
     return updated_question

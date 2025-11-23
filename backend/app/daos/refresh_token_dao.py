@@ -5,9 +5,11 @@ from fastapi.encoders import jsonable_encoder
 from app.databases import mongo
 from app.schemas import refresh_token_schema
 
+
 hasher = PasswordHash.recommended()
 
-# Create a new refresh token
+
+# Tạo một refresh token mới
 async def store_refresh_token(token_data: refresh_token_schema.RefreshTokenCreate) -> bool:
     token_data = jsonable_encoder(token_data)
     token_data["created_at"] = datetime.now(timezone.utc)
@@ -18,7 +20,7 @@ async def store_refresh_token(token_data: refresh_token_schema.RefreshTokenCreat
     return created_token is not None
 
 
-# Revoke a refresh token
+# Thu hồi (revoke) một refresh token
 async def revoke_refresh_token(user_id: str, refresh_token: str) -> bool:
     hashed_tokens = await mongo.get_refresh_tokens_collection().find(
         {"user_id": user_id, "revoked": False}
@@ -34,7 +36,7 @@ async def revoke_refresh_token(user_id: str, refresh_token: str) -> bool:
     return False
     
 
-# Check if a refresh token is revoked
+# Kiểm tra xem refresh token đã bị thu hồi hay chưa
 async def is_refresh_token_revoked(user_id: str, refresh_token: str) -> bool:
     hashed_tokens = await mongo.get_refresh_tokens_collection().find(
         {"user_id": user_id, "revoked": True}

@@ -7,6 +7,8 @@ from app.schemas import document_schema
 from app.controllers import document_controller
 from app.utils.api_response import api_response
 
+
+# --- ROUTERS ---
 admin_route = APIRouter(
     prefix="/documents",
     tags=["Documents"],
@@ -21,78 +23,90 @@ user_route = APIRouter(
 )
 
 
-# ADMIN ROUTES
-# Get chunk by doc_id and chunk_index
+# --- ADMIN ROUTES ---
+# Lấy chunk tài liệu theo document ID và chunk index
 @admin_route.get("/{doc_id}/chunks/{chunk_index}")
-async def get_chunk(doc_id: str, chunk_index: int):
+async def get_chunk(
+    doc_id: str, 
+    chunk_index: int
+):
     try:
         chunk = await document_controller.get_document_chunk(doc_id, chunk_index)
         return api_response(
                 status_code=200,
-                message="Chunk retrieved successfully.",
+                message="Lấy chunk tài liệu thành công.",
                 details=chunk
             )
     except ValueError as e:
         return api_response(
             status_code=404,
-            message=str(e)
+            message="Không tìm thấy chunk tài liệu.",
+            details=str(e)
         )
     except Exception as e:
         return api_response(
             status_code=500,
-            message=str(e)
+            message="Lỗi máy chủ.",
+            details=str(e)
         )
     
     
-# Update a document by ID
+# Cập nhật tài liệu theo ID
 @admin_route.patch("/{doc_id}")
-async def update_document(doc_id: str, doc_update: document_schema.DocumentUpdate, current_user = Depends(auth_service.get_current_user)):
+async def update_document(
+    doc_id: str,
+    doc_update: document_schema.DocumentUpdate,
+    current_user = Depends(auth_service.get_current_user)
+):
     try:
         doc_update = jsonable_encoder(doc_update)
         current_user = jsonable_encoder(current_user)
-        edited_by = current_user["_id"]
 
-        updated_doc = await document_controller.update_document(doc_id, doc_update, edited_by)
+        updated_doc = await document_controller.update_document(doc_id, doc_update, current_user["_id"])
         return api_response(
                 status_code=200,
-                message="Document updated successfully.",
-                details=updated_doc,
+                message="Cập nhật tài liệu thành công.",
+                details=updated_doc
             )
     except ValueError as e:
         return api_response(
             status_code=404,
-            message=str(e),
+            message="Không tìm thấy tài liệu.",
+            details=str(e)
         )
     except Exception as e:
         return api_response(
             status_code=500,
-            message=str(e),
+            message="Lỗi máy chủ.",
+            details=str(e)
         )
    
     
-# Delete a document by ID
+# Xóa tài liệu theo ID
 @admin_route.delete("/{doc_id}")
 async def delete_document(doc_id: str):
     try:
         await document_controller.delete_document(doc_id)
         return api_response(
                 status_code=200,
-                message="Document deleted successfully.",
+                message="Xóa tài liệu thành công.",
                 details=None,
             )
     except ValueError as e:
         return api_response(
             status_code=404,
-            message=str(e),
+            message="Không tìm thấy tài liệu.",
+            details=str(e)
         )
     except Exception as e:
         return api_response(
             status_code=500,
-            message=str(e),
+            message="Lỗi máy chủ.",
+            details=str(e)
         )
 
 
-# Upload a document
+# Tải tài liệu
 @admin_route.post("/upload")
 async def upload_document(
     file: UploadFile,
@@ -104,34 +118,34 @@ async def upload_document(
 ):
     try:
         current_user = jsonable_encoder(current_user)
-        uploaded_by = current_user["_id"]
-        
         result = await document_controller.upload_document(
             file=file,
             doc_type=doc_type,
             department=department,
             language=language,
             file_url=file_url,
-            uploaded_by=uploaded_by
+            uploaded_by=current_user["_id"]
         )
         return api_response(
             status_code=200,
-            message="Document uploaded successfully.",
+            message="Tải tài liệu thành công.",
             details=result
         )
     except ValueError as e:
         return api_response(
             status_code=400,
-            message=str(e)
+            message="Lỗi tải tài liệu.",
+            details=str(e)
         )
     except Exception as e:
         return api_response(
             status_code=500,
-            message=str(e)
+            message="Lỗi máy chủ.",
+            details=str(e)
         )
         
         
-# Upload appendix document (PDF)
+# Tải tài liệu phụ lục (PDF)
 @admin_route.post("/upload-appendix")
 async def upload_appendix_document(
     file: UploadFile,
@@ -142,36 +156,36 @@ async def upload_appendix_document(
     current_user = Depends(auth_service.get_current_user)
 ):
     try:
-        current_user = jsonable_encoder(current_user)
-        uploaded_by = current_user["_id"]
-        
+        current_user = jsonable_encoder(current_user)        
         result = await document_controller.upload_appendix_document(
             file=file,
             doc_type=doc_type,
             department=department,
             language=language,
             file_url=file_url,
-            uploaded_by=uploaded_by
+            uploaded_by=current_user["_id"]
         )
         return api_response(
             status_code=200,
-            message="Appendix document uploaded successfully.",
+            message="Tải tài liệu phụ lục thành công.",
             details=result
         )
     except ValueError as e:
         return api_response(
             status_code=400,
-            message=str(e)
+            message="Lỗi tải tài liệu phụ lục.",
+            details=str(e)
         )
     except Exception as e:
         return api_response(
             status_code=500,
-            message=str(e)
+            message="Lỗi máy chủ.",
+            details=str(e)
         )
         
         
-# USER ROUTES
-# Get all documents
+# --- USER ROUTES ---
+# Lấy tất cả tài liệu
 @user_route.get("/")
 async def get_documents(
     page: int = Query(1, ge=1),
@@ -193,7 +207,7 @@ async def get_documents(
         docs = await document_controller.get_documents(filters=filters, skip=skip, limit=limit)
         return api_response(
             status_code=200,
-            message="Documents retrieved successfully.",
+            message="Lấy tài liệu thành công.",
             details= {
                 "documents": docs,
                 "page": page,
@@ -203,11 +217,17 @@ async def get_documents(
     except Exception as e:
         return api_response(
             status_code=500,
-            message=str(e),
+            message="Lỗi máy chủ",
+            details=str(e)
         ) 
+        
+        
+# Tìm kiếm tài liệu bằng từ khóa
+# TODO
 
 
-# View document file
+
+# Xem file tài liệu
 @user_route.get("/view/{doc_id}")
 async def view_document_file(doc_id: str):
     try:
@@ -216,32 +236,36 @@ async def view_document_file(doc_id: str):
     except ValueError as e:
         return api_response(
             status_code=404,
-            message=str(e)
+            message="Không tìm thấy tài liệu.",
+            details=str(e)
         )
     except Exception as e:
         return api_response(
             status_code=500,
-            message=str(e)
+            message="Lỗi máy chủ.",
+            details=str(e)
         )
         
         
-# Get a document by ID
+# Lấy tài liệu theo ID
 @user_route.get("/{doc_id}")
 async def get_document(doc_id: str):
     try:
         doc = await document_controller.get_document_by_id(doc_id)
         return api_response(
                 status_code=200,
-                message="Document retrieved successfully.",
+                message="Lấy tài liệu thành công.",
                 details=doc,
             )
     except ValueError as e:
         return api_response(
             status_code=404,
-            message=str(e),
+            message="Không tìm thấy tài liệu.",
+            details=str(e)
         )
     except Exception as e:
         return api_response(
             status_code=500,
-            message=str(e),
+            message="Lỗi máy chủ.",
+            details=str(e)
         )

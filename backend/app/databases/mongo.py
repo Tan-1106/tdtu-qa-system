@@ -3,16 +3,17 @@ import logging
 from pymongo.errors import ConnectionFailure
 from motor.motor_asyncio import AsyncIOMotorClient
 
-# Logging configuration
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 
-# Read environment variables
+# --- CONFIGURATION ---
 MONGO_URL = os.getenv("MONGO_URL", "mongodb://mongodb:27017")
 DB_NAME = os.getenv("MONGO_DB_NAME", "tdtu_qa_db")
 
 
-# Connect to MongoDB
+# --- CLIENT ---
+# Kết nối MongoDB
 client: AsyncIOMotorClient | None = None
 db = None
 
@@ -22,9 +23,9 @@ async def connect_to_mongo():
         client = AsyncIOMotorClient(MONGO_URL, serverSelectionTimeoutMS=5000)
         await client.admin.command("ping")
         db = client[DB_NAME]
-        logging.info(f"LOG: Connected to MongoDB at {MONGO_URL}, using database: {DB_NAME}")
+        logging.info(f"- LOG: Đã kết nối đến MongoDB tại {MONGO_URL}, database: {DB_NAME}")
     except ConnectionFailure as e:
-        logging.error(f"LOG: Could not connect to MongoDB: {e}")
+        logging.error(f"- LOG: Không thể kết nối đến MongoDB: {e}")
         raise e
 
 
@@ -33,16 +34,16 @@ async def close_mongo_connection():
     global client
     if client:
         client.close()
-        logging.info("LOG: MongoDB connection closed.")
+        logging.info("- LOG: Đã đóng kết nối MongoDB.")
 
 
-# COLLECTIONS
+# --- COLLECTIONS ---
 # Users collection
 def get_users_collection():
     global db
     if db is None:
-        raise RuntimeError("Database is not initialized. Did you call connect_to_mongo()?")
-    logging.info(f"LOG: Accessing collection: users in database: {DB_NAME}")
+        raise RuntimeError("Cơ sở dữ liệu chưa được khởi tạo.")
+    logging.info(f"- LOG: Truy cập collection: users trong database: {DB_NAME}")
     return db.get_collection("users")
 
 
@@ -50,8 +51,8 @@ def get_users_collection():
 def get_refresh_tokens_collection():
     global db
     if db is None:
-        raise RuntimeError("Database is not initialized. Did you call connect_to_mongo()?")
-    logging.info(f"LOG: Accessing collection: refresh_tokens in database: {DB_NAME}")
+        raise RuntimeError("Cơ sở dữ liệu chưa được khởi tạo.")
+    logging.info(f"- LOG: Truy cập collection: refresh_tokens trong database: {DB_NAME}")
     return db.get_collection("refresh_tokens")
 
 
@@ -59,8 +60,8 @@ def get_refresh_tokens_collection():
 def get_documents_collection():
     global db
     if db is None:
-        raise RuntimeError("Database is not initialized. Did you call connect_to_mongo()?")
-    logging.info(f"LOG: Accessing collection: documents in database: {DB_NAME}")
+        raise RuntimeError("Cơ sở dữ liệu chưa được khởi tạo.")
+    logging.info(f"- LOG: Truy cập collection: documents trong database: {DB_NAME}")
     return db.get_collection("documents")
 
 
@@ -68,8 +69,8 @@ def get_documents_collection():
 def get_potential_questions_collection():
     global db
     if db is None:
-        raise RuntimeError("Database is not initialized. Did you call connect_to_mongo()?")
-    logging.info(f"LOG: Accessing collection: potential_questions in database: {DB_NAME}")
+        raise RuntimeError("Cơ sở dữ liệu chưa được khởi tạo.")
+    logging.info(f"- LOG: Truy cập collection: potential_questions trong database: {DB_NAME}")
     return db.get_collection("potential_questions")
 
 
@@ -77,8 +78,8 @@ def get_potential_questions_collection():
 def get_questions_collection():
     global db
     if db is None:
-        raise RuntimeError("Database is not initialized. Did you call connect_to_mongo()?")
-    logging.info(f"LOG: Accessing collection: questions in database: {DB_NAME}")
+        raise RuntimeError("Cơ sở dữ liệu chưa được khởi tạo.")
+    logging.info(f"- LOG: Truy cập collection: questions trong database: {DB_NAME}")
     return db.get_collection("questions")
 
 
@@ -86,8 +87,8 @@ def get_questions_collection():
 def get_answers_collection():
     global db
     if db is None:
-        raise RuntimeError("Database is not initialized. Did you call connect_to_mongo()?")
-    logging.info(f"LOG: Accessing collection: answers in database: {DB_NAME}")
+        raise RuntimeError("Cơ sở dữ liệu chưa được khởi tạo.")
+    logging.info(f"- LOG: Truy cập collection: answers trong database: {DB_NAME}")
     return db.get_collection("answers")
 
 
@@ -95,6 +96,6 @@ def get_answers_collection():
 def get_popular_questions_collection():
     global db
     if db is None:
-        raise RuntimeError("Database is not initialized. Did you call connect_to_mongo()?")
-    logging.info(f"LOG: Accessing collection: popular_questions in database: {DB_NAME}")
+        raise RuntimeError("Cơ sở dữ liệu chưa được khởi tạo.")
+    logging.info(f"- LOG: Truy cập collection: popular_questions trong database: {DB_NAME}")
     return db.get_collection("popular_questions")

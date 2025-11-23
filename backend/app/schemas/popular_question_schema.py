@@ -2,7 +2,7 @@ from bson import ObjectId
 from typing import List, Optional
 from pydantic import BaseModel, Field
 
-# Not implement yet
+
 # Create Popular Question Schema
 class PopularQuestionCreate(BaseModel):
     question: str = Field(..., description="The popular question content")

@@ -3,6 +3,7 @@ from typing import Optional
 from datetime import datetime
 from pydantic import BaseModel, Field, EmailStr
 
+
 # Update User Information Schema
 class UserInformationUpdate(BaseModel):
     full_name: Optional[str] = Field(default=None, description="Full name of the user")
