@@ -1,6 +1,6 @@
 from fastapi import UploadFile
 
-from app.services import question_embedding_service
+from app.services import question_embedding_service, prototype_service
 
 
 # Lấy tất cả embeddings câu hỏi
@@ -18,6 +18,7 @@ async def get_question_embedding_by_id(embedding_id: str):
 # Nhập embeddings câu hỏi từ file JSON
 async def import_question_embeddings_file(file: UploadFile):
     result = await question_embedding_service.import_question_embeddings_file(file=file)
+    await prototype_service.cluster_question_embeddings()
     return result
 
 

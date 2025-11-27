@@ -15,11 +15,11 @@ logging.getLogger("sentence_transformers").setLevel(logging.WARNING)
 # --- Configuration ---
 # Biến môi trường
 GPT_KEY = os.getenv("GPT_KEY")
-GPT_5_NANO = os.getenv("GPT_5_NANO")
-GPT_5_MINI = os.getenv("GPT_5_MINI")
-EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL")
-TRANSLATE_MODEL = os.getenv("TRANSLATE_MODEL")
-CROSS_ENCODER_MODEL = os.getenv("CROSS_ENCODER_MODEL")
+GPT_5_NANO = os.getenv("GPT_5_NANO", "gpt-5-nano")
+GPT_5_MINI = os.getenv("GPT_5_MINI", "gpt-5-mini")
+EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "dangvantuan/vietnamese-embedding")
+TRANSLATE_MODEL = os.getenv("TRANSLATE_MODEL", "VietAI/envit5-translation")
+CROSS_ENCODER_MODEL = os.getenv("CROSS_ENCODER_MODEL", "cross-encoder/mmarco-mMiniLMv2-L12-H384-v1")
 
 
 # Khởi tạo client và mô hình

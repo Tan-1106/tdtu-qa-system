@@ -64,8 +64,23 @@ async def login(request: auth_schema.LoginRequest):
         )
         
 
-# Quên mật khẩu
-# TODO
+# Gửi yêu cầu reset mật khẩu
+@router.post("/forgot-password")
+async def forgot_password(request: auth_schema.ForgotPasswordRequest):
+    try:
+        request = jsonable_encoder(request)
+        await auth_controller.forgot_password(request['email'])
+        return api_response(
+            status_code=200,
+            message="Yêu cầu đặt lại mật khẩu đã được gửi thành công nếu email tồn tại trong hệ thống.",
+            details=None
+        )
+    except Exception as e:
+        return api_response(
+            status_code=500,
+            message="Lỗi máy chủ.",
+            details=str(e)
+        )
         
             
 # Lấy thông tin người dùng hiện tại

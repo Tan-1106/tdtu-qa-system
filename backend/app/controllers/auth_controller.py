@@ -2,6 +2,7 @@ from fastapi import Depends
 
 from app.schemas import user_schema
 from app.services import auth_service
+from app.utils import smtp
 
 
 # Tạo tài khoản người dùng
@@ -25,3 +26,9 @@ async def get_current_user(current_user: user_schema.UserResponse = Depends(auth
 async def refresh_tokens(refresh_token: str):
     new_tokens = await auth_service.refresh_tokens(refresh_token)
     return new_tokens
+
+
+# Quên mật khẩu
+async def forgot_password(email: str):
+    auth_service.generate_reset_password_token(email)
+    smtp.send_reset_password_email(email, "PLACEHOLDER_RESET_LINK")

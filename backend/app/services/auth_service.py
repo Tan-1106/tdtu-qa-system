@@ -3,6 +3,7 @@ import jwt
 from fastapi import Depends
 from pwdlib import PasswordHash
 from fastapi.encoders import jsonable_encoder
+from itsdangerous import URLSafeTimedSerializer
 from fastapi.security import OAuth2PasswordBearer
 from datetime import datetime, timedelta, timezone
 
@@ -17,7 +18,7 @@ REFRESH_EXPIRATION_TIME_DAYS=int(os.getenv("REFRESH_EXPIRATION_TIME_DAYS") or 7)
 
 hasher = PasswordHash.recommended()
 oauth2_access_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
-
+reset_password_serializer = URLSafeTimedSerializer(SECRET_KEY)
 
 # --- TOKEN ---
 # Tạo JWT Tokens
@@ -150,6 +151,24 @@ async def refresh_tokens(refresh_token: str) -> str:
         "access_token": new_access_token,
         "refresh_token": new_refresh_token,
     }
+    
+    
+# Tạo reset password token
+def generate_reset_password_token(email: str) -> str:
+    return reset_password_serializer.dumps(email, salt="reset-password")
+
+
+# Xác minh reset password token
+def verify_reset_password_token(token: str, expiration: int = 300) -> str:
+    try:
+        email = reset_password_serializer.loads(
+            token,
+            salt="reset-password",
+            max_age=expiration
+        )
+        return email
+    except Exception:
+        raise ValueError("Token đặt lại mật khẩu không hợp lệ hoặc đã hết hạn.")
         
         
 # --- AUTHENTICATION ---

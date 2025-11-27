@@ -24,4 +24,5 @@ hdbscan
 sentence_transformers
 
 pyjwt
+itsdangerous
 pwdlib[argon2]

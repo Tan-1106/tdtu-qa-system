@@ -42,3 +42,10 @@ class LoginRequest(BaseModel):
     password: str = Field(..., description="The password of the user")
     class Config:
         extra = "forbid"
+        
+        
+# Forgot Password Request Schema
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr = Field(..., description="The email of the user who forgot the password")
+    class Config:
+        extra = "forbid"
