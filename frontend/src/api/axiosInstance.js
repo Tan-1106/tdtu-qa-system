@@ -1,9 +1,10 @@
 import axios from 'axios';
 
+const baseURL = import.meta?.env?.VITE_API_BASE || '/api';
+
 // Tạo một instance của Axios
 const axiosInstance = axios.create({
-  // SỬA LẠI THÀNH 'localhost:8000'
-  baseURL: 'http://localhost:8000/api', 
+  baseURL,
   headers: {
     'Content-Type': 'application/json',
   },

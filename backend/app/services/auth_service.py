@@ -1,5 +1,7 @@
 import os
 import jwt
+import httpx
+import base64
 from fastapi import Depends
 from pwdlib import PasswordHash
 from fastapi.encoders import jsonable_encoder
@@ -19,6 +21,53 @@ REFRESH_EXPIRATION_TIME_DAYS=int(os.getenv("REFRESH_EXPIRATION_TIME_DAYS") or 7)
 hasher = PasswordHash.recommended()
 oauth2_access_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 reset_password_serializer = URLSafeTimedSerializer(SECRET_KEY)
+
+
+CLIENT_ID = os.getenv("ELIT_CLIENT_ID")
+CLIENT_SECRET = os.getenv("ELIT_CLIENT_SECRET")
+
+AUTH_BASE = os.getenv("ELIT_BASE_URL")
+REDIRECT_URI = os.getenv("CALLBACK_URL")
+
+
+# --- ELIT OAUTH2 ---
+async def elit_login(code: str) -> dict:
+    if not code or not isinstance(code, str):
+        raise ValueError("Mã code không hợp lệ.")
+
+    
+    if not all([CLIENT_ID, CLIENT_SECRET, REDIRECT_URI, AUTH_BASE]):
+        raise Exception("Lỗi hệ thống: Cấu hình đăng nhập chưa đầy đủ.")
+
+    basic = base64.b64encode(f"{CLIENT_ID}:{CLIENT_SECRET}".encode()).decode()
+    async with httpx.AsyncClient(timeout=20) as client:
+        try:
+            res = await client.post(
+                url=AUTH_BASE.rstrip("/") + "/oauth2/v1/token",
+                headers={ "AUTHORIZATION": f"Basic {basic}" },
+                data={
+                    "code": code,
+                    "grant_type": "authorization_code",
+                    "redirect_uri": REDIRECT_URI    
+                },
+            )
+        except httpx.RequestError as e:
+            raise Exception(f"Không gọi được ELIT token endpoint: {str(e)}")
+
+    if res.status_code >= 400:
+        try:
+            err = res.json()
+        except Exception:
+            err = {"message": f"ELIT trả về lỗi {res.status_code}"}
+        raise ValueError(err.get("message") or "Không thể lấy token từ ELIT.")
+
+    try:
+        data = res.json()
+    except Exception as e:
+        raise Exception(f"Không phân tích được phản hồi từ ELIT: {str(e)}")
+
+    print("ELIT token response data:", data)
+    return data
 
 # --- TOKEN ---
 # Tạo JWT Tokens
@@ -172,52 +221,6 @@ def verify_reset_password_token(token: str, expiration: int = 300) -> str:
         
         
 # --- AUTHENTICATION ---
-# Đăng ký người dùng mới
-async def register_user(user_data: dict) -> dict:
-    user_data["password"] = hasher.hash(user_data["password"])
-    user_data["role"] = "User"
-    user = await user_dao.create_user(user_data)
-    return user
-
-
-# Đăng nhập và tạo tokens
-async def login(request: dict) -> dict:    
-    email = request["email"]
-    password = request["password"]
-        
-    user_credentials = await user_dao.get_user_credentials_by_email(email)
-    user_credentials = jsonable_encoder(user_credentials)
-    try:
-        if not hasher.verify(password, user_credentials["password"]):
-            raise ValueError("Sai mật khẩu.")
-    except ValueError as e:
-        raise ValueError("Không thể xác thực mật khẩu.") from e
-
-    access_token, refresh_token = await generate_tokens(user_credentials)
-    
-    success = await refresh_token_dao.store_refresh_token(
-        {
-            "user_id": str(user_credentials["_id"]),
-            "hashed_token": hasher.hash(refresh_token)
-        }
-    )
-    if not success:
-        raise Exception("Xác thực đăng nhập không thành công.")
-    
-    return {
-        "token": {
-            "access_token": access_token,
-            "refresh_token": refresh_token,
-            "token_type": "bearer"
-        },
-        "user": {
-            "full_name": user_credentials["full_name"],
-            "email": user_credentials["email"],
-            "role": user_credentials["role"]
-        }
-    }
-
-
 # Lấy người dùng hiện tại từ Access Token
 async def get_current_user(access_token: dict = Depends(verify_access_token)) -> dict:
     user_id = access_token["payload"]["sub"]

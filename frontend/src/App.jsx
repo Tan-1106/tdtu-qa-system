@@ -6,14 +6,14 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import UserLayout from './components/UserLayout.jsx';
 import AdminLayout from './components/admin/AdminLayout.jsx';
 
+// Auth Pages
+import LoginPage from './components/auth/LoginPage.jsx';
+import AuthComplete from './components/auth/AuthComplete.jsx';
+
 // User Pages
 import ChatPage from './components/ChatPage.jsx';
 import DocumentListPage from './components/documents/DocumentListPage.jsx';
 import PopularQuestionsPage from './components/faq/PopularQuestionsPage.jsx';
-
-// Auth Pages
-import LoginPage from './components/auth/LoginPage.jsx';
-import RegisterPage from './components/auth/RegisterPage.jsx';
 
 // Admin Pages
 import DocumentManagementPage from './components/admin/DocumentManagementPage.jsx';
@@ -33,7 +33,7 @@ function App() {
 
         {/* === CÁC TRANG XÁC THỰC === */}
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/auth-complete" element={<AuthComplete />} />
 
         {/* === CÁC TRANG CỦA ADMIN === */}
         <Route path="/admin" element={<AdminLayout />}>

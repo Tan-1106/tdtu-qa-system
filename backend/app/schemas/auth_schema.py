@@ -3,6 +3,13 @@ from pydantic import BaseModel
 from pydantic import Field, EmailStr
 
 
+# ELIT Login Schema
+class ELITLoginCode(BaseModel):
+    code: str = Field(..., description="The authorization code received from ELIT after user login")
+    class Config:
+        extra = "forbid"
+
+
 # Token Response Schema
 class TokenResponse(BaseModel):
     access_token: str = Field(..., description="JWT access token")    

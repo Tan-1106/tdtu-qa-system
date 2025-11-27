@@ -10,6 +10,9 @@ services:
       - "5173:5173"
     environment:
       - VITE_API_BASE=/api
+      - VITE_CLIENT_ID=${ELIT_CLIENT_ID}
+      - VITE_CALLBACK_URL=${ELIT_CALLBACK_URL}
+      - VITE_AUTH_URL=${ELIT_AUTH_BASE}/oauth2/v1/authorize
       - CHOKIDAR_USEPOLLING=1
       - HOST=0.0.0.0
     volumes:

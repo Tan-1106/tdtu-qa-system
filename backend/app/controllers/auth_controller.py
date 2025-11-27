@@ -5,30 +5,17 @@ from app.services import auth_service
 from app.utils import smtp
 
 
-# Tạo tài khoản người dùng
-async def register(user: dict):
-    user = await auth_service.register_user(user)
-    return user
+# Xử lý đăng nhập bằng ELIT
+async def elit_login(code: str) -> dict:
+    tokens_and_user = await auth_service.elit_login(code)
+    return tokens_and_user
+
+# # Lấy thông tin người dùng hiện tại
+# async def get_current_user(current_user: user_schema.UserResponse = Depends(auth_service.get_current_user)):
+#     return current_user
 
 
-# Đăng nhập
-async def login(request: dict):
-    response = await auth_service.login(request)
-    return response
-
-
-# Lấy thông tin người dùng hiện tại
-async def get_current_user(current_user: user_schema.UserResponse = Depends(auth_service.get_current_user)):
-    return current_user
-
-
-# Làm mới tokens
-async def refresh_tokens(refresh_token: str):
-    new_tokens = await auth_service.refresh_tokens(refresh_token)
-    return new_tokens
-
-
-# Quên mật khẩu
-async def forgot_password(email: str):
-    auth_service.generate_reset_password_token(email)
-    smtp.send_reset_password_email(email, "PLACEHOLDER_RESET_LINK")
+# # Làm mới tokens
+# async def refresh_tokens(refresh_token: str):
+#     new_tokens = await auth_service.refresh_tokens(refresh_token)
+#     return new_tokens

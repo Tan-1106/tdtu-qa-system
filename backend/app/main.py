@@ -9,6 +9,7 @@ from app.utils.api_response import api_response
 from app.databases.mongo import connect_to_mongo, close_mongo_connection
 from app.routes import document_route, question_embedding_route, user_route, prototype_route, auth_route, question_route, potential_question_route
 
+
 # --- FILTER OUT HEALTH CHECK LOGS ---
 class HealthCheckFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
