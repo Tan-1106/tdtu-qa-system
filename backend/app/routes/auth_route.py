@@ -18,19 +18,13 @@ router = APIRouter(
 @router.post("/verify")
 async def elit_login(code: auth_schema.ELITLoginCode):
     code = jsonable_encoder(code)["code"]
-    try:
-        tokens_and_user = await auth_controller.elit_login(code)
-        return api_response(
-            status_code=200,
-            message="Đăng nhập thành công.",
-            details=tokens_and_user
-        )
-    except ValueError as e:
-        return api_response(
-            status_code=400,
-            message="Lỗi dữ liệu đầu vào.",
-            details=str(e)
-        )
+    tokens_and_user = await auth_controller.elit_login(code)
+    
+    return api_response(
+        status_code=200,
+        message="Đăng nhập thành công.",
+        details=tokens_and_user
+    )
         
             
 # # Lấy thông tin người dùng hiện tại

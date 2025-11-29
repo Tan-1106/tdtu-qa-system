@@ -1,8 +1,8 @@
 from fastapi import Depends
 
+from app.utils import smtp
 from app.schemas import user_schema
 from app.services import auth_service
-from app.utils import smtp
 
 
 # Xử lý đăng nhập bằng ELIT
