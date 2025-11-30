@@ -1,13 +1,40 @@
 from typing import Any
+from fastapi import HTTPException, status
 from fastapi.responses import JSONResponse
 
-
+# --- API RESPONSE ---
 def api_response(status_code: int, message: str, details: Any = None):
     return JSONResponse(
-        status_code = status_code,
-        success = 200 <= status_code < 300, 
+        status_code=status_code,
         content={
+            "status_code": status_code,
             "message": message,
             "details": details
         }
     )
+    
+
+# --- CUSSTOM EXCEPTIONS ---
+class UserError(Exception):
+    def __init__(self, message: str = "User error occurred"):
+        self.message = message
+
+
+class NotFoundException(Exception):
+    def __init__(self, message: str = "Resource not found"):
+        self.message = message
+
+
+class BusinessException(Exception):
+    def __init__(self, message: str = "Business logic error"):
+        self.message = message
+
+
+class DatabaseException(Exception):
+    def __init__(self, message: str = "Database error"):
+        self.message = message
+        
+
+class AuthException(HTTPException):
+    def __init__(self, message: str = "Unauthorized"):
+        super().__init__(status_code=status.HTTP_401_UNAUTHORIZED, detail=message)

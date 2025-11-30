@@ -1,33 +1,74 @@
 from app.services import user_service
+from app.utils.user_information import Role, Faculty
+from app.utils.api_response import UserError, AuthException
+
+# Get list of users
+async def get_users(page: int, limit: int):
+    users = await user_service.get_users(page, limit)
+    return users
 
 
-# # Lấy tất cả người dùng
-# async def get_users():
-#     users = await user_service.get_users()
-#     return users
+# Get list of students
+async def get_students(faculty: str, page: int, limit: int):
+    students = await user_service.get_students(faculty, page, limit)
+    return students
 
 
-# # Lấy người dùng theo ID
-# async def get_user_by_id(user_id: str):
-#     user = await user_service.get_user_by_id(user_id)
-#     return user
+# Assign admin role to user
+async def assign_admin(user_id: str):
+    response = await user_service.assign_admin(user_id)
+    return response
 
 
-# # Lấy người dùng theo email
-# async def get_user_by_email(email: str):
-#     user = await user_service.get_user_by_email(email)
-#     return user
+# Assign faculty manager role to user
+async def assign_faculty_manager(user_id: str, faculty: str):
+    if faculty not in [fac.value.name for fac in Faculty]:
+        raise UserError("Invalid faculty specified")
+    
+    response = await user_service.assign_faculty_manager(user_id, faculty)
+    return response
+    
+
+# Assign student role to user
+async def assign_student(user_id: str, faculty: str):
+    if faculty not in [fac.value.name for fac in Faculty]:
+        raise UserError("Invalid faculty specified")
+    
+    response = await user_service.assign_student(user_id, faculty)
+    return response
 
 
-# # Cập nhật người dùng theo ID
-# async def update_user(user_id: str, user_update: dict):
-#     user_update = {k: v for k, v in user_update.items() if v is not None}
+# Ban a user
+async def ban_user(user_id: str, current_user: dict):
+    if current_user["_id"] == user_id:
+        raise UserError("You cannot ban yourself")
+    
+    user_to_ban = await user_service.get_user_by_id(user_id)
+    if user_to_ban["banned"]:
+        raise UserError("User is already banned")
+    
+    if (current_user["role"] == Role.STUDENT.value) or \
+        current_user["role"] == Role.FACULTY_MANAGER.value and user_to_ban["role"] != Role.STUDENT.value or \
+            current_user["role"] == Role.FACULTY_MANAGER.value and user_to_ban["faculty"] != current_user["faculty"]:
+        raise AuthException("You do not have permission to ban this user")
+        
+    response = await user_service.ban_user(user_id)
+    return response
 
-#     updated_user = await user_service.update_user(user_id, user_update)
-#     return updated_user
 
-
-# # Xóa người dùng theo ID
-# async def delete_user(user_id: str):
-#     response = await user_service.delete_user(user_id)
-#     return response
+# Unban a user
+async def unban_user(user_id: str, current_user: dict):
+    if current_user["_id"] == user_id:
+        raise UserError("You cannot unban yourself")
+    
+    user_to_unban = await user_service.get_user_by_id(user_id)
+    if not user_to_unban["banned"]:
+        raise UserError("User is not banned")
+    
+    if (current_user["role"] == Role.STUDENT.value) or \
+        current_user["role"] == Role.FACULTY_MANAGER.value and user_to_unban["role"] != Role.STUDENT.value or \
+            current_user["role"] == Role.FACULTY_MANAGER.value and user_to_unban["faculty"] != current_user["faculty"]:
+        raise AuthException("You do not have permission to unban this user")
+    
+    response = await user_service.unban_user(user_id)
+    return response

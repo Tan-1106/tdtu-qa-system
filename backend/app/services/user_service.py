@@ -1,47 +1,66 @@
-from app.daos import user_dao
+from fastapi.encoders import jsonable_encoder
+from app.daos.user_dao import UserDAO
 
 
-# # Lấy tất cả người dùng
-# async def get_users():
-#     users = await user_dao.get_users()
-#     return users
+# Get user by ID
+async def get_user_by_id(user_id: str):
+    user = await UserDAO().get_user_by_id(user_id)
+    return jsonable_encoder(user)
 
 
-# # Lấy một người dùng theo ID
-# async def get_user_by_id(user_id: str):
-#     user = await user_dao.get_user_by_id(user_id)
-#     if not user:
-#         raise ValueError(f"Người dùng với ID {user_id} không tìm thấy")
-#     return user
+# Get list of users
+async def get_users(page: int, limit: int):
+    skip = (page - 1) * limit
+    total = await UserDAO().count_all_users()
+    total_pages = (total + limit - 1) // limit
+    users = await UserDAO().get_users(skip, limit)
+    return {
+        "users": jsonable_encoder(users),
+        "total": total,
+        "total_pages": total_pages,
+        "current_page": page
+    }
 
 
-# # Lấy một người dùng theo email
-# async def get_user_by_email(email: str):
-#     user = await user_dao.get_user_by_email(email)
-#     if not user:
-#         raise ValueError(f"Người dùng với email {email} không tìm thấy")
-#     return user
+# Get list of students
+async def get_students(faculty: str, page: int, limit: int):
+    skip = (page - 1) * limit
+    total = await UserDAO().count_students_by_faculty(faculty)
+    total_pages = (total + limit - 1) // limit
+    students = await UserDAO().get_students_by_faculty(faculty, skip, limit)
+    return {
+        "students": jsonable_encoder(students),
+        "total": total,
+        "total_pages": total_pages,
+        "current_page": page
+    }
 
 
-# # Lấy thông tin đăng nhập của người dùng theo email
-# async def get_user_credentials_by_email(email: str):
-#     user = await user_dao.get_user_credentials_by_email(email)
-#     if not user:
-#         raise ValueError(f"Người dùng với email {email} không tìm thấy")
-#     return user
+# Assign admin role to user
+async def assign_admin(user_id: str):
+    updated_user = await UserDAO().assign_admin_role(user_id)
+    return jsonable_encoder(updated_user)
+
+    
+# Assign faculty manager role to user
+async def assign_faculty_manager(user_id: str, faculty: str):
+    updated_user = await UserDAO().assign_faculty_manager_role(user_id, faculty)
+    return jsonable_encoder(updated_user)
 
 
-# # Cập nhật một người dùng theo ID
-# async def update_user(user_id: str, user_update: dict):
-#     updated_user = await user_dao.update_user(user_id, user_update)
-#     if not updated_user:
-#         raise ValueError(f"Người dùng với ID {user_id} không tìm thấy")
-#     return updated_user
+# Assign student role to user
+async def assign_student(user_id: str, faculty: str):
+    updated_user = await UserDAO().assign_student_role(user_id, faculty)
+    return jsonable_encoder(updated_user)
 
 
-# # Xóa một người dùng theo ID
-# async def delete_user(user_id: str):
-#     result = await user_dao.delete_user(user_id)
-#     if not result:
-#         raise ValueError(f"Người dùng với ID {user_id} không tìm thấy")
-#     return result
+# Ban a user
+async def ban_user(user_id: str):
+    response = await UserDAO().ban_user(user_id)
+    return jsonable_encoder(response)
+
+
+# Unban a user
+async def unban_user(user_id: str):
+    response = await UserDAO().unban_user(user_id)
+    return jsonable_encoder(response)

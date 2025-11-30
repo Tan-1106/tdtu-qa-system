@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends
 from fastapi.encoders import jsonable_encoder
 
+from app.services import auth_service
 from app.controllers import auth_controller
 from app.utils.api_response import api_response
 from app.schemas import auth_schema, user_schema
@@ -14,56 +15,37 @@ router = APIRouter(
 
 
 # --- ROUTES ---
-# Xử lý Login Code từ ELIT
+# Process ELIT login
 @router.post("/verify")
 async def elit_login(code: auth_schema.ELITLoginCode):
     code = jsonable_encoder(code)["code"]
-    tokens_and_user = await auth_controller.elit_login(code)
+    response = await auth_controller.elit_login(code)
     
+    print("ELIT LOGIN RESPONSE:", response)
     return api_response(
         status_code=200,
-        message="Đăng nhập thành công.",
-        details=tokens_and_user
+        message="Login successful",
+        details=response
     )
         
             
-# # Lấy thông tin người dùng hiện tại
-# @router.get("/me")
-# async def get_current_user(current_user: user_schema.UserResponse = Depends(auth_controller.get_current_user)):
-#     try:
-#         return api_response(
-#             status_code=200,
-#             message="Lấy thông tin người dùng hiện tại thành công.",
-#             details=current_user
-#         )
-#     except Exception as e:
-#         return api_response(
-#             status_code=500,
-#             message="Lỗi khi lấy thông tin người dùng hiện tại.",
-#             details=str(e)
-#         )
+# Get current user information
+@router.get("/me")
+async def get_current_user(current_user: user_schema.UserRecord = Depends(auth_service.get_current_user)):
+    return api_response(
+        status_code=200,
+        message="Get current user information successful",
+        details=current_user
+    )
         
         
-# # Làm mới Tokens
-# @router.post("/refresh")
-# async def refresh_tokens(refresh_token: auth_schema.RefreshToken):
-#     try:
-#         refresh_token = jsonable_encoder(refresh_token)["refresh_token"]
-#         tokens = await auth_controller.refresh_tokens(refresh_token)
-#         return api_response(
-#             status_code=200,
-#             message="Làm mới tokens thành công.",
-#             details=tokens
-#         )
-#     except ValueError as e:
-#         return api_response(
-#             status_code=400,
-#             message="Lỗi dữ liệu đầu vào.",
-#             details=str(e)
-#         )
-#     except Exception as e:
-#         return api_response(
-#             status_code=500,
-#             message="Lỗi máy chủ.",
-#             details=str(e)
-#         )
+# Refresh Tokens
+@router.post("/refresh")
+async def refresh_tokens(refresh_token: auth_schema.RefreshTokensRequest):
+    refresh_token = jsonable_encoder(refresh_token)["refresh_token"]
+    tokens = await auth_controller.refresh_tokens(refresh_token)
+    return api_response(
+        status_code=200,
+        message="Refresh tokens successful.",
+        details=tokens
+    )

@@ -5,9 +5,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.utils.api_response import api_response
+from app.utils.api_response import api_response, UserError, NotFoundException, BusinessException, DatabaseException
 from app.databases.mongo import connect_to_mongo, close_mongo_connection
-from app.routes import document_route, question_embedding_route, user_route, prototype_route, auth_route, question_route, potential_question_route
+from app.routes import auth_route, user_route, model_route
 
 
 # --- LOGGER SETUP ---
@@ -53,6 +53,16 @@ app.add_middleware(
 
 
 # --- EXCEPTION HANDLERS ---
+# User Error
+@app.exception_handler(UserError)
+async def user_error_handler(request, exc: UserError):
+    return api_response(
+        status_code=400,
+        message="User Error",
+        details=exc.message
+    )
+
+
 # Validation Error
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
@@ -71,7 +81,47 @@ async def global_exception_handler(request: Request, exc: Exception):
     return api_response(
         status_code=500,
         message="Internal Server Error",
-        details="An unexpected error occurred."
+        details="An unexpected error occurred"
+    )
+    
+    
+# Not Found Exception
+@app.exception_handler(NotFoundException)
+async def not_found_handler(request, exc: NotFoundException):
+    return api_response(
+        status_code=404, 
+        message="Resource Not Found",
+        details=exc.message
+    )
+
+
+# Business Exception
+@app.exception_handler(BusinessException)
+async def business_handler(request, exc: BusinessException):
+    return api_response(
+        status_code=400, 
+        message="Business logic error",
+        details=exc.message
+    )
+
+
+# Database Exception
+@app.exception_handler(DatabaseException)
+async def db_handler(request, exc: DatabaseException):
+    return api_response(
+        status_code=500, 
+        message="Database error",
+        details=exc.message
+    )
+    
+    
+# HTTP Exception
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    return api_response(
+        status_code=exc.status_code,
+        message="HTTP Exception",
+        details=exc.detail
     )
 
 
@@ -81,14 +131,19 @@ async def home():
     return {"msg": "Welcome to the TDTU QA System API"}
 
 
-# # --- ROUTES ---
-# # Authentication routes
-# app.include_router(auth_route.router, prefix="/api")
+# --- ROUTES ---
+# Authentication routes
+app.include_router(auth_route.router, prefix="/api")
 
 
-# # User routes
-# app.include_router(user_route.user_router, prefix="/api")
-# app.include_router(user_route.admin_router, prefix="/api")
+# User routes
+app.include_router(user_route.admin_router, prefix="/api")
+app.include_router(user_route.faculty_manager_router, prefix="/api")
+app.include_router(user_route.student_router, prefix="/api")
+
+
+# LLM Model & API Key routes
+app.include_router(model_route.router, prefix="/api")
 
 
 # # Document routes
