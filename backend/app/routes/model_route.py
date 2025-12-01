@@ -1,3 +1,4 @@
+from typing import Optional
 from fastapi import APIRouter, Depends, Query
 from fastapi.encoders import jsonable_encoder
 
@@ -47,12 +48,60 @@ async def get_api_keys(
 @router.patch("/api-keys/{key_id}")
 async def update_api_key(
     key_id: str,
-    update_data: api_key_schema.APIKeyUpdateSchema
+    update_data: Optional[api_key_schema.APIKeyUpdateSchema] = None
 ):
-    update_data = jsonable_encoder(update_data)
+    if update_data:
+        update_data = jsonable_encoder(update_data)
+        update_data = {k: v for k, v in update_data.items() if v is not None}
+    else:
+        update_data = {}
+    
     updated_key = await model_controller.update_api_key(key_id, update_data)
     return api_response(
         status_code=200,
         message="API key updated successfully.",
         details=jsonable_encoder(updated_key)
+    )
+    
+    
+# Delete an API Key
+@router.delete("/api-keys/{key_id}")
+async def delete_api_key(key_id: str):
+    await model_controller.delete_api_key(key_id)
+    return api_response(
+        status_code=200,
+        message="API key deleted successfully."
+    )
+
+# Toggle API Key Usage Status
+@router.patch("/api-keys/{key_id}/toggle-status")
+async def toggle_api_key_status(
+    key_id: str,
+    toggle_data: Optional[api_key_schema.APIKeyUsageToggleSchema] = None
+):
+    if toggle_data:
+        toggle_data = jsonable_encoder(toggle_data)
+        using_model = toggle_data.get("using_model")
+    else:
+        using_model = None
+    
+    updated_key = await model_controller.toggle_api_key_status(key_id, using_model)
+    return api_response(
+        status_code=200,
+        message="API key status toggled successfully.",
+        details=jsonable_encoder(updated_key)
+    )
+    
+    
+# Get all available models
+@router.post("/available-models")
+async def get_available_models(
+    request: api_key_schema.GetAvailableModelsSchema
+):
+    request = jsonable_encoder(request)
+    models = await model_controller.get_available_models(request)
+    return api_response(
+        status_code=200,
+        message="Get available models successfully.",
+        details={"models": models}
     )

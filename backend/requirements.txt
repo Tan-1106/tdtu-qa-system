@@ -21,6 +21,7 @@ langchain-text-splitters
 pyvi
 openai
 hdbscan
+google-generativeai
 sentence_transformers
 
 pyjwt

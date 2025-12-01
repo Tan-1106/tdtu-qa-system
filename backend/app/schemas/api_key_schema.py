@@ -13,6 +13,7 @@ class APIKeyRecord(BaseModel):
     api_key: str
     provider: str
     is_using: bool
+    using_model: str | None = None
     created_at: datetime
     updated_at: datetime | None = None
     class Config:
@@ -45,7 +46,7 @@ class APIKeyUpdateSchema(BaseModel):
         
 # API Key Usage Toggle Schema
 class APIKeyUsageToggleSchema(BaseModel):
-    is_using: bool
+    using_model: Optional[str] = None
     class Config:
         from_attributes = True
         extra = "forbid"
@@ -55,3 +56,12 @@ class APIKeyUsageToggleSchema(BaseModel):
 class APIKeyProvider(str, Enum):
     OPENAI = "OpenAI"
     GEMINI = "Google"
+    
+    
+# Get Available Models Schema
+class GetAvailableModelsSchema(BaseModel):
+    api_key: str
+    provider: str
+    class Config:
+        from_attributes = True
+        extra = "forbid"

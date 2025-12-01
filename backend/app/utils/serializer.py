@@ -33,6 +33,7 @@ def api_key_serialize(api_key) -> dict:
         "api_key": api_key.get("api_key"),
         "provider": api_key.get("provider"),
         "is_using": api_key.get("is_using", False),
+        "using_model": api_key.get("using_model"),
         "created_at": api_key.get("created_at").isoformat() if api_key.get("created_at") else None,
         "updated_at": api_key.get("updated_at").isoformat() if api_key.get("updated_at") else None
     }
