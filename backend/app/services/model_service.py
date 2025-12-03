@@ -90,19 +90,35 @@ async def get_all_api_keys(page: int, limit: int):
     }
     
     
-# Update an existing API key
-async def update_api_key(key_id: str, update_data: dict):
+# Get a single API key by ID
+async def get_api_key_by_id(key_id: str):
     encryptor = APIKeyEncryptor()
     
-    # Check if API key already exists
-    if "api_key" in update_data:
-        existing_keys = jsonable_encoder(await APIKeyDAO().get_all_api_keys())
-        for encrypted_key in existing_keys:
-            decrypted_key = encryptor.decrypt(encrypted_key["api_key"])
-            if decrypted_key == update_data["api_key"] and str(encrypted_key["_id"]) != key_id:
-                raise DatabaseException("API key already exists.")
-        update_data["api_key"] = encryptor.encrypt(update_data["api_key"])
+    api_key = jsonable_encoder(await APIKeyDAO().get_api_key_by_id(key_id))
+    if not api_key:
+        raise DatabaseException("API key not found.")
     
+    decrypted = encryptor.decrypt(api_key["api_key"])
+    api_key["api_key"] = decrypted
+    return api_key
+
+
+# Get current using API key
+async def get_current_api_key():
+    encryptor = APIKeyEncryptor()
+    
+    api_key = jsonable_encoder(await APIKeyDAO().get_current_using_api_key())
+    if not api_key:
+        return None
+
+    decrypted = encryptor.decrypt(api_key["api_key"])
+    api_key["api_key"] = decrypted
+    return api_key
+
+
+# Update an existing API key
+async def update_api_key(key_id: str, update_data: dict):
+    encryptor = APIKeyEncryptor()    
     updated_key = jsonable_encoder(await APIKeyDAO().update_api_key(key_id, update_data))
     decrypted = encryptor.decrypt(updated_key["api_key"])
     updated_key["api_key"] = decrypted
@@ -116,23 +132,20 @@ async def delete_api_key(key_id: str):
     
     
 # Toggle API Key Usage Status
-async def toggle_api_key_status(key_id: str, using_model: str | None = None):
+async def toggle_api_key_status(key_id: str):
     encryptor = APIKeyEncryptor()
     
-    updated_key = jsonable_encoder(await APIKeyDAO().get_api_key_by_id(key_id))
-    if not updated_key:
-        raise DatabaseException("API key not found.")
+    api_key = jsonable_encoder(await APIKeyDAO().get_api_key_by_id(key_id))
+    if not api_key:
+        raise DatabaseException("API key not found")
+    if not api_key["is_using"] and api_key["using_model"] is None:
+        raise UserError("To activate an API key, please provide the model it will be used for")
     
-    new_status = not updated_key.get("is_using", True)
-    if new_status:
-        if using_model is None:
-            raise UserError("Using model must be specified when enabling API key usage.")
-        
-        await APIKeyDAO().reset_all_api_keys_usage()
-        update_data = {"is_using": new_status, "using_model": using_model}
-    else:
-        update_data = {"is_using": new_status, "using_model": None}
-        
+    new_status = not api_key["is_using"]
+    if new_status is True:
+        await APIKeyDAO().deactivate_all_api_keys()
+    update_data = {"is_using": new_status}
+    
     updated_key = jsonable_encoder(await APIKeyDAO().update_api_key(key_id, update_data))
     decrypted = encryptor.decrypt(updated_key["api_key"])
     updated_key["api_key"] = decrypted
@@ -158,7 +171,7 @@ async def get_available_models(request: dict):
             ]
             return models
         except Exception as e:
-            raise UserError("Invalid API key or unable to fetch models from OpenAI.")
+            raise UserError("Invalid API key or unable to connect to OpenAI.")
     elif provider == APIKeyProvider.GEMINI.value:
         try:
             genai.configure(api_key=api_key)
@@ -171,4 +184,4 @@ async def get_available_models(request: dict):
             ]
             return models
         except Exception as ge:
-            raise UserError("Invalid API key or unable to fetch models from Google Generative AI.")
+            raise UserError("Invalid API key or unable to connect to Google Generative AI.")

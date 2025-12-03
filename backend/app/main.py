@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.utils.api_response import api_response, UserError, NotFoundException, BusinessException, DatabaseException
+from app.utils.api_response import api_response, UserError, NotFoundException, DatabaseException
 from app.databases.mongo import connect_to_mongo, close_mongo_connection
 from app.routes import auth_route, user_route, model_route
 
@@ -61,6 +61,17 @@ async def user_error_handler(request, exc: UserError):
         message="User Error",
         details=exc.message
     )
+        
+
+# Not Found Exception
+@app.exception_handler(NotFoundException)
+async def not_found_handler(request, exc: NotFoundException):
+    return api_response(
+        status_code=404, 
+        message="Resource Not Found",
+        details=exc.message
+    )
+
 
 
 # Validation Error
@@ -82,26 +93,6 @@ async def global_exception_handler(request: Request, exc: Exception):
         status_code=500,
         message="Internal Server Error",
         details="An unexpected error occurred"
-    )
-    
-    
-# Not Found Exception
-@app.exception_handler(NotFoundException)
-async def not_found_handler(request, exc: NotFoundException):
-    return api_response(
-        status_code=404, 
-        message="Resource Not Found",
-        details=exc.message
-    )
-
-
-# Business Exception
-@app.exception_handler(BusinessException)
-async def business_handler(request, exc: BusinessException):
-    return api_response(
-        status_code=400, 
-        message="Business logic error",
-        details=exc.message
     )
 
 

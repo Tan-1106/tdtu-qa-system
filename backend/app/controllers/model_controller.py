@@ -10,6 +10,7 @@ async def create_api_key(data: dict):
     if api_provider not in [provider.value for provider in api_key_schema.APIKeyProvider]:
         raise UserError("Invalid API key provider. Supported providers are: " + ", ".join([provider.value for provider in api_key_schema.APIKeyProvider]))
     
+    await model_service.get_available_models(data)
     api_key = await model_service.create_api_key(data)
     return api_key
 
@@ -20,14 +21,22 @@ async def get_all_api_keys(page: int, limit: int):
     return api_keys
 
 
+# Get a single API key by ID
+async def get_api_key_by_id(key_id: str):
+    api_key = await model_service.get_api_key_by_id(key_id)
+    return api_key
+
+
+# Get current using API key
+async def get_current_api_key():
+    api_key = await model_service.get_current_api_key()
+    return api_key
+
+
 # Update an existing API key
 async def update_api_key(key_id: str, update_data: dict):
     if update_data == {}:
         raise UserError("No data provided for update.")
-    
-    if "provider" in update_data and update_data["provider"] not in [provider.value for provider in api_key_schema.APIKeyProvider]:
-        raise UserError("Invalid API key provider. Supported providers are: " + ", ".join([provider.value for provider in api_key_schema.APIKeyProvider]))
-    
     
     updated_key = await model_service.update_api_key(key_id, update_data)
     return updated_key
@@ -39,8 +48,8 @@ async def delete_api_key(key_id: str):
     
     
 # Toggle API Key Usage Status
-async def toggle_api_key_status(key_id: str, using_model: str | None = None):
-    updated_key = await model_service.toggle_api_key_status(key_id, using_model)
+async def toggle_api_key_status(key_id: str):
+    updated_key = await model_service.toggle_api_key_status(key_id)
     return updated_key
 
 

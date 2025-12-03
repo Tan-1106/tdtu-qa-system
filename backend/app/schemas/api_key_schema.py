@@ -25,7 +25,7 @@ class APIKeyRecord(BaseModel):
 #  API Key Creation Schema
 class APIKeyCreationSchema(BaseModel):
     name: str
-    description: str | None = None
+    description: Optional[str] = None
     api_key: str
     provider: str
     class Config:
@@ -34,19 +34,17 @@ class APIKeyCreationSchema(BaseModel):
         
         
 # API Key Update Schema
-class APIKeyUpdateSchema(BaseModel):
+class APIKeyInformationUpdateSchema(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
-    api_key: Optional[str] = None
-    provider: Optional[str] = None
     class Config:
         from_attributes = True
         extra = "forbid"
         
         
 # API Key Usage Toggle Schema
-class APIKeyUsageToggleSchema(BaseModel):
-    using_model: Optional[str] = None
+class APIKeyAddModelSchema(BaseModel):
+    using_model: str
     class Config:
         from_attributes = True
         extra = "forbid"

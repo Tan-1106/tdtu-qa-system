@@ -43,12 +43,34 @@ async def get_api_keys(
         details=api_keys
     )
     
+    
+# Get current using API Key
+@router.get("/api-keys/current")
+async def get_current_api_key():
+    api_key = await model_controller.get_current_api_key()
+    return api_response(
+        status_code=200,
+        message="Get current API key successfully.",
+        details=jsonable_encoder(api_key)
+    )
+    
+    
+# Get a single API Key by ID
+@router.get("/api-keys/{key_id}")
+async def get_api_key_by_id(key_id: str):
+    api_key = await model_controller.get_api_key_by_id(key_id)
+    return api_response(
+        status_code=200,
+        message="Get API key successfully.",
+        details=jsonable_encoder(api_key)
+    )
+    
 
 # Update an API Key
 @router.patch("/api-keys/{key_id}")
-async def update_api_key(
+async def update_api_key_information(
     key_id: str,
-    update_data: Optional[api_key_schema.APIKeyUpdateSchema] = None
+    update_data: Optional[api_key_schema.APIKeyInformationUpdateSchema] = None
 ):
     if update_data:
         update_data = jsonable_encoder(update_data)
@@ -73,22 +95,29 @@ async def delete_api_key(key_id: str):
         message="API key deleted successfully."
     )
 
+
 # Toggle API Key Usage Status
-@router.patch("/api-keys/{key_id}/toggle-status")
-async def toggle_api_key_status(
-    key_id: str,
-    toggle_data: Optional[api_key_schema.APIKeyUsageToggleSchema] = None
-):
-    if toggle_data:
-        toggle_data = jsonable_encoder(toggle_data)
-        using_model = toggle_data.get("using_model")
-    else:
-        using_model = None
-    
-    updated_key = await model_controller.toggle_api_key_status(key_id, using_model)
+@router.post("/api-keys/{key_id}/toggle-usage")
+async def toggle_api_key_status(key_id: str):
+    updated_key = await model_controller.toggle_api_key_status(key_id)
     return api_response(
         status_code=200,
-        message="API key status toggled successfully.",
+        message="API key usage status toggled successfully.",
+        details=jsonable_encoder(updated_key)
+    )
+    
+    
+# Add or change using model for an API Key
+@router.post("/api-keys/{key_id}/add-model")
+async def add_model_to_api_key(
+    key_id: str,
+    data: api_key_schema.APIKeyAddModelSchema
+):
+    update_data = jsonable_encoder(data)
+    updated_key = await model_controller.update_api_key(key_id, update_data)
+    return api_response(
+        status_code=200,
+        message="Using model added/updated successfully.",
         details=jsonable_encoder(updated_key)
     )
     

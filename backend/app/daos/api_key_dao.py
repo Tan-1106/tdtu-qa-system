@@ -55,10 +55,17 @@ class APIKeyDAO:
             return api_key_schema.APIKeyRecord(**api_key_serialize(api_key))
         return None
     
+    
+    # Get current using API key
+    async def get_current_using_api_key(self) -> dict | None:
+        api_key = await self.api_keys_collection.find_one({"is_using": True})
+        if api_key:
+            return api_key_schema.APIKeyRecord(**api_key_serialize(api_key))
+        return None
+    
 
     # Update an existing API key record
     async def update_api_key(self, key_id: str, update_data: dict) -> dict:
-        print("Updating API Key ID:", key_id, "with data:", update_data)
         update_data["updated_at"] = datetime.now(timezone.utc)
         result = await self.api_keys_collection.update_one(
             {"_id": ObjectId(key_id)},
@@ -67,15 +74,14 @@ class APIKeyDAO:
         if result.modified_count != 1:
             raise DatabaseException("Unable to update API key record.")
         updated_key = await self.api_keys_collection.find_one({"_id": ObjectId(key_id)})
-        print("Updated API Key Record:", updated_key)
         return api_key_schema.APIKeyRecord(**api_key_serialize(updated_key))
     
     
     # Reset all API keys usage
-    async def reset_all_api_keys_usage(self) -> bool:
-        result = await self.api_keys_collection.update_many(
+    async def deactivate_all_api_keys(self) -> bool:
+        await self.api_keys_collection.update_many(
             {"is_using": True},
-            {"$set": {"is_using": False, "using_model": None}}
+            {"$set": {"is_using": False}}
         )
         return True
 
@@ -86,33 +92,3 @@ class APIKeyDAO:
         if result.deleted_count != 1:
             raise DatabaseException("Unable to delete API key record.")
         return True
-    
-    
-    # Toggle API key usage status
-    async def toggle_api_key_status(self, key_id: str, using_model: str | None = None) -> dict:
-        api_key = await self.api_keys_collection.find_one({"_id": ObjectId(key_id)})
-        if not api_key:
-            raise DatabaseException("API key not found.")
-        
-        new_status = not api_key.get("is_using", True)
-        print("Toggling API Key ID:", key_id, "to status:", new_status, "with model:", using_model)
-        if new_status is False:
-            result = await self.api_keys_collection.update_one(
-                {"_id": ObjectId(key_id)},
-                {"$set": {"is_using": new_status, "using_model": None}}
-            )
-        else:
-            await self.api_keys_collection.update_many(
-                {"is_using": True},
-                {"$set": {"is_using": False, "using_model": None}}
-            )
-            result = await self.api_keys_collection.update_one(
-                {"_id": ObjectId(key_id)},
-                {"$set": {"is_using": new_status, "using_model": using_model}}
-            )
-        
-        if result.modified_count != 1:
-            raise DatabaseException("Unable to toggle API key status.")
-        
-        updated_key = await self.api_keys_collection.find_one({"_id": ObjectId(key_id)})
-        return api_key_schema.APIKeyRecord(**api_key_serialize(updated_key))

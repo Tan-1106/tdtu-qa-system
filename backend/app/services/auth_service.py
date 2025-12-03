@@ -7,7 +7,7 @@ from pwdlib import PasswordHash
 from fastapi.encoders import jsonable_encoder
 from fastapi.security import OAuth2PasswordBearer
 from datetime import datetime, timedelta, timezone
-from app.utils.api_response import NotFoundException, BusinessException, AuthException
+from app.utils.api_response import NotFoundException, AuthException
 
 from app.schemas import auth_schema
 from app.daos.user_dao import UserDAO
@@ -39,7 +39,7 @@ async def elit_login(code: str) -> dict:
         raise NotFoundException("Login code is invalid.")
     
     if not all([CLIENT_ID, CLIENT_SECRET, REDIRECT_URI, AUTH_BASE]):
-        raise BusinessException("ELIT configuration is incomplete.")
+        raise NotFoundException("ELIT configuration is incomplete.")
 
     # Get user information from ELIT
     basic = base64.b64encode(f"{CLIENT_ID}:{CLIENT_SECRET}".encode()).decode()

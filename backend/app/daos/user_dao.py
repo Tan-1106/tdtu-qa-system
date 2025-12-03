@@ -23,6 +23,8 @@ class UserDAO:
         user["created_at"] = datetime.now(timezone.utc)
         result = await self.users_collection.insert_one(user)
         created_user = await self.users_collection.find_one({"_id": result.inserted_id})
+        if not created_user:
+            raise DatabaseException("Failed to create user")
         
         return user_schema.UserRecord(**serializer.user_serialize(created_user))
     

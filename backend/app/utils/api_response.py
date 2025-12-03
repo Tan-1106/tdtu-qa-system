@@ -25,11 +25,6 @@ class NotFoundException(Exception):
         self.message = message
 
 
-class BusinessException(Exception):
-    def __init__(self, message: str = "Business logic error"):
-        self.message = message
-
-
 class DatabaseException(Exception):
     def __init__(self, message: str = "Database error"):
         self.message = message
