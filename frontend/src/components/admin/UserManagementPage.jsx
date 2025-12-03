@@ -6,7 +6,7 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import UserFormModal from './UserFormModal.jsx'; // Sẽ tạo ở bước 2
+import UserFormModal from './UserFormModal.jsx'; // Giả định component này tồn tại
 
 // Dữ liệu mẫu
 const mockUsers = [
@@ -15,7 +15,7 @@ const mockUsers = [
   { id: 3, fullName: 'Lê Minh Cường', email: 'cuong.le.admin@tdtu.edu.vn', role: 'Admin' },
 ];
 
-// Màu cho vai trò
+// Màu cho vai trò (Admin -> error, User -> success)
 const roleColor = {
   'Admin': 'error',
   'User': 'success',
@@ -43,6 +43,7 @@ const UserManagementPage = () => {
   const handleDelete = (userId) => {
     if (window.confirm('Bạn có chắc chắn muốn xóa người dùng này?')) {
       setUsers(currentUsers => currentUsers.filter(u => u.id !== userId));
+      console.log(`Xóa người dùng ${userId}`);
     }
   };
 
@@ -59,10 +60,24 @@ const UserManagementPage = () => {
   };
 
   return (
-    <Paper elevation={3} sx={{ p: 3, borderRadius: 4 }}>
+    <Box sx={{ p: { xs: 1, md: 3 } }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" sx={{ fontWeight: 700 }}>Quản lý người dùng</Typography>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={handleAdd}>
+        <Typography variant="h4" sx={{ fontWeight: 700, color: 'primary.main' }}>Quản lý người dùng</Typography>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={handleAdd}
+          // Áp dụng style từ DocumentManagementPage
+          sx={{
+            borderRadius: 3,
+            fontWeight: 600,
+            background: 'linear-gradient(90deg, #1976d2 60%, #42a5f5 100%)',
+            boxShadow: '0 2px 8px 0 rgba(25,118,210,0.10)',
+            '&:hover': {
+              background: 'linear-gradient(90deg, #1565c0 60%, #1976d2 100%)'
+            }
+          }}
+        >
           Thêm người dùng
         </Button>
       </Box>
@@ -74,7 +89,11 @@ const UserManagementPage = () => {
         user={editingUser}
       />
 
-      <TableContainer>
+      <TableContainer 
+        component={Paper} 
+        // Áp dụng style từ DocumentManagementPage
+        sx={{ borderRadius: 4, boxShadow: '0 4px 16px 0 rgba(25,118,210,0.06)' }}
+      >
         <Table>
           <TableHead>
             <TableRow>
@@ -95,20 +114,32 @@ const UserManagementPage = () => {
                   <Chip
                     label={user.role}
                     color={roleColor[user.role]}
-                    size="small"
-                    sx={{ fontWeight: 600 }}
+                    // Áp dụng style từ DocumentManagementPage
+                    sx={{ fontWeight: 600, borderRadius: 2 }} 
                   />
                 </TableCell>
                 <TableCell align="right">
-                  <IconButton onClick={() => handleEdit(user)}><EditIcon color="primary" /></IconButton>
-                  <IconButton onClick={() => handleDelete(user.id)}><DeleteIcon color="error" /></IconButton>
+                  {/* Sử dụng sx cho màu sắc IconButton */}
+                  <IconButton onClick={() => handleEdit(user)} sx={{ color: 'primary.main' }}>
+                    <EditIcon />
+                  </IconButton>
+                  <IconButton onClick={() => handleDelete(user.id)} sx={{ color: 'error.main' }}>
+                    <DeleteIcon />
+                  </IconButton>
                 </TableCell>
               </TableRow>
             ))}
+            {users.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={5} align="center" sx={{ color: 'text.secondary', py: 4 }}>
+                  Không có người dùng nào.
+                </TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
       </TableContainer>
-    </Paper>
+    </Box>
   );
 };
 
