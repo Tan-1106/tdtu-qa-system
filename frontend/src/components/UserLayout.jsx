@@ -1,92 +1,99 @@
-import React from 'react';
-import { Outlet, NavLink as RouterNavLink } from 'react-router-dom';
-import { AppBar, Toolbar, Typography, Container, Button, Box, Paper, Stack, useTheme } from '@mui/material';
-import SchoolIcon from '@mui/icons-material/School';
+import React, { useState } from 'react';
+import { Outlet } from 'react-router-dom';
+import { Box, Typography } from '@mui/material'; 
+import Sidebar from './Sidebar'; 
+import MenuIcon from '@mui/icons-material/Menu';
+import IconButton from '@mui/material/IconButton';
 
-const navLinks = [
-  { label: 'Hỏi-Đáp', to: '/' },
-  { label: 'Tài liệu', to: '/documents' },
-  { label: 'Câu hỏi phổ biến', to: '/popular-questions' },
-  { label: 'Đăng nhập', to: '/login' }
-];
-
-const activeLinkStyle = {
-  background: 'linear-gradient(90deg, #1976d2 60%, #42a5f5 100%)',
-  color: 'white',
-  borderRadius: 20,
-  boxShadow: '0 2px 8px rgba(25, 118, 210, 0.15)',
-  fontWeight: 700,
-};
+const sidebarWidth = '280px';
+// Dữ liệu mẫu ban đầu cho lịch sử
+const initialChatId = 'chat-1';
 
 const UserLayout = () => {
-  const theme = useTheme();
+    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+    // Nâng cấp state activeChatId lên đây
+    const [activeChatId, setActiveChatId] = useState(initialChatId); 
 
-  return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', bgcolor: 'background.default' }}>
-      {/* AppBar nâng cấp */}
-      <AppBar position="static" elevation={3} sx={{ bgcolor: 'white', color: 'primary.main', borderBottom: `2px solid ${theme.palette.primary.light}` }}>
-        <Container maxWidth="lg">
-          <Toolbar sx={{ py: 1 }}>
-            <Stack direction="row" alignItems="center" spacing={1} sx={{ flexGrow: 1 }}>
-              <SchoolIcon fontSize="large" color="primary" />
-              <Typography variant="h5" sx={{ fontWeight: 'bold', letterSpacing: 1 }}>
-                TDTU Q&A
-              </Typography>
-            </Stack>
-            <Stack direction="row" spacing={1}>
-              {navLinks.map(link => (
-                <Button
-                  key={link.to}
-                  component={RouterNavLink}
-                  to={link.to}
-                  style={({ isActive }) => isActive ? activeLinkStyle : undefined}
-                  sx={{
-                    px: 2.5,
-                    py: 1,
-                    borderRadius: 20,
-                    fontWeight: 600,
-                    color: 'primary.main',
-                    transition: 'all 0.2s',
-                    '&:hover': {
-                      background: 'rgba(25, 118, 210, 0.08)',
-                      color: 'primary.dark',
-                      boxShadow: '0 2px 8px rgba(25, 118, 210, 0.10)'
-                    }
-                  }}
-                >
-                  {link.label}
-                </Button>
-              ))}
-            </Stack>
-          </Toolbar>
-        </Container>
-      </AppBar>
+    const toggleSidebar = () => {
+        setIsSidebarOpen(prev => !prev);
+    };
 
-      {/* Main content với shadow và bo góc */}
-      <Box component="main" sx={{ flexGrow: 1, py: { xs: 2, md: 4 }, bgcolor: 'background.default' }}>
-        <Container maxWidth="md">
-          <Paper elevation={4} sx={{ borderRadius: 5, p: { xs: 2, md: 4 }, minHeight: '60vh', boxShadow: '0 8px 32px 0 rgba(25,118,210,0.08)' }}>
-            <Outlet />
-          </Paper>
-        </Container>
-      </Box>
+    // Giá trị Context được truyền cho Outlet (sử dụng cho ChatPage và các trang khác)
+    const contextValue = { 
+        isSidebarOpen, 
+        toggleSidebar,
+        activeChatId,
+        setActiveChatId
+    };
 
-      {/* Footer nâng cấp */}
-      <Box component="footer" sx={{
-        bgcolor: 'primary.main',
-        color: 'white',
-        py: 3,
-        mt: 'auto',
-        boxShadow: '0 -2px 16px 0 rgba(25,118,210,0.10)'
-      }}>
-        <Container maxWidth="lg">
-          <Typography variant="body2" align="center" sx={{ opacity: 0.95 }}>
-            © {new Date().getFullYear()} - Đồ án chuyên ngành Công nghệ thông tin - TDTU
-          </Typography>
-        </Container>
-      </Box>
-    </Box>
-  );
-};
+    return (
+        <Box sx={{ 
+            display: 'flex',
+            height: '100vh', 
+            width: '100%',
+            bgcolor: '#f7fafd'
+        }}>
+            
+            {/* Sidebar (Cố định vị trí) */}
+            <Sidebar 
+                isSidebarOpen={isSidebarOpen} 
+                toggleSidebar={toggleSidebar}
+                activeChatId={activeChatId}
+                setActiveChatId={setActiveChatId} 
+            />
+
+            {/* Overlay cho Mobile khi Sidebar mở */}
+            {isSidebarOpen && (
+                <Box
+                    onClick={toggleSidebar}
+                    sx={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        bgcolor: 'rgba(0, 0, 0, 0.5)',
+                        zIndex: 90,
+                        display: { xs: 'block', md: 'none' }
+                    }}
+                />
+            )}
+
+            {/* Khu vực Nội dung Chính (Outlet) */}
+            <Box 
+                component="main" 
+                sx={{ 
+                    flexGrow: 1, 
+                    display: 'flex',
+                    flexDirection: 'column',
+                    height: '100%', 
+                    ml: { xs: 0, md: isSidebarOpen ? sidebarWidth : 0 },
+                    transition: 'margin-left 0.3s ease-in-out',
+                    width: '100%',
+                }}
+            > 
+                {/* Header cho Mobile (chỉ hiện nút Menu) */}
+                <Box sx={{ 
+                    p: 1, 
+                    bgcolor: 'white', 
+                    display: { xs: 'flex', md: 'none' },
+                    alignItems: 'center', 
+                    borderBottom: '1px solid #e3e3e3',
+                    position: 'sticky', 
+                    top: 0,
+                    zIndex: 10 
+                }}>
+                    <IconButton size="large" onClick={toggleSidebar} sx={{ color: 'text.primary' }}>
+                        <MenuIcon />
+                    </IconButton>
+                    <Typography variant="h6" sx={{ fontWeight: 600, ml: 1 }}>TDTU Q&A</Typography>
+                </Box>
+                
+                {/* Outlet sẽ render ChatPage, DocumentListPage, PopularQuestionsPage */}
+                <Outlet context={contextValue} /> 
+            </Box>
+        </Box>
+    );
+}
 
 export default UserLayout;
