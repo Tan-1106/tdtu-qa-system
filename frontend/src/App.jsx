@@ -23,7 +23,7 @@ import UserManagementPage from './components/admin/UserManagementPage.jsx';
 // PROTECTED ROUTE IMPORTS
 import ProtectedRoute from './components/ProtectedRoute.jsx'; 
 import AdminRoute from './components/AdminRoute.jsx'; 
-import useUserAuth from './hooks/useUserAuth'; // Import Hook để kiểm tra vai trò
+import useUserAuth from './hooks/useUserAuth'; 
 
 // 💡 COMPONENT MỚI: CHUYỂN HƯỚNG TÙY THEO VAI TRÒ
 const RoleRedirector = () => {
@@ -43,7 +43,7 @@ const RoleRedirector = () => {
         return <Navigate to="/admin/dashboard" replace />;
     }
 
-    // Nếu là Student (hoặc vai trò khác), chuyển hướng đến trang chat chính
+    // Nếu là Student chuyển hướng đến trang chat chính
     return <Navigate to="/" replace />; 
 };
 
@@ -56,7 +56,6 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/auth-complete" element={<AuthComplete />} />
 
-        {/* 💡 FIX: ROUTE CHUYỂN HƯỚNG GỐC SAU KHI ĐĂNG NHẬP */}
         {/* Route này sẽ kiểm tra vai trò và chuyển hướng */}
         <Route path="/role-dispatch" element={<RoleRedirector />} />
 

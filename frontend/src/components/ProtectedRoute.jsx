@@ -20,7 +20,6 @@ const ProtectedRoute = () => {
         return <Navigate to="/login" replace />;
     }
 
-    // 2. 💡 FIX: Access Control - Chặn Admin truy cập khu vực User
     const isAdminOrManager = user && (user.role === 'Admin' || user.role === 'Faculty Manager');
     
     if (isAdminOrManager) {

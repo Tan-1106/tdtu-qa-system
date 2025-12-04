@@ -1,12 +1,6 @@
-// /api/userApi.js (Bạn cần tạo file này)
+import axiosInstance from '../axiosInstance'; 
+import { clearTokens } from '../axiosInstance'; 
 
-import axiosInstance from '../axiosInstance'; // Đảm bảo đường dẫn đúng
-import { clearTokens } from '../axiosInstance'; // Hàm clearTokens đã được export từ axiosInstance.js
-
-/**
- * Lấy thông tin người dùng hiện tại
- * API: GET {{base}}/auth/me
- */
 export const getCurrentUser = async () => {
     try {
         const response = await axiosInstance.get('/auth/me');
@@ -19,9 +13,7 @@ export const getCurrentUser = async () => {
     }
 };
 
-/**
- * Hàm Đăng xuất
- */
+
 export const logoutUser = () => {
     clearTokens();
     // Thêm logic chuyển hướng hoặc làm mới trang
