@@ -19,6 +19,8 @@ import PopularQuestionsPage from './components/faq/PopularQuestionsPage.jsx';
 import DocumentManagementPage from './components/admin/DocumentManagementPage.jsx';
 import FeedbackDashboardPage from './components/admin/FeedbackDashboardPage.jsx';
 import UserManagementPage from './components/admin/UserManagementPage.jsx';
+import ModelManagementPage from './components/admin/ModelManagementPage.jsx'; // 💡 IMPORT PAGE MỚI
+
 
 // PROTECTED ROUTE IMPORTS
 import ProtectedRoute from './components/ProtectedRoute.jsx'; 
@@ -77,6 +79,7 @@ function App() {
                 <Route path="dashboard" element={<FeedbackDashboardPage />} /> 
                 <Route path="documents" element={<DocumentManagementPage />} />
                 <Route path="users" element={<UserManagementPage />} />
+                <Route path="models" element={<ModelManagementPage />} />
             </Route>
         </Route>
         {/* ======================================= */}

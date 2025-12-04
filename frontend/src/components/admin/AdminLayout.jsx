@@ -8,6 +8,7 @@ import ArticleIcon from '@mui/icons-material/Article';
 import FeedbackIcon from '@mui/icons-material/Feedback';
 import GroupIcon from '@mui/icons-material/Group'; 
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
+import DnsIcon from '@mui/icons-material/Dns'; // 💡 Icon mới cho Model/API Key
 import tdtuLogo from '../../assets/logo_tdtu.png'; 
 import useUserAuth from '../../hooks/useUserAuth'; 
 
@@ -24,8 +25,10 @@ const activeLinkStyle = {
 };
 
 const AdminLayout = () => {
+  // 💡 1. LẤY THÔNG TIN NGƯỜI DÙNG
   const { user: currentUser, isLoadingUser, handleLogout } = useUserAuth(); 
   
+  // 💡 2. LOGIC TÍNH TOÁN VAI TRÒ
   const isAdmin = currentUser?.role === 'Admin';
   const isFacultyManager = currentUser?.role === 'Faculty Manager';
   
@@ -40,7 +43,14 @@ const AdminLayout = () => {
     console.log('Admin initiating logout and reload...');
     handleLogout(); 
   };
-    
+    
+  // Xử lý Loading (Đảm bảo user đã tải xong)
+  if (isLoadingUser) {
+    // Để tránh lỗi trắng màn hình, AdminRoute/ProtectedRoute đã xử lý loading. 
+    return null; 
+  }
+  
+  // Trường hợp user không có quyền (đã được lọc qua AdminRoute)
   if (!currentUser) return null;
 
 
@@ -105,7 +115,8 @@ const AdminLayout = () => {
       >
         <Toolbar sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 3, flexDirection: 'column' }}>
           
-          <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+          {/* LOGO và TÊN VAI TRÒ */}
+          <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: departmentName ? 0.5 : 1.5 }}>
             <Box
               component="img"
               src={tdtuLogo}
@@ -113,12 +124,13 @@ const AdminLayout = () => {
               sx={{ height: 44, mr: 1.5, borderRadius: 2, boxShadow: '0 2px 8px 0 rgba(25,118,210,0.10)' }}
             />
             <Typography variant="h6" sx={{ fontWeight: 'bold', letterSpacing: 1, whiteSpace: 'nowrap' }}>
-              {sidebarTitle} 
+              {sidebarTitle} {/* Hiển thị TDTU Admin / TDTU Manager */}
             </Typography>
           </Stack>
           
+          {/* TÊN KHOA (CHỈ KHI LÀ MANAGER) */}
           {departmentName && (
-              <Typography variant="caption" sx={{ opacity: 0.9, mt: -1, textAlign: 'center', maxWidth: '90%' }} noWrap>
+              <Typography variant="caption" sx={{ opacity: 0.9, mt: 0, textAlign: 'center', maxWidth: '90%' }} noWrap>
                   {departmentName}
               </Typography>
           )}
@@ -169,6 +181,24 @@ const AdminLayout = () => {
               <ListItemText primary="Quản lý Người dùng" sx={{ fontWeight: 600 }} />
             </ListItemButton>
           </ListItem>
+          
+          {/* 💡 CHỈ HIỂN THỊ CHO ADMIN */}
+          {isAdmin && (
+              <ListItem disablePadding>
+                  <ListItemButton
+                      component={RouterNavLink}
+                      to="/admin/models"
+                      sx={({ isActive }) => ({
+                          color: 'white', borderRadius: 3, mx: 1, my: 0.5,
+                          '&:hover': { background: 'rgba(255,255,255,0.10)' },
+                          ...(isActive ? activeLinkStyle : {}),
+                      })}
+                  >
+                      <ListItemIcon sx={{ color: 'inherit', minWidth: 38 }}><DnsIcon /></ListItemIcon>
+                      <ListItemText primary="Quản lý Model & API" sx={{ fontWeight: 600 }} />
+                  </ListItemButton>
+              </ListItem>
+          )}
 
         </List>
       </Drawer>
