@@ -3,15 +3,13 @@ import {
   Box, Button, Typography, Table, TableBody, TableCell, TableContainer,
   TableHead, TableRow, Paper, IconButton, Chip, TablePagination, CircularProgress, Alert
 } from '@mui/material';
-// import AddIcon from '@mui/icons-material/Add'; // Không cần thiết
 import EditIcon from '@mui/icons-material/Edit';
-import BlockIcon from '@mui/icons-material/Block'; // Icon chặn
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'; // Icon bỏ chặn
+import BlockIcon from '@mui/icons-material/Block'; 
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'; 
 import { getUsersList, banUser, unbanUser, getStudentsList, banStudent, unbanStudent} from '../../api/adminApi'; // 💡 Import API
 import UserFormModal from './UserFormModal';    
 import useUserAuth from '../../hooks/useUserAuth';
 
-// Màu cho vai trò
 const roleColor = {
   'Admin': 'error',
   'Faculty Manager': 'warning',
@@ -27,14 +25,12 @@ const UserManagementPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   
-  // State phân trang và loading
-  const [page, setPage] = useState(0); // Mui TablePagination dùng 0-index
+  const [page, setPage] = useState(0); 
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [totalUsers, setTotalUsers] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // 💡 HÀM TẢI DỮ LIỆU TỪ API
   const fetchUsers = async (currentPage, limit) => {
     setIsLoading(true);
     setError(null);
@@ -42,20 +38,15 @@ const UserManagementPage = () => {
         let data;
         
         if (isAdmin) {
-            // Dành cho Admin: Lấy tất cả người dùng
             data = await getUsersList(currentPage + 1, limit); 
         } else if (isFacultyManager) {
-            // 💡 LOGGING: Kiểm tra xem Khoa Manager có đúng không
             console.log(`[FM Load] Đang tải người dùng cho Khoa: ${currentUser.department}`); 
             
-            // Dành cho Faculty Manager: Lấy người dùng của khoa mình
             data = await getStudentsList(currentPage + 1, limit);
         } else {
-            // Không đủ quyền
             throw new Error("Tài khoản không có quyền truy cập trang này.");
         }
         
-        // 🛑 Xử lý TypeError: data.users có thể là undefined
         if (!data || !data.users) {
             setUsers([]);
             setTotalUsers(0);
@@ -65,7 +56,6 @@ const UserManagementPage = () => {
         setUsers(data.users.map(u => ({
           ...u,
           id: u._id, 
-          // Cần dùng sub để hiển thị MSSV cho sinh viên
           studentId: u.sub, 
           fullName: u.name,
           email: u.email,
@@ -77,7 +67,6 @@ const UserManagementPage = () => {
     } catch (err) {
       console.error("Error fetching users:", err);
 
-      // Xử lý thông báo lỗi chi tiết hơn
       let defaultError = isFacultyManager 
           ? 'Không thể tải danh sách người dùng trong khoa.'
           : 'Không thể tải danh sách người dùng. Kiểm tra quyền Admin.';
@@ -99,26 +88,22 @@ const UserManagementPage = () => {
   };
 
   useEffect(() => {
-        // Chỉ fetch nếu currentUser đã được load
         if (currentUser) { 
             fetchUsers(page, rowsPerPage);
         }
     }, [page, rowsPerPage, currentUser]);
-// ... (các hàm khác giữ nguyên)
 
-  // Hành động phân trang
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
   };
 
   const handleChangeRowsPerPage = (event) => {
     setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0); // Reset về trang đầu tiên khi thay đổi limit
+    setPage(0); 
   };
 
 
   const handleEdit = (user) => {
-        // 🛑 Hạn chế: Faculty Manager không thể phân quyền
         if (isFacultyManager) {
             setError('Faculty Manager không có quyền chỉnh sửa phân quyền.');
             return;
@@ -129,14 +114,9 @@ const UserManagementPage = () => {
 
   const handleToggleBan = async (user) => {
         try {
-            // 🛑 Cập nhật logic call: FM giờ có thể ban/unban TẤT CẢ user trong khoa
-            // FM sử dụng API banStudent/unbanStudent
+
             const apiCall = user.banned ? (isAdmin ? unbanUser : unbanStudent) : (isAdmin ? banUser : banStudent);
-            
-            // XÓA LOGIC CŨ: Không cần kiểm tra user.role !== 'Student' nữa
-            // Chúng ta dựa vào Backend để kiểm tra xem FM có quyền thực hiện thao tác này lên user cùng khoa không.
-            
-            // Gọi API tương ứng
+
             await apiCall(user.id);
             
             fetchUsers(page, rowsPerPage); 
@@ -147,13 +127,12 @@ const UserManagementPage = () => {
     };
 
   const handleSave = (userData) => {
-    // Sau khi modal UserFormModal gọi API Phân quyền (assign-*), ta gọi fetchUsers
     console.log("Saving user data via modal, initiating fetch...");
     setIsModalOpen(false);
     fetchUsers(page, rowsPerPage);
   };
     
-  if (isLoading || !currentUser) { // Đảm bảo chờ user load xong
+  if (isLoading || !currentUser) {
         return (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
                 <CircularProgress />
@@ -168,11 +147,10 @@ const UserManagementPage = () => {
       
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
           <Typography variant="h4" sx={{ fontWeight: 700, color: 'primary.main' }}>
-            Quản lý người dùng ({isFacultyManager ? `Khoa: ${currentUser.department}` : 'Toàn hệ thống'})
+            Quản lý người dùng
           </Typography>
         </Box>
 
-        {/* Modal phân quyền chỉ dùng cho Admin */}
         {isAdmin && (
             <UserFormModal
               open={isModalOpen}
@@ -220,14 +198,12 @@ const UserManagementPage = () => {
                 </TableCell>
                 <TableCell align="right">
                   
-                    {/* 1. Nút Phân quyền (Edit) */}
                   {isAdmin && (
                             <IconButton onClick={() => handleEdit(user)} sx={{ color: 'primary.main' }} title="Phân quyền & Chi tiết">
                               <EditIcon />
                           </IconButton>
                         )}
                     
-                    {/* 2. Nút Chặn/Bỏ chặn */}
                     <IconButton 
                         onClick={() => handleToggleBan(user)} 
                         sx={{ color: user.banned ? 'success.main' : 'error.main' }} 
@@ -249,7 +225,6 @@ const UserManagementPage = () => {
         </Table>
       </TableContainer>
       
-      {/* Pagination */}
       <TablePagination
         component="div"
         count={totalUsers}

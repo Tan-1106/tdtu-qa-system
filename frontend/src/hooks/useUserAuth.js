@@ -40,10 +40,11 @@ const useUserAuth = () => {
         fetchUser();
     }, []);
 
-    const handleLogout = () => {
-        logoutUser();
+    const handleLogout = async () => {
+        await logoutUser(); 
         setUser(null);
         setIsAuthenticated(false);
+        window.location.reload(); 
     };
 
     return { user, isLoadingUser, isAuthenticated, handleLogout };

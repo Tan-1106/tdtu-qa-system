@@ -18,55 +18,55 @@ const initialHistory = [
 const BOT_WELCOME_MESSAGE = { id: 1, text: 'Chào bạn, tôi là trợ lý ảo của TDTU. Tôi có thể giúp gì cho bạn?', sender: 'bot' };
 
 const ChatPage = () => {
-    const theme = useTheme();
-    const { user, isLoadingUser, isAuthenticated } = useUserAuth();
-    
-    const context = useOutletContext();
-    const { 
-        isSidebarOpen = true, 
-        toggleSidebar = () => {}, 
-        activeChatId = 'chat-1', 
-        setActiveChatId = () => {} 
-    } = context || {}; 
+    const theme = useTheme();
+    const { user, isLoadingUser, isAuthenticated } = useUserAuth();
+    
+    const context = useOutletContext();
+    const { 
+        isSidebarOpen = true, 
+        toggleSidebar = () => {}, 
+        activeChatId = 'chat-1', 
+        setActiveChatId = () => {} 
+    } = context || {}; 
 
-    const [history] = useState(initialHistory);
+    const [history] = useState(initialHistory);
 
-    const [messages, setMessages] = useState([]);
-    const [input, setInput] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
-    const [isBotAnswered, setIsBotAnswered] = useState(false); 
+    const [messages, setMessages] = useState([]);
+    const [input, setInput] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [isBotAnswered, setIsBotAnswered] = useState(false); 
 
-    const scrollRef = useRef(null); 
+    const scrollRef = useRef(null); 
 
-    useEffect(() => { 
-        if (activeChatId === undefined) return; 
+    useEffect(() => { 
+        if (activeChatId === undefined) return; 
 
-        if (activeChatId === null) {
-            setMessages([BOT_WELCOME_MESSAGE]);
-            setIsBotAnswered(false); 
-        } else {
-            setIsLoading(true);
-            const chatTitle = history.find(c => c.id === activeChatId)?.title || 'Cuộc trò chuyện mới';
-            
-            setTimeout(() => {
-                const simulatedMessages = [
-                    BOT_WELCOME_MESSAGE,
-                    { id: 103, text: `Câu hỏi mẫu: ${chatTitle}`, sender: 'user' },
-                    { id: 104, text: `Câu trả lời của bot cho câu hỏi: ${chatTitle}.`, sender: 'bot' }
-                ];
-                setMessages(simulatedMessages);
-                setIsLoading(false);
-                setIsBotAnswered(true); 
-            }, 500);
-        }
-    }, [activeChatId, history]);
+        if (activeChatId === null) {
+            setMessages([BOT_WELCOME_MESSAGE]);
+            setIsBotAnswered(false); 
+        } else {
+            setIsLoading(true);
+            const chatTitle = history.find(c => c.id === activeChatId)?.title || 'Cuộc trò chuyện mới';
+            
+            setTimeout(() => {
+                const simulatedMessages = [
+                    BOT_WELCOME_MESSAGE,
+                    { id: 103, text: `Câu hỏi mẫu: ${chatTitle}`, sender: 'user' },
+                    { id: 104, text: `Câu trả lời của bot cho câu hỏi: ${chatTitle}.`, sender: 'bot' }
+                ];
+                setMessages(simulatedMessages);
+                setIsLoading(false);
+                setIsBotAnswered(true); 
+            }, 500);
+        }
+    }, [activeChatId, history]);
 
 
-    useEffect(() => { 
+    useEffect(() => { 
       scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages]);
+    }, [messages]);
   
-    const handleSend = async () => {
+    const handleSend = async () => {
       if (input.trim() === '' || isBotAnswered) return; 
       
       const userMessage = { id: Date.now(), text: input, sender: 'user' };
@@ -84,41 +84,41 @@ const ChatPage = () => {
         };
         setMessages(prev => [...prev, botResponse]);
         setIsLoading(false);
-        setIsBotAnswered(true); 
+        setIsBotAnswered(true); 
 
-        if (activeChatId === null) {
-            const newChatId = 'chat-new-' + Date.now();
-            setActiveChatId(newChatId); 
-        }
+        if (activeChatId === null) {
+            const newChatId = 'chat-new-' + Date.now();
+            setActiveChatId(newChatId); 
+        }
 
       }, 1500);
-    };
+    };
   
-    const handleFeedback = (messageId, feedbackType) => {
-        console.log(`Feedback cho tin nhắn ${messageId}: ${feedbackType}`);
-    };
-    
-    const currentChatTitle = useMemo(() => { 
-        const chat = history.find(c => c.id === activeChatId);
-        if (chat) return chat.title;
-        if (activeChatId === null || (activeChatId && typeof activeChatId === 'string' && activeChatId.startsWith('chat-new-'))) return 'Trò chuyện mới';
-        return 'Đang tải...';
-    }, [activeChatId, history]);
+    const handleFeedback = (messageId, feedbackType) => {
+        console.log(`Feedback cho tin nhắn ${messageId}: ${feedbackType}`);
+    };
+    
+    const currentChatTitle = useMemo(() => { 
+        const chat = history.find(c => c.id === activeChatId);
+        if (chat) return chat.title;
+        if (activeChatId === null || (activeChatId && typeof activeChatId === 'string' && activeChatId.startsWith('chat-new-'))) return 'Trò chuyện mới';
+        return 'Đang tải...';
+    }, [activeChatId, history]);
 
-    if (isLoadingUser || !isAuthenticated || !user) {
-        return null; 
-    }
-    
-    const currentUser = user;
-    const isInputDisabled = isLoading || isBotAnswered; 
+    if (isLoadingUser || !isAuthenticated || !user) {
+        return null; 
+    }
+    
+    const currentUser = user;
+    const isInputDisabled = isLoading || isBotAnswered; 
 
-    return (
+    return (
       <Box sx={{ 
-            flexGrow: 1, 
-            display: 'flex', 
-            flexDirection: 'column', 
-            height: '100%' 
-        }}> 
+            flexGrow: 1, 
+            display: 'flex', 
+            flexDirection: 'column', 
+            height: '100%' 
+        }}> 
         
         <Box sx={{ 
           p: 2, 
@@ -127,19 +127,19 @@ const ChatPage = () => {
           alignItems: 'center', 
           gap: 1.5, 
           borderBottom: '1px solid #e3e3e3',
-          position: 'sticky', 
-          top: 0,
-          zIndex: 10,
-          flexShrink: 0 
+          position: 'sticky', 
+          top: 0,
+          zIndex: 10,
+          flexShrink: 0 
         }}>
-          <IconButton 
-              size="large" 
-              onClick={toggleSidebar} 
-              sx={{ color: 'text.primary' }}
-          >
-            {isSidebarOpen ? <CloseIcon /> : <MenuIcon />}
-          </IconButton>
-          
+          <IconButton 
+              size="large" 
+              onClick={toggleSidebar} 
+              sx={{ color: 'text.primary' }}
+          >
+            {isSidebarOpen ? <CloseIcon /> : <MenuIcon />}
+          </IconButton>
+          
           <Typography variant="h6" sx={{ fontWeight: 600, flexGrow: 1, color: 'primary.main' }}>
             {currentChatTitle} 
           </Typography>
@@ -178,7 +178,7 @@ const ChatPage = () => {
                   p: 2,
                   borderRadius: 2,
                   maxWidth: { xs: '90%', md: '75%' },
-                  bgcolor: msg.sender === 'user' ? 'primary.light' : 'white',
+                  bgcolor: msg.sender === 'user' ? 'primary.main' : 'white', 
                   color: msg.sender === 'user' ? 'white' : 'text.primary',
                   boxShadow: msg.sender === 'bot' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none',
                   whiteSpace: 'pre-wrap'
@@ -250,6 +250,8 @@ const ChatPage = () => {
                 borderRadius: '15px',
                 minWidth: '56px',
                 height: '56px',
+                 background: 'linear-gradient(135deg, #1976d2 30%, #42a5f5 90%)',
+                 boxShadow: '0 2px 6px rgba(25, 118, 210, 0.4)',
               }}
               disabled={isInputDisabled || input.trim() === ''}
             >

@@ -6,11 +6,33 @@ import { CircularProgress, Box } from '@mui/material';
 const ProtectedRoute = () => {
     const { user, isAuthenticated, isLoadingUser } = useUserAuth();
 
-    // Hiển thị Loading trong khi fetch trạng thái user
     if (isLoadingUser) {
         return (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
-                <CircularProgress />
+            <Box
+                sx={{
+                    position: "fixed",
+                    inset: 0,
+                    background: "rgba(255, 255, 255, 0.7)",
+                    backdropFilter: "blur(4px)",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    zIndex: 9999,
+                }}
+            >
+                <CircularProgress size={60} thickness={4} />
+                <Box
+                    sx={{
+                        mt: 2,
+                        fontSize: "1.1rem",
+                        fontWeight: 500,
+                        color: "#555",
+                        animation: "fadeIn 1s ease-in-out infinite alternate"
+                    }}
+                >
+                    Đang kiểm tra quyền truy cập...
+                </Box>
             </Box>
         );
     }
