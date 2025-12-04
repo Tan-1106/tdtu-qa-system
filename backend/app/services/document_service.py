@@ -1,0 +1,148 @@
+import os
+import re
+import json
+import fitz
+import shutil
+import asyncio
+import camelot
+import tempfile
+import pdfplumber
+import pytesseract
+from io import BytesIO
+from fastapi import UploadFile
+from tiktoken import get_encoding
+from pdf2image import convert_from_path
+from fastapi.encoders import jsonable_encoder
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+
+
+# --- CONFIGURATION ---
+enc = get_encoding("cl100k_base")
+UPLOAD_DIRECTORY = "uploads/documents"
+
+
+# --- MAIN SERVICE FUNCTIONS ---
+# Extract text content from PDF documents, handling both text-based and scanned PDFs.
+async def extract_file_content(file: UploadFile):
+    document_content = ""
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+        shutil.copyfileobj(file.file, tmp)
+        tmp_path = tmp.name
+        
+    # Scanned
+    if not is_text_based_pdf(tmp_path):
+        try:
+            images = convert_from_path(tmp_path)
+            for img in images:
+                page_text = pytesseract.image_to_string(img, lang='vie+eng')
+                clean_text = re.sub(r'\s+', ' ', page_text)
+                document_content += clean_text
+        except Exception as e:
+            raise Exception("Failed to convert scanned PDF to text.") from e
+        
+    # Text-based
+    else:
+        try:
+            doc = fitz.open(tmp_path)
+            for page in doc:
+                page_text = page.get_text().strip()
+                clean_text = re.sub(r'\s+', ' ', page_text)
+                document_content += clean_text
+            doc.close()
+        except Exception as e:
+            raise Exception("Failed to extract text from PDF.") from e
+        
+    return document_content
+
+
+# Split text into chunks for embedding
+async def split_text_into_chunks(text: str, words_per_chunk: int, overlap: int) -> list[str]:
+    text = text.strip()
+    chunks = []
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=words_per_chunk,
+        chunk_overlap=overlap,
+        separators=[
+            "CHƯƠNG", "Chương",
+            "ĐIỀU", "Điều",
+            "MỤC", "Mục",
+            "I.", "II.", "III.", "IV.", "V.", "VI.", "VII.", "VIII.", "IX.", "X.", "XI.", "XII.", "XIII.", "XIV.", "XV.", "XVI.", "XVII.", "XVIII.", "XIX.", "XX.",
+            "1.", "2.", "3.", "4.", "5.", "6.", "7.", "8.", "9.", "10.", "11.", "12.", "13.", "14.", "15.", "16.", "17.", "18.", "19.", "20.",
+            "(1)", "(2)", "(3)", "(4)", "(5)", "(6)", "(7)", "(8)", "(9)", "(10)", "(11)", "(12)", "(13)", "(14)", "(15)", "(16)", "(17)", "(18)", "(19)", "(20)",
+            ";", ".", "\n\n", "\n", " ", ""
+            
+        ],
+        length_function=lambda x: len(enc.encode(x))
+    )
+    chunks = splitter.split_text(text)
+    chunks = await merge_chunks(chunks, target_max_length=words_per_chunk)
+    return chunks
+
+
+# Save uploaded document file to server
+async def save_document_file(file: UploadFile):
+    os.makedirs(UPLOAD_DIRECTORY, exist_ok=True)
+    file_path = os.path.join(UPLOAD_DIRECTORY, file.filename)
+
+    contents = await file.read()
+    
+    loop = asyncio.get_event_loop()
+    await loop.run_in_executor(
+        None,
+        lambda: open(file_path, "wb").write(contents)
+    )
+        
+    return file_path
+
+
+# --- SUPPORTING FUNCTIONS ---
+# check if PDF is text-based
+def is_text_based_pdf(file_path: str) -> bool:
+    try:
+        doc = fitz.open(file_path)
+        for page in doc:
+            page_text = page.get_text().strip()
+            if page_text:
+                doc.close()
+                return True
+        doc.close()
+        return False
+    except Exception as e:
+        raise RuntimeError("Failed to process PDF file.") from e
+    
+    
+# Merge small chunks into larger ones
+async def merge_chunks(chunks: list[str], target_max_length: int) -> list[str]:
+    # First pass: merge small chunks
+    merged_chunks = []
+    current_chunk = ""
+    for chunk in chunks:
+        if len(enc.encode(current_chunk + " " + chunk)) <= target_max_length:
+            if current_chunk:
+                current_chunk += " " + chunk
+            else:
+                current_chunk = chunk
+        else:
+            if current_chunk:
+                merged_chunks.append(current_chunk.strip())
+            current_chunk = chunk
+    if current_chunk:
+        merged_chunks.append(current_chunk.strip())
+
+    # Second pass: ensure no chunks are too small
+    final_chunks = []
+    buffer = ""
+    for chunk in merged_chunks:
+        if len(enc.encode(chunk)) < target_max_length * 0.5:
+            if buffer:
+                buffer += " " + chunk
+            else:
+                buffer = chunk
+        else:
+            if buffer:
+                final_chunks.append(buffer.strip())
+                buffer = ""
+            final_chunks.append(chunk.strip())
+    if buffer:
+        final_chunks.append(buffer.strip())
+    return final_chunks

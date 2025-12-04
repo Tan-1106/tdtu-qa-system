@@ -5,26 +5,37 @@ from app.schemas import user_schema
 from app.services import auth_service
 from app.controllers import user_controller
 from app.utils.api_response import api_response
-from app.utils.user_information import Role, Faculty
+from app.utils.basic_information import Role, Faculty
 
 
 # --- ROUTERS ---
 admin_router = APIRouter(
     prefix="/users",
     tags=["Users"],
-    dependencies=[Depends(auth_service.require_role([Role.ADMIN.value]))]
+    dependencies=[
+        Depends(auth_service.require_role([Role.ADMIN.value])),
+        Depends(auth_service.check_user_ban_status)
+    ]
 )
+
 
 faculty_manager_router = APIRouter(
     prefix="/users",
     tags=["Users"],
-    dependencies=[Depends(auth_service.require_role([Role.FACULTY_MANAGER.value]))]
+    dependencies=[
+        Depends(auth_service.require_role([Role.FACULTY_MANAGER.value])),
+        Depends(auth_service.check_user_ban_status)
+    ]
 )
+
 
 student_router = APIRouter(
     prefix="/users",
     tags=["Users"],
-    dependencies=[Depends(auth_service.require_role([Role.STUDENT.value]))]
+    dependencies=[
+        Depends(auth_service.require_role([Role.STUDENT.value])),
+        Depends(auth_service.check_user_ban_status)
+    ]
 )
 
 
@@ -184,4 +195,5 @@ async def unban_student(
         details=response
     )
     
+
 # --- STUDENT ROUTES ---

@@ -7,7 +7,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.utils.api_response import api_response, UserError, NotFoundException, DatabaseException
 from app.databases.mongo import connect_to_mongo, close_mongo_connection
-from app.routes import auth_route, user_route, model_route
+from app.routes import auth_route, user_route, model_route, document_route
 
 
 # --- LOGGER SETUP ---
@@ -138,8 +138,8 @@ app.include_router(model_route.router, prefix="/api")
 
 
 # # Document routes
-# app.include_router(document_route.user_route, prefix="/api")
-# app.include_router(document_route.admin_route, prefix="/api")
+app.include_router(document_route.admin_router, prefix="/api")
+# app.include_router(document_route.user_router, prefix="/api")
 
 
 # # Question Embedding routes

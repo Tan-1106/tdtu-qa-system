@@ -3,17 +3,20 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.encoders import jsonable_encoder
 
 from app.services import auth_service
-from app.utils.user_information import Role
+from app.schemas import api_key_schema
+from app.utils.basic_information import Role
 from app.controllers import model_controller
 from app.utils.api_response import api_response
-from app.schemas import api_key_schema
 
 
 # --- ROUTERS ---
 router = APIRouter(
     prefix="/model",
     tags=["Model"],
-    dependencies=[Depends(auth_service.require_role([Role.ADMIN.value]))]
+    dependencies=[
+        Depends(auth_service.require_role([Role.ADMIN.value])),
+        Depends(auth_service.check_user_ban_status)
+    ]
 )
 
 

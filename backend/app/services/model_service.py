@@ -1,5 +1,7 @@
 import os
 import re
+import ast
+import json
 import asyncio
 import logging
 from openai import OpenAI
@@ -167,7 +169,7 @@ async def get_available_models(request: dict):
             models = [
                 model for model in models
                 if re.search(r"gpt", model, re.IGNORECASE) and
-                   not re.search(r"realtime|mini|chatgpt|transcribe|chat|audio|image|preview|codex|instruct", model, re.IGNORECASE)
+                   not re.search(r"realtime|chatgpt|transcribe|chat|audio|image|preview|codex|instruct", model, re.IGNORECASE)
             ]
             return models
         except Exception as e:
@@ -185,3 +187,89 @@ async def get_available_models(request: dict):
             return models
         except Exception as ge:
             raise UserError("Invalid API key or unable to connect to Google Generative AI.")
+        
+        
+# Generate potential questions from text chunks
+def generate_potential_questions(api_key: dict, context: str, num_questions: int) -> list[str]:
+    # Tạo prompt
+    prompt = f"""
+    Bạn là một trợ lý tạo câu hỏi thông minh.
+
+    Nhiệm vụ:
+    Sinh ra đúng {num_questions} câu hỏi tiềm năng đáp ứng toàn bộ tiêu chí sau:
+    - Ngắn gọn, rõ ràng, không trùng lặp, tự nhiên.
+    - Là những câu hỏi mà một sinh viên tại Trường Đại học Tôn Đức Thắng có thể đặt ra liên quan đến phạm vi, hoạt động, quy định… của trường dựa trên đoạn văn bạn được cung cấp bên dưới bằng hệ thống Retrieval-Augmented Generation (RAG).
+    - Không được hỏi dựa theo cú pháp hoặc câu chữ cụ thể trong văn bản, chỉ dựa trên chủ đề có thể được văn bản đề cập.
+    - Không được nhắc đến bản thân văn bản hoặc vị trí văn bản (ví dụ: “theo văn bản trên”, “dựa trên nội dung đã cho”, “thông báo này”, “quy định này”,...).
+    - Câu hỏi phải có ý nghĩa đầy đủ, người đọc không cần xem đoạn văn bản vẫn hiểu được.
+    - Ít nhất phải có 1 câu hỏi tổng quát về chủ đề chính của đoạn văn bản.
+    Đoạn văn bản:
+    \"\"\"{context}\"\"\"
+
+    Yêu cầu định dạng đầu ra:
+    - Trả về **một danh sách Python hợp lệ** chứa đúng {num_questions} chuỗi (string).
+    - Không thêm bất kỳ mô tả, giải thích, hoặc ký tự thừa nào khác ngoài danh sách.
+    - Ví dụ đầu ra:
+    ["Câu hỏi 1", "Câu hỏi 2", ..., "Câu hỏi {num_questions}"]
+    """
+
+    output_text = []
+    
+    if api_key["provider"] == APIKeyProvider.OPENAI.value:
+        openai_client = OpenAI(api_key=api_key["api_key"])
+        response = openai_client.responses.create(
+            model=api_key["using_model"],
+            input=prompt,
+            store=False
+        )
+        output_text = response.output_text
+        output_text = normalize_text(output_text)
+        
+    elif api_key["provider"] == APIKeyProvider.GEMINI.value:
+        genai.configure(api_key=api_key["api_key"])
+        model = genai.GenerativeModel(api_key["using_model"])
+        response = model.generate_content(
+            prompt,
+            generation_config={"max_output_tokens": 1024}
+        )
+        output_text = response.text
+        output_text = normalize_text(output_text)
+    
+    # Logging
+    print("- LOG: Generated questions for context:")
+    print(context)
+    for i in output_text:
+        print(f"  + {i}")
+    
+    return output_text
+
+
+# --- SUPPORTING FUNCTIONS ---
+# Normalize text input
+def normalize_text(text: str):
+    if isinstance(text, str):
+        cleaned = text.strip()
+        if cleaned.startswith("```"):
+            cleaned = re.sub(r"^```(?:python)?|```$", "", cleaned, flags=re.IGNORECASE).strip()
+        try:
+            data = json.loads(cleaned)
+        except Exception:
+            try:
+                data = ast.literal_eval(cleaned)
+            except Exception:
+                data = cleaned
+    else:
+        data = text
+
+    if isinstance(data, list):
+        out = []
+        for item in data:
+            if isinstance(item, str):
+                s = re.sub(r"\s+", " ", item.replace("\n", " ")).strip()
+                out.append(s)
+        return out
+
+    if isinstance(data, str):
+        return re.sub(r"\s+", " ", data.replace("\n", " ")).strip()
+
+    return data

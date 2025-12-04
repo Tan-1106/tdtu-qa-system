@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from app.databases import mongo
 from app.utils import serializer
 from app.schemas import user_schema
-from app.utils.user_information import Role
+from app.utils.basic_information import Role
 from app.utils.api_response import DatabaseException
 
 

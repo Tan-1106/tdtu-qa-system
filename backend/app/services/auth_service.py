@@ -12,7 +12,7 @@ from app.utils.api_response import NotFoundException, AuthException
 from app.schemas import auth_schema
 from app.daos.user_dao import UserDAO
 from app.daos.token_dao import TokenDAO
-from app.utils.user_information import get_user_info
+from app.utils.basic_information import get_user_info
 
 
 # --- ELIT CONFIGURATIONS ---
@@ -234,3 +234,12 @@ def has_faculty_access(required_faculty: str):
             raise AuthException("Permission denied: User does not have access to this faculty.")
         return current_user
     return permission_checker
+
+
+
+# Check user ban status
+async def check_user_ban_status(current_user: dict = Depends(get_current_user)):
+    current_user = jsonable_encoder(current_user)
+    if current_user["banned"]:
+        raise AuthException("User is banned from the system.")
+    return current_user

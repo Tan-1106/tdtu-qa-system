@@ -1,3 +1,4 @@
+from typing import Optional
 from datetime import datetime
 from pydantic import BaseModel
 from pydantic import Field, EmailStr
@@ -15,7 +16,7 @@ class ELITLoginResponse(BaseModel):
     sub: str = Field(..., description="Student ID associated with the user")
     name: str = Field(..., description="Full name of the user")
     email: EmailStr = Field(..., description="Email address of the user")
-    image: str | None = Field(None, description="URL of the user's profile image")
+    image: Optional[str] = Field(None, description="URL of the user's profile image")
     class Config:
         extra = "ignore"
 
@@ -27,7 +28,7 @@ class TokensRecord(BaseModel):
     refresh_token: str = Field(..., description="JWT refresh token")
     revoked: bool = Field(False, description="Indicates if the refresh token has been revoked")
     created_at: datetime = Field(..., description="Timestamp when the tokens were created")
-    revoked_at: datetime | None = Field(None, description="Timestamp when the refresh token was revoked, if applicable")
+    revoked_at: Optional[datetime] = Field(None, description="Timestamp when the refresh token was revoked, if applicable")
     class Config:
         from_attributes = True
         extra = "ignore"

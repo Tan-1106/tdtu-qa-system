@@ -9,13 +9,13 @@ from pydantic import BaseModel, Field
 class APIKeyRecord(BaseModel):
     id: str = Field(alias="_id")
     name: str
-    description: str | None = None
+    description: Optional[str] = None
     api_key: str
     provider: str
     is_using: bool
-    using_model: str | None = None
+    using_model: Optional[str] = None
     created_at: datetime
-    updated_at: datetime | None = None
+    updated_at: Optional[datetime] = None
     class Config:
         from_attributes = True
         populate_by_name = True

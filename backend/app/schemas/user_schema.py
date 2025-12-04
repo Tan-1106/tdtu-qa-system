@@ -1,4 +1,5 @@
 from bson import ObjectId
+from typing import Optional
 from datetime import datetime
 from pydantic import BaseModel, Field, EmailStr
 
@@ -9,7 +10,7 @@ class UserRecord(BaseModel):
     sub: str
     name: str
     email: EmailStr
-    image: str | None = None
+    image: Optional[str] = None
     role: str
     faculty: str
     banned: bool

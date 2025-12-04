@@ -1,5 +1,5 @@
 from app.services import user_service
-from app.utils.user_information import Role, Faculty
+from app.utils.basic_information import Role, Faculty
 from app.utils.api_response import UserError, AuthException
 
 # Get list of users
