@@ -19,7 +19,6 @@ from app.utils.api_response import UserError, DatabaseException
 
 
 # --- CONFIGURATION ---
-EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "dangvantuan/vietnamese-embedding")
 TRANSLATE_MODEL = os.getenv("TRANSLATE_MODEL", "VietAI/envit5-translation")
 CROSS_ENCODER_MODEL = os.getenv("CROSS_ENCODER_MODEL", "cross-encoder/mmarco-mMiniLMv2-L12-H384-v1")
 
@@ -66,11 +65,11 @@ async def create_api_key(data: dict):
     
 
 # Get all API keys
-async def get_all_api_keys(page: int, limit: int):
+async def get_all_api_keys(page: int, limit: int, provider: str = None):
     encryptor = APIKeyEncryptor()
     
     skip = (page - 1) * limit
-    total = await APIKeyDAO().count_all_api_keys()
+    total = await APIKeyDAO().count_all_api_keys(provider)
     total_pages = (total + limit - 1) // limit
     if total == 0:
         return {
@@ -80,7 +79,7 @@ async def get_all_api_keys(page: int, limit: int):
             "current_page": page
         }
     
-    api_keys = jsonable_encoder(await APIKeyDAO().get_api_keys(skip, limit))
+    api_keys = jsonable_encoder(await APIKeyDAO().get_api_keys(skip, limit, provider))
     for api_key in api_keys:
         decrypted = encryptor.decrypt(api_key["api_key"])
         api_key["api_key"] = decrypted
@@ -191,7 +190,6 @@ async def get_available_models(request: dict):
         
 # Generate potential questions from text chunks
 def generate_potential_questions(api_key: dict, context: str, num_questions: int) -> list[str]:
-    # Tạo prompt
     prompt = f"""
     Bạn là một trợ lý tạo câu hỏi thông minh.
 
@@ -234,12 +232,6 @@ def generate_potential_questions(api_key: dict, context: str, num_questions: int
         )
         output_text = response.text
         output_text = normalize_text(output_text)
-    
-    # Logging
-    print("- LOG: Generated questions for context:")
-    print(context)
-    for i in output_text:
-        print(f"  + {i}")
     
     return output_text
 

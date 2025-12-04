@@ -7,11 +7,12 @@ from pydantic import BaseModel, Field, HttpUrl
 # Document Record Schema
 class DocumentRecord(BaseModel):
     id: str = Field(alias="_id")
-    filename: str
+    file_name: str
     doc_type: str
     department: Optional[str] = None
     faculty: Optional[str] = None
     file_url: HttpUrl
+    file_path: str
     uploaded_by: str
     uploaded_at: datetime
     updated_by: Optional[str] = None

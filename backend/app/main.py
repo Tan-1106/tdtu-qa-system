@@ -7,7 +7,8 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.utils.api_response import api_response, UserError, NotFoundException, DatabaseException
 from app.databases.mongo import connect_to_mongo, close_mongo_connection
-from app.routes import auth_route, user_route, model_route, document_route
+from app.routes import auth_route, user_route, document_route
+from app.routes import llm_route
 
 
 # --- LOGGER SETUP ---
@@ -135,7 +136,7 @@ app.include_router(user_route.general_router, prefix="/api")
 
 
 # LLM Model & API Key routes
-app.include_router(model_route.router, prefix="/api")
+app.include_router(llm_route.router, prefix="/api")
 
 
 # # Document routes

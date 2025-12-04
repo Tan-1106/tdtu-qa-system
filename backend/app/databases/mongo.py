@@ -72,13 +72,13 @@ def get_documents_collection():
     return db.get_collection("documents")
 
 
-# Potential questions collection
-def get_potential_questions_collection():
+# Document Chunks collection
+def get_document_chunks_collection():
     global db
     if db is None:
         raise RuntimeError("Database has not been initialized.")
-    logging.info(f"Accessing collection: potential_questions in database: {DB_NAME}")
-    return db.get_collection("potential_questions")
+    logging.info(f"Accessing collection: document_chunks in database: {DB_NAME}")
+    return db.get_collection("document_chunks")
 
 
 # Questions collection

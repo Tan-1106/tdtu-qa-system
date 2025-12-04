@@ -25,8 +25,11 @@ class APIKeyDAO:
 
 
     # Count all API keys
-    async def count_all_api_keys(self) -> int:
-        count = await self.api_keys_collection.count_documents({})
+    async def count_all_api_keys(self, provider: str = None) -> int:
+        query = {}
+        if provider:
+            query["provider"] = provider
+        count = await self.api_keys_collection.count_documents(query)
         return count
     
     
@@ -40,9 +43,12 @@ class APIKeyDAO:
     
     
     # Get all API keys (Pagination)
-    async def get_api_keys(self, skip: int, limit: int) -> list[api_key_schema.APIKeyRecord]:
+    async def get_api_keys(self, skip: int, limit: int, provider: str = None) -> list[api_key_schema.APIKeyRecord]:
         api_keys = []
-        cursor = self.api_keys_collection.find().skip(skip).limit(limit)
+        query = {}
+        if provider:
+            query["provider"] = provider
+        cursor = self.api_keys_collection.find(query).skip(skip).limit(limit)
         async for key in cursor:
             api_keys.append(api_key_schema.APIKeyRecord(**api_key_serialize(key)))
         return api_keys

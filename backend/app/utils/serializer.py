@@ -37,3 +37,31 @@ def api_key_serialize(api_key) -> dict:
         "created_at": api_key.get("created_at").isoformat() if api_key.get("created_at") else None,
         "updated_at": api_key.get("updated_at").isoformat() if api_key.get("updated_at") else None
     }
+    
+    
+# Document
+def document_serialize(document) -> dict:
+    return {
+        "id": str(document["_id"]),
+        "file_name": document.get("file_name"),
+        "doc_type": document.get("doc_type"),
+        "department": document.get("department"),
+        "faculty": document.get("faculty"),
+        "file_url": document.get("file_url"),
+        "file_path": document.get("file_path"),
+        "uploaded_by": document.get("uploaded_by"),
+        "uploaded_at": document.get("uploaded_at").isoformat() if document.get("uploaded_at") else None,
+        "updated_by": document.get("updated_by"),
+        "updated_at": document.get("updated_at").isoformat() if document.get("updated_at") else None
+    }
+    
+    
+# Document Chunk
+def document_chunk_serialize(document_chunk) -> dict:
+    return {
+        "id": str(document_chunk["_id"]),
+        "doc_id": str(document_chunk.get("doc_id")),
+        "chunks": document_chunk.get("chunks", {}),
+        "created_at": document_chunk.get("created_at").isoformat() if document_chunk.get("created_at") else None,
+        "updated_at": document_chunk.get("updated_at").isoformat() if document_chunk.get("updated_at") else None
+    }

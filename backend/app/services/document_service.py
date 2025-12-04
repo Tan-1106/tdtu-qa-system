@@ -15,6 +15,8 @@ from pdf2image import convert_from_path
 from fastapi.encoders import jsonable_encoder
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
+from app.daos.document_dao import DocumentDAO
+
 
 # --- CONFIGURATION ---
 enc = get_encoding("cl100k_base")
@@ -93,6 +95,23 @@ async def save_document_file(file: UploadFile):
     )
         
     return file_path
+
+
+# Delete document file from server
+async def delete_document_file(file_path: str):
+    if os.path.exists(file_path):
+        os.remove(file_path)
+
+
+# Store document in MongoDB
+async def store_document_record(document_record: dict):
+    new_document = await DocumentDAO().create_document(document_record)
+    return jsonable_encoder(new_document)
+
+
+# Delete document record from MongoDB
+async def delete_document_record(doc_id: str):
+    await DocumentDAO().delete_document(doc_id)
 
 
 # --- SUPPORTING FUNCTIONS ---
