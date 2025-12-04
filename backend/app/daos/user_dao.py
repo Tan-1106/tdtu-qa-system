@@ -30,15 +30,30 @@ class UserDAO:
     
     
     # Count all users
-    async def count_all_users(self) -> int:
-        count = await self.users_collection.count_documents({})
+    async def count_all_users(self, role: str = None, faculty: str = None, banned: bool = None) -> int:
+        query = {}
+        if role:
+            query["role"] = role
+        if faculty:
+            query["faculty"] = faculty
+        if banned is not None:
+            query["banned"] = banned
+            
+        count = await self.users_collection.count_documents(query)
         return count
     
     
     # Get all users
-    async def get_users(self, skip: int, limit: int) -> list[user_schema.UserRecord]:
+    async def get_users(self, skip: int, limit: int, role: str = None, faculty: str = None, banned: bool = None) -> list[user_schema.UserRecord]:
         users = []
-        cursor = self.users_collection.find().skip(skip).limit(limit)
+        query = {}
+        if role:
+            query["role"] = role
+        if faculty:
+            query["faculty"] = faculty
+        if banned is not None:
+            query["banned"] = banned
+        cursor = self.users_collection.find(query).skip(skip).limit(limit)
         async for user in cursor:
             users.append(user_schema.UserRecord(**serializer.user_serialize(user)))
         return users
@@ -61,15 +76,21 @@ class UserDAO:
     
     
     # Count students by faculty
-    async def count_students_by_faculty(self, faculty: str) -> int:
-        count = await self.users_collection.count_documents({"faculty": faculty, "role": Role.STUDENT.value})
+    async def count_students_by_faculty(self, faculty: str, banned: bool = None) -> int:
+        query = {"faculty": faculty, "role": Role.STUDENT.value}
+        if banned is not None:
+            query["banned"] = banned
+        count = await self.users_collection.count_documents(query)
         return count
     
     
     # Get students by faculty with pagination
-    async def get_students_by_faculty(self, faculty: str, skip: int, limit: int) -> list[user_schema.UserRecord]:
+    async def get_students_by_faculty(self, faculty: str, skip: int, limit: int, banned: bool = None) -> list[user_schema.UserRecord]:
         students = []
-        cursor = self.users_collection.find({"faculty": faculty, "role": Role.STUDENT.value}).skip(skip).limit(limit)
+        query = {"faculty": faculty, "role": Role.STUDENT.value}
+        if banned is not None:
+            query["banned"] = banned
+        cursor = self.users_collection.find(query).skip(skip).limit(limit)
         async for user in cursor:
             students.append(user_schema.UserRecord(**serializer.user_serialize(user)))
         return students

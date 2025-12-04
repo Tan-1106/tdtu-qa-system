@@ -1,16 +1,21 @@
-from app.services import user_service
+from app.services import user_service, auth_service
 from app.utils.basic_information import Role, Faculty
 from app.utils.api_response import UserError, AuthException
 
 # Get list of users
-async def get_users(page: int, limit: int):
-    users = await user_service.get_users(page, limit)
+async def get_users(page: int, limit: int, role: str = None, faculty: str = None, banned: bool = None):
+    if role and role not in [r.value for r in Role]:
+        raise UserError("Invalid role specified")
+    if faculty and faculty not in [fac.value.name for fac in Faculty]:
+        raise UserError("Invalid faculty specified")
+    
+    users = await user_service.get_users(page, limit, role, faculty, banned)
     return users
 
 
 # Get list of students
-async def get_students(faculty: str, page: int, limit: int):
-    students = await user_service.get_students(faculty, page, limit)
+async def get_students(faculty: str, page: int, limit: int, banned: bool = None):
+    students = await user_service.get_students(faculty, page, limit, banned)
     return students
 
 
@@ -72,3 +77,9 @@ async def unban_user(user_id: str, current_user: dict):
     
     response = await user_service.unban_user(user_id)
     return response
+
+
+
+# Logout user by revoking refresh token
+async def logout_user(refresh_token: str):
+    await auth_service.revoke_refresh_token(refresh_token)

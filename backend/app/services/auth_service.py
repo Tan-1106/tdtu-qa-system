@@ -205,7 +205,14 @@ async def refresh_tokens(refresh_token: str) -> str:
         "access_token": new_access_token,
         "refresh_token": new_refresh_token,
     }
-        
+    
+    
+# Revoke refresh token
+async def revoke_refresh_token(refresh_token: str):
+    refresh_token = await verify_refresh_token(refresh_token)
+    user_sub = refresh_token["payload"]["sub"]
+    await TokenDAO().revoke_refresh_token(user_sub, refresh_token["token"])
+
         
 # --- SYSTEM AUTHENTICATION ---
 # Get current user information
@@ -213,6 +220,10 @@ async def get_current_user(access_token: dict = Depends(verify_access_token)) ->
     user_sub = access_token["payload"]["sub"]
     user = await UserDAO().get_user_by_sub(user_sub)
     user = jsonable_encoder(user)
+    
+    if user["banned"]:
+        raise AuthException("User is banned from the system.")
+    
     return user
 
 
@@ -234,12 +245,3 @@ def has_faculty_access(required_faculty: str):
             raise AuthException("Permission denied: User does not have access to this faculty.")
         return current_user
     return permission_checker
-
-
-
-# Check user ban status
-async def check_user_ban_status(current_user: dict = Depends(get_current_user)):
-    current_user = jsonable_encoder(current_user)
-    if current_user["banned"]:
-        raise AuthException("User is banned from the system.")
-    return current_user

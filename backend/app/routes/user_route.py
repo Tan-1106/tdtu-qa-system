@@ -13,8 +13,7 @@ admin_router = APIRouter(
     prefix="/users",
     tags=["Users"],
     dependencies=[
-        Depends(auth_service.require_role([Role.ADMIN.value])),
-        Depends(auth_service.check_user_ban_status)
+        Depends(auth_service.require_role([Role.ADMIN.value]))
     ]
 )
 
@@ -23,8 +22,7 @@ faculty_manager_router = APIRouter(
     prefix="/users",
     tags=["Users"],
     dependencies=[
-        Depends(auth_service.require_role([Role.FACULTY_MANAGER.value])),
-        Depends(auth_service.check_user_ban_status)
+        Depends(auth_service.require_role([Role.FACULTY_MANAGER.value]))
     ]
 )
 
@@ -33,8 +31,16 @@ student_router = APIRouter(
     prefix="/users",
     tags=["Users"],
     dependencies=[
-        Depends(auth_service.require_role([Role.STUDENT.value])),
-        Depends(auth_service.check_user_ban_status)
+        Depends(auth_service.require_role([Role.STUDENT.value]))
+    ]
+)
+
+
+general_router = APIRouter(
+    prefix="/users",
+    tags=["Users"],
+    dependencies=[
+        Depends(auth_service.get_current_user)
     ]
 )
 
@@ -44,9 +50,12 @@ student_router = APIRouter(
 @admin_router.get("/")
 async def get_users(
     page: int = Query(1, ge=1),
-    limit: int = Query(10, ge=1, le=100)
+    limit: int = Query(10, ge=1, le=100),
+    role: str = Query(None),
+    faculty: str = Query(None),
+    banned: bool = Query(None)
 ):
-    users = await user_controller.get_users(page, limit)
+    users = await user_controller.get_users(page, limit, role, faculty, banned)
     return api_response(
         status_code=200,
         message="Get users list successfully.",
@@ -155,10 +164,11 @@ async def unban_user(
 async def get_students(
     current_user = Depends(auth_service.get_current_user),
     page: int = Query(1, ge=1),
-    limit: int = Query(10, ge=1, le=100)
+    limit: int = Query(10, ge=1, le=100),
+    banned: bool = Query(None)
 ):
     current_user = jsonable_encoder(current_user)
-    students = await user_controller.get_students(current_user["faculty"], page, limit)
+    students = await user_controller.get_students(current_user["faculty"], page, limit, banned)
     return api_response(
         status_code=200,
         message="Get students list successfully.",
@@ -197,3 +207,19 @@ async def unban_student(
     
 
 # --- STUDENT ROUTES ---
+
+
+# --- GENERAL ROUTES ---
+# Logout a user
+@general_router.post("/logout")
+async def logout_user(
+    refresh_token: user_schema.LogoutRequest
+):
+    refresh_token = jsonable_encoder(refresh_token)["refresh_token"]
+    await user_controller.logout_user(refresh_token)
+    return api_response(
+        status_code=200,
+        message="User logged out successfully.",
+        details=None
+    )
+    

@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 
 from app.databases import mongo
 from app.schemas import auth_schema
-from app.utils.api_response import DatabaseException
+from app.utils.api_response import DatabaseException, AuthException
 
 
 class TokenDAO:
@@ -31,17 +31,20 @@ class TokenDAO:
     # Revoke tokens
     async def revoke_refresh_token(self, sub: str, refresh_token: str) -> bool:
         hasher = PasswordHash.recommended()
-        tokens = await self.tokens_collection.find({"sub": sub, "revoked": False}).to_list(length=None)
+        tokens = await self.tokens_collection.find({"sub": sub}).to_list(length=None)
         
         for token in tokens:
-            if hasher.verify(refresh_token, token["refresh_token"]):
+            if hasher.verify(refresh_token, token["refresh_token"]) and not token["revoked"]:
                 result = await self.tokens_collection.update_one(
                     {"_id": token["_id"]},
                     {"$set": {"revoked": True, "revoked_at": datetime.now(timezone.utc)}}
                 )
                 if result.modified_count != 1:
                     raise DatabaseException("Unable to revoke refresh token.")
-                return True        
+                return True
+            
+            elif hasher.verify(refresh_token, token["refresh_token"]) and token["revoked"]:
+                raise AuthException("Refresh token has already been revoked.")
         raise DatabaseException("Refresh token not found.")
     
     

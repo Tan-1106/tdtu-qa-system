@@ -13,8 +13,7 @@ admin_router = APIRouter(
     prefix="/document",
     tags=["Document"],
     dependencies=[
-        Depends(auth_service.require_role([Role.ADMIN.value])),
-        Depends(auth_service.check_user_ban_status)
+        Depends(auth_service.require_role([Role.ADMIN.value]))
     ]
 )
 

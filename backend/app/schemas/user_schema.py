@@ -27,3 +27,10 @@ class AssignFacultySchema(BaseModel):
     class Config:
         from_attributes = True
         extra = "forbid"
+        
+
+# Logout Request Schema
+class LogoutRequest(BaseModel):
+    refresh_token: str = Field(..., description="JWT refresh token")
+    class Config:
+        extra = "forbid"
