@@ -6,30 +6,22 @@ from app.services import auth_service
 from app.utils.basic_information import Role
 from app.utils.api_response import api_response
 from app.controllers import document_controller
+from app.schemas import document_schema
 
 
 # --- ROUTERS ---
-admin_router = APIRouter(
+router = APIRouter(
     prefix="/documents",
-    tags=["Document"],
+    tags=["Documents"],
     dependencies=[
-        Depends(auth_service.require_role([Role.ADMIN.value]))
-    ]
-)
-
-
-faculty_router = APIRouter(
-    prefix="/documents",
-    tags=["Document"],
-    dependencies=[
-        Depends(auth_service.get_current_user)
+        Depends(auth_service.require_role([Role.ADMIN.value, Role.FACULTY_MANAGER.value]))
     ]
 )
 
 
 # --- ADMIN ROUTES ---
 # Upload a new document
-@admin_router.post("/upload")
+@router.post("/upload")
 async def upload_document(
     file: UploadFile,
     doc_type: str = Form(...),
@@ -55,7 +47,7 @@ async def upload_document(
     
     
 # Get documents (with pagination)
-@admin_router.get("/")
+@router.get("/")
 async def get_documents(
     page: int = Query(1, ge=1),
     limit: int = Query(10, ge=1, le=100),
@@ -69,4 +61,19 @@ async def get_documents(
         status_code=200,
         message="Get documents list successfully.",
         details=documents
+    )
+    
+    
+# Update document information
+@router.patch("/{doc_id}")
+async def update_document(
+    doc_id: str,
+    data: document_schema.DocumentUpdateSchema
+):
+    data = jsonable_encoder(data)
+    updated_document = await document_controller.update_document(doc_id, data)
+    return api_response(
+        status_code=200,
+        message="Document information updated successfully.",
+        details=updated_document
     )

@@ -129,9 +129,7 @@ app.include_router(auth_route.router, prefix="/api")
 
 
 # User routes
-app.include_router(user_route.admin_router, prefix="/api")
-app.include_router(user_route.faculty_manager_router, prefix="/api")
-app.include_router(user_route.general_router, prefix="/api")
+app.include_router(user_route.router, prefix="/api")
 
 
 # LLM Model & API Key routes
@@ -139,7 +137,7 @@ app.include_router(llm_route.router, prefix="/api")
 
 
 # # Document routes
-app.include_router(document_route.admin_router, prefix="/api")
+app.include_router(document_route.router, prefix="/api")
 # app.include_router(document_route.user_router, prefix="/api")
 
 

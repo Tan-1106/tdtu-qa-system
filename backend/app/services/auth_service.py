@@ -12,7 +12,7 @@ from app.utils.api_response import NotFoundException, AuthException
 from app.schemas import auth_schema
 from app.daos.user_dao import UserDAO
 from app.daos.token_dao import TokenDAO
-from app.utils.basic_information import get_user_info
+from app.utils.basic_information import get_user_info, Role, Faculty
 
 
 # --- ELIT CONFIGURATIONS ---
@@ -27,6 +27,7 @@ SECRET_KEY=os.getenv("SECRET_KEY")
 ALGORITHM=os.getenv("ALGORITHM")
 ACCESS_EXPIRATION_TIME_MINUTES=int(os.getenv("ACCESS_EXPIRATION_TIME_MINUTES") or 5)
 REFRESH_EXPIRATION_TIME_DAYS=int(os.getenv("REFRESH_EXPIRATION_TIME_DAYS") or 7)
+
 
 hasher = PasswordHash.recommended()
 oauth2_access_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
@@ -221,9 +222,17 @@ async def get_current_user(access_token: dict = Depends(verify_access_token)) ->
     user = await UserDAO().get_user_by_sub(user_sub)
     user = jsonable_encoder(user)
     
-    if user["banned"]:
-        raise AuthException("User is banned from the system.")
+    user_role = user["role"]
+    user_faculty = user["faculty"]
+    user_banned = user["banned"]
     
+    if user_role not in (r.value for r in Role):
+        raise AuthException("Your role does not have permission to access the system.")
+    if user_role != Role.ADMIN.value and user_faculty not in (f.value.name for f in Faculty):
+        raise AuthException("Invalid faculty assigned to your account.")
+    if user_banned:
+        raise AuthException("User is banned from the system.")
+
     return user
 
 

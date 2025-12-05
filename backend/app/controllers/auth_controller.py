@@ -8,6 +8,6 @@ async def elit_login(code: str) -> dict:
 
 
 # Refresh tokens
-async def refresh_tokens(refresh_token: str):
+async def refresh_tokens(refresh_token: str) -> dict:
     new_tokens = await auth_service.refresh_tokens(refresh_token)
     return new_tokens

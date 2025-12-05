@@ -9,25 +9,7 @@ from app.utils.basic_information import Role, Faculty
 
 
 # --- ROUTERS ---
-admin_router = APIRouter(
-    prefix="/users",
-    tags=["Users"],
-    dependencies=[
-        Depends(auth_service.require_role([Role.ADMIN.value]))
-    ]
-)
-
-
-faculty_manager_router = APIRouter(
-    prefix="/users",
-    tags=["Users"],
-    dependencies=[
-        Depends(auth_service.require_role([Role.FACULTY_MANAGER.value]))
-    ]
-)
-
-
-general_router = APIRouter(
+router = APIRouter(
     prefix="/users",
     tags=["Users"],
     dependencies=[
@@ -36,18 +18,20 @@ general_router = APIRouter(
 )
 
 
-# --- ADMIN ROUTES ---
+# --- ROUTES ---
 # Get list of users (with pagination)
-@admin_router.get("/")
+@router.get("/")
 async def get_users(
     page: int = Query(1, ge=1),
     limit: int = Query(10, ge=1, le=100),
     role: str = Query(None),
     faculty: str = Query(None),
     banned: bool = Query(None),
-    keyword: str = Query(None)
+    keyword: str = Query(None),
+    current_user = Depends(auth_service.get_current_user)
 ):
-    users = await user_controller.get_users(page, limit, role, faculty, banned, keyword)
+    current_user = jsonable_encoder(current_user)
+    users = await user_controller.get_users(page, limit, role, faculty, banned, keyword, current_user)
     return api_response(
         status_code=200,
         message="Get users list successfully.",
@@ -56,8 +40,10 @@ async def get_users(
     
 
 # Get list of role options
-@admin_router.get("/roles")
-async def get_role_options():
+@router.get("/roles")
+async def get_role_options(
+    check_admin = Depends(auth_service.require_role([Role.ADMIN.value]))
+):
     roles = [role.value for role in Role]
     return api_response(
         status_code=200,
@@ -67,8 +53,10 @@ async def get_role_options():
     
 
 # Get all faculty options
-@admin_router.get("/faculties")
-async def get_faculty_options():
+@router.get("/faculties")
+async def get_faculty_options(
+    check_admin = Depends(auth_service.require_role([Role.ADMIN.value]))
+):
     faculties = [faculty.value.name for faculty in Faculty]
     return api_response(
         status_code=200,
@@ -78,9 +66,10 @@ async def get_faculty_options():
     
     
 # Assign role admin to user
-@admin_router.post("/{user_id}/assign-admin")
+@router.post("/{user_id}/assign-admin")
 async def assign_admin(
-    user_id: str
+    user_id: str,
+    check_admin = Depends(auth_service.require_role([Role.ADMIN.value]))
 ):
     response = await user_controller.assign_admin(user_id)
     return api_response(
@@ -91,10 +80,11 @@ async def assign_admin(
 
     
 # Assign role faculty manager to user or change manager's faculty
-@admin_router.post("/{user_id}/assign-faculty-manager")
+@router.post("/{user_id}/assign-faculty-manager")
 async def assign_faculty_manager(
     user_id: str,
-    assign_data: user_schema.AssignFacultySchema
+    assign_data: user_schema.AssignFacultySchema,
+    check_admin = Depends(auth_service.require_role([Role.ADMIN.value]))
 ):
     assign_data = jsonable_encoder(assign_data)
     response = await user_controller.assign_faculty_manager(user_id, assign_data["faculty"])
@@ -106,10 +96,11 @@ async def assign_faculty_manager(
     
 
 # Assign role student to user or change student's faculty
-@admin_router.post("/{user_id}/assign-student")
+@router.post("/{user_id}/assign-student")
 async def assign_student(
     user_id: str,
-    assign_data: user_schema.AssignFacultySchema
+    assign_data: user_schema.AssignFacultySchema,
+    check_admin = Depends(auth_service.require_role([Role.ADMIN.value]))
 ):
     assign_data = jsonable_encoder(assign_data)
     response = await user_controller.assign_student(user_id, assign_data["faculty"])
@@ -121,7 +112,7 @@ async def assign_student(
     
     
 # Ban a user
-@admin_router.patch("/{user_id}/ban")
+@router.patch("/{user_id}/ban")
 async def ban_user(
     user_id: str,
     current_user = Depends(auth_service.get_current_user)
@@ -136,7 +127,7 @@ async def ban_user(
     
 
 # Unban a user
-@admin_router.patch("/{user_id}/unban")
+@router.patch("/{user_id}/unban")
 async def unban_user(
     user_id: str,
     current_user = Depends(auth_service.get_current_user)
@@ -150,58 +141,9 @@ async def unban_user(
     )
 
 
-# --- FACULTY MANAGER ROUTES ---
-# Get list of students based on Admin's faculty (with pagination)
-@faculty_manager_router.get("/students")
-async def get_students(
-    current_user = Depends(auth_service.get_current_user),
-    page: int = Query(1, ge=1),
-    limit: int = Query(10, ge=1, le=100),
-    banned: bool = Query(None),
-    keyword: str = Query(None)
-):
-    current_user = jsonable_encoder(current_user)
-    students = await user_controller.get_students(page, limit, current_user["faculty"], banned, keyword)
-    return api_response(
-        status_code=200,
-        message="Get students list successfully.",
-        details=students
-    )
-    
-
-# Ban a student
-@faculty_manager_router.patch("/students/{student_id}/ban")
-async def ban_student(
-    student_id: str,
-    current_user = Depends(auth_service.get_current_user)
-):
-    current_user = jsonable_encoder(current_user)
-    response = await user_controller.ban_user(student_id, current_user)
-    return api_response(
-        status_code=200,
-        message="Student has been banned successfully.",
-        details=response
-    )
-    
-    
-# Unban a student
-@faculty_manager_router.patch("/students/{student_id}/unban")
-async def unban_student(
-    student_id: str,
-    current_user = Depends(auth_service.get_current_user)
-):
-    current_user = jsonable_encoder(current_user)
-    response = await user_controller.unban_user(student_id, current_user)
-    return api_response(
-        status_code=200,
-        message="Student has been unbanned successfully.",
-        details=response
-    )
-
-
 # --- GENERAL ROUTES ---
 # Logout a user
-@general_router.post("/logout")
+@router.post("/logout")
 async def logout_user(
     refresh_token: user_schema.LogoutRequest
 ):
@@ -212,4 +154,3 @@ async def logout_user(
         message="User logged out successfully.",
         details=None
     )
-    

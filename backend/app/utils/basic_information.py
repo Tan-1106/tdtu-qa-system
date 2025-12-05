@@ -43,6 +43,6 @@ def get_user_info(user_sub: str):
                 "role": Role.STUDENT.value
             }
     return {
-        "role": "N/A",
-        "faculty": "N/A"
+        "role": None,
+        "faculty": None
     }
