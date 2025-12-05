@@ -1,12 +1,6 @@
-// /api/userApi.js (Bạn cần tạo file này)
+import axiosInstance from '../axiosInstance'; 
+import { clearTokens } from '../axiosInstance'; 
 
-import axiosInstance from '../axiosInstance'; // Đảm bảo đường dẫn đúng
-import { clearTokens } from '../axiosInstance'; // Hàm clearTokens đã được export từ axiosInstance.js
-
-/**
- * Lấy thông tin người dùng hiện tại
- * API: GET {{base}}/auth/me
- */
 export const getCurrentUser = async () => {
     try {
         const response = await axiosInstance.get('/auth/me');
@@ -15,15 +9,24 @@ export const getCurrentUser = async () => {
         } 
         throw new Error(response.data.message || "Failed to fetch user information.");
     } catch (error) {
+        clearTokens();
         throw error; 
     }
 };
 
-/**
- * Hàm Đăng xuất
- */
-export const logoutUser = () => {
-    clearTokens();
-    // Thêm logic chuyển hướng hoặc làm mới trang
-    // Ví dụ: window.location.href = '/login'; 
+
+export const logoutUser = async () => {
+    try {
+        const response = await axiosInstance.post('/users/logout');
+        
+        if (response.data.status_code === 200) {
+            console.log("Logout API call successful.");
+        } else {
+            console.error("Logout API call returned non-200 status:", response.data.message);
+        }
+    } catch (error) {
+        console.error("Error during logout API call:", error);
+    } finally {
+        clearTokens();
+    }
 };

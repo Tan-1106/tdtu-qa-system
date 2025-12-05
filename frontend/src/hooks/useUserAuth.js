@@ -19,14 +19,13 @@ const useUserAuth = () => {
         const fetchUser = async () => {
             try {
                 const userData = await getCurrentUser();
-                
-                // 🛑 FIX: Đã thêm trường role vào đối tượng user
+
                 setUser({
                     name: userData.name,
                     studentId: userData.sub, 
                     department: userData.faculty, 
                     avatar: userData.name.charAt(0).toUpperCase(),
-                    role: userData.role, // <-- TRƯỜNG BỊ THIẾU
+                    role: userData.role, 
                 });
                 setIsAuthenticated(true);
             } catch (error) {
@@ -41,10 +40,11 @@ const useUserAuth = () => {
         fetchUser();
     }, []);
 
-    const handleLogout = () => {
-        logoutUser();
+    const handleLogout = async () => {
+        await logoutUser(); 
         setUser(null);
         setIsAuthenticated(false);
+        window.location.reload(); 
     };
 
     return { user, isLoadingUser, isAuthenticated, handleLogout };

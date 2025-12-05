@@ -3,14 +3,13 @@ import {
   Box, Button, Typography, Table, TableBody, TableCell, TableContainer,
   TableHead, TableRow, Paper, IconButton, Chip, TablePagination, CircularProgress, Alert
 } from '@mui/material';
-// import AddIcon from '@mui/icons-material/Add'; // Không cần thiết
 import EditIcon from '@mui/icons-material/Edit';
-import BlockIcon from '@mui/icons-material/Block'; // Icon chặn
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'; // Icon bỏ chặn
-import { getUsersList, banUser, unbanUser } from '../../api/adminApi'; // 💡 Import API
-import UserFormModal from './UserFormModal';
+import BlockIcon from '@mui/icons-material/Block'; 
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'; 
+import { getUsersList, banUser, unbanUser, getStudentsList, banStudent, unbanStudent} from '../../api/adminApi'; // 💡 Import API
+import UserFormModal from './UserFormModal';    
+import useUserAuth from '../../hooks/useUserAuth';
 
-// Màu cho vai trò
 const roleColor = {
   'Admin': 'error',
   'Faculty Manager': 'warning',
@@ -18,28 +17,45 @@ const roleColor = {
 };
 
 const UserManagementPage = () => {
+    const { user: currentUser } = useUserAuth(); 
+    const isFacultyManager = currentUser?.role === 'Faculty Manager';
+    const isAdmin = currentUser?.role === 'Admin';
+    
   const [users, setUsers] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   
-  // State phân trang và loading
-  const [page, setPage] = useState(0); // Mui TablePagination dùng 0-index
+  const [page, setPage] = useState(0); 
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [totalUsers, setTotalUsers] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // 💡 HÀM TẢI DỮ LIỆU TỪ API
   const fetchUsers = async (currentPage, limit) => {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await getUsersList(currentPage + 1, limit); // Chuyển 0-index sang 1-index cho API
-      setUsers(data.users.map(u => ({
+        let data;
+        
+        if (isAdmin) {
+            data = await getUsersList(currentPage + 1, limit); 
+        } else if (isFacultyManager) {
+            console.log(`[FM Load] Đang tải người dùng cho Khoa: ${currentUser.department}`); 
+            
+            data = await getStudentsList(currentPage + 1, limit);
+        } else {
+            throw new Error("Tài khoản không có quyền truy cập trang này.");
+        }
+        
+        if (!data || !data.users) {
+            setUsers([]);
+            setTotalUsers(0);
+            return;
+        }
+
+        setUsers(data.users.map(u => ({
           ...u,
-          // FIX: Đảm bảo trường ID là _id để thao tác API
           id: u._id, 
-          // Cần dùng sub để hiển thị MSSV/ID cho sinh viên
           studentId: u.sub, 
           fullName: u.name,
           email: u.email,
@@ -50,83 +66,99 @@ const UserManagementPage = () => {
       setTotalUsers(data.total);
     } catch (err) {
       console.error("Error fetching users:", err);
-      // Giữ nguyên thông báo lỗi chung
-      setError('Không thể tải danh sách người dùng. Kiểm tra quyền Admin.');
+
+      let defaultError = isFacultyManager 
+          ? 'Không thể tải danh sách người dùng trong khoa.'
+          : 'Không thể tải danh sách người dùng. Kiểm tra quyền Admin.';
+
+      let finalError = defaultError;
+
+      if (err.response && err.response.data && err.response.data.message) {
+          finalError = err.response.data.message;
+      } else if (err.message && err.message !== "Tài khoản không có quyền truy cập trang này.") {
+          finalError = err.message;
+      } else if (err.message === "Tài khoản không có quyền truy cập trang này.") {
+          finalError = err.message;
+      }
+      
+      setError(finalError);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchUsers(page, rowsPerPage);
-  }, [page, rowsPerPage]);
+        if (currentUser) { 
+            fetchUsers(page, rowsPerPage);
+        }
+    }, [page, rowsPerPage, currentUser]);
 
-  // Hành động phân trang
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
   };
 
   const handleChangeRowsPerPage = (event) => {
     setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0); // Reset về trang đầu tiên khi thay đổi limit
+    setPage(0); 
   };
 
 
   const handleEdit = (user) => {
-    setEditingUser(user);
-    setIsModalOpen(true);
-  };
+        if (isFacultyManager) {
+            setError('Faculty Manager không có quyền chỉnh sửa phân quyền.');
+            return;
+        }
+        setEditingUser(user);
+        setIsModalOpen(true);
+    };
 
-  // Hành động Chặn/Bỏ chặn
   const handleToggleBan = async (user) => {
-    try {
-      if (user.banned) {
-          console.log(`Bỏ chặn người dùng ${user.id}`);
-          await unbanUser(user.id);
-      } else {
-          console.log(`Chặn người dùng ${user.id}`);
-          await banUser(user.id);
-      }
-      // Sau khi thao tác, tải lại trang hiện tại
-      fetchUsers(page, rowsPerPage); 
-    } catch (error) {
-      // Xử lý lỗi cụ thể cho Chặn/Bỏ chặn nếu cần (ví dụ: không thể tự chặn chính mình)
-      console.error("Error toggling ban status:", error);
-      setError(error.message || "Thao tác Chặn/Bỏ chặn thất bại.");
-    }
-  };
+        try {
+
+            const apiCall = user.banned ? (isAdmin ? unbanUser : unbanStudent) : (isAdmin ? banUser : banStudent);
+
+            await apiCall(user.id);
+            
+            fetchUsers(page, rowsPerPage); 
+        } catch (error) {
+            console.error("Error toggling ban status:", error);
+            setError(error.message || "Thao tác Chặn/Bỏ chặn thất bại.");
+        }
+    };
 
   const handleSave = (userData) => {
-    // Sau khi modal UserFormModal gọi API Phân quyền (assign-*), ta gọi fetchUsers
     console.log("Saving user data via modal, initiating fetch...");
     setIsModalOpen(false);
     fetchUsers(page, rowsPerPage);
   };
     
-  if (isLoading) {
-      return (
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
-              <CircularProgress />
-              <Typography sx={{ ml: 2 }}>Đang tải dữ liệu người dùng...</Typography>
-          </Box>
-      );
-  }
-
+  if (isLoading || !currentUser) {
+        return (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+                <CircularProgress />
+                <Typography sx={{ ml: 2 }}>Đang tải dữ liệu người dùng...</Typography>
+            </Box>
+        );
+    }
+    
   return (
-    <Box sx={{ p: { xs: 1, md: 3 } }}>
-      {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
+      <Box sx={{ p: { xs: 1, md: 3 } }}>
+        {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
       
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" sx={{ fontWeight: 700, color: 'primary.main' }}>Quản lý người dùng</Typography>
-        {/* 🛑 Đã loại bỏ nút "Chỉnh sửa phân quyền" ở đây */}
-      </Box>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+          <Typography variant="h4" sx={{ fontWeight: 700, color: 'primary.main' }}>
+            Quản lý người dùng
+          </Typography>
+        </Box>
 
-      <UserFormModal
-        open={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSave={handleSave}
-        user={editingUser}
-      />
+        {isAdmin && (
+            <UserFormModal
+              open={isModalOpen}
+              onClose={() => setIsModalOpen(false)}
+              onSave={handleSave}
+              user={editingUser}
+            />
+        )}
 
       <TableContainer 
         component={Paper} 
@@ -135,7 +167,7 @@ const UserManagementPage = () => {
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell><b>MSSV/ID</b></TableCell>
+              <TableCell><b>MSSV</b></TableCell>
               <TableCell><b>Họ và Tên</b></TableCell>
               <TableCell><b>Khoa</b></TableCell>
               <TableCell><b>Vai trò</b></TableCell>
@@ -166,12 +198,12 @@ const UserManagementPage = () => {
                 </TableCell>
                 <TableCell align="right">
                   
-                    {/* 1. Nút Phân quyền (Edit) */}
-                  <IconButton onClick={() => handleEdit(user)} sx={{ color: 'primary.main' }} title="Phân quyền & Chi tiết">
-                    <EditIcon />
-                  </IconButton>
+                  {isAdmin && (
+                            <IconButton onClick={() => handleEdit(user)} sx={{ color: 'primary.main' }} title="Phân quyền & Chi tiết">
+                              <EditIcon />
+                          </IconButton>
+                        )}
                     
-                    {/* 2. Nút Chặn/Bỏ chặn */}
                     <IconButton 
                         onClick={() => handleToggleBan(user)} 
                         sx={{ color: user.banned ? 'success.main' : 'error.main' }} 
@@ -193,7 +225,6 @@ const UserManagementPage = () => {
         </Table>
       </TableContainer>
       
-      {/* Pagination */}
       <TablePagination
         component="div"
         count={totalUsers}
