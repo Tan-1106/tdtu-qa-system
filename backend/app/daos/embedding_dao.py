@@ -22,6 +22,34 @@ class EmbeddingDAO:
             "metadatas": embedding["metadatas"]
         }
         
+        
+    # Count total embeddings
+    async def count_embeddings(self) -> int:
+        count = chroma.embeddings_collection.count()
+        return count
+    
+    
+    # Get embedding vectors with pagination
+    async def get_embedding_vectors(self, skip: int, limit: int) -> list:
+        all_embeddings = chroma.embeddings_collection.get(
+            include=["embeddings", "metadatas"],
+            offset=skip,
+            limit=limit
+        )
+        embeddings_list = []
+        for idx in range(len(all_embeddings["ids"])):
+            vector = all_embeddings["embeddings"][idx]
+            if hasattr(vector, 'tolist'):
+                vector = vector.tolist()
+            
+            embedding_data = {
+                "embedding_id": all_embeddings["ids"][idx],
+                "vector": vector,
+                "metadatas": all_embeddings["metadatas"][idx]
+            }
+            embeddings_list.append(embedding_data)
+        return embeddings_list
+        
     
     # Delete embeddings by document ID
     async def delete_embeddings_by_doc_id(self, doc_id: str):
@@ -35,3 +63,13 @@ class EmbeddingDAO:
         
         if ids_to_delete:
             chroma.embeddings_collection.delete(ids=ids_to_delete)
+            
+            
+    # Reset embeddings collection
+    async def reset_embeddings(self):
+        try:
+            chroma.client.delete_collection(name="embeddings")
+        except Exception:
+            pass
+        chroma.embeddings_collection = chroma.client.get_or_create_collection(name="embeddings")
+        return True

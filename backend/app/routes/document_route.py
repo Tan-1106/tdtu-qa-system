@@ -3,18 +3,17 @@ from fastapi.encoders import jsonable_encoder
 from fastapi import APIRouter, Depends, UploadFile, Form, Query
 
 from app.services import auth_service
-from app.utils.basic_information import Role
+from app.schemas import document_schema
 from app.utils.api_response import api_response
 from app.controllers import document_controller
-from app.schemas import document_schema
 
 
-# --- ROUTERS ---
+# --- ROUTER ---
 router = APIRouter(
     prefix="/documents",
     tags=["Documents"],
     dependencies=[
-        Depends(auth_service.require_role([Role.ADMIN.value, Role.FACULTY_MANAGER.value]))
+        Depends(auth_service.get_current_user)
     ]
 )
 
@@ -25,8 +24,8 @@ router = APIRouter(
 async def upload_document(
     file: UploadFile,
     doc_type: str = Form(...),
-    department: str = Form(None),
-    faculty: str = Form(None),
+    department: str = Form(None),                           # For Admin only
+    faculty: str = Form(None),                              # For Admin only                           
     file_url: str = Form(...),
     current_user = Depends(auth_service.get_current_user)
 ):
@@ -37,7 +36,7 @@ async def upload_document(
         department=department,
         faculty=faculty,
         file_url=file_url,
-        uploaded_by=current_user["_id"]
+        current_user=current_user
     )
     return api_response(
         status_code=201,
@@ -46,34 +45,52 @@ async def upload_document(
     )
     
     
-# Get documents (with pagination)
-@router.get("/")
+# Get general documents
+@router.get("/general")
 async def get_documents(
     page: int = Query(1, ge=1),
     limit: int = Query(10, ge=1, le=100),
     doc_type: str = Query(None),
     department: str = Query(None),
-    faculty: str = Query(None),
     keyword: str = Query(None)
 ):
-    documents = await document_controller.get_documents(page, limit, doc_type, department, faculty, keyword)
+    documents = await document_controller.get_general_documents(page, limit, doc_type, department, keyword)
     return api_response(
         status_code=200,
-        message="Get documents list successfully.",
+        message="Documents retrieved successfully.",
         details=documents
     )
     
     
-# Update document information
-@router.patch("/{doc_id}")
-async def update_document(
-    doc_id: str,
-    data: document_schema.DocumentUpdateSchema
+# Get faculty documents
+@router.get("/faculty")
+async def get_faculty_documents(
+    page: int = Query(1, ge=1),
+    limit: int = Query(10, ge=1, le=100),
+    doc_type: str = Query(None),
+    faculty: str = Query(None),                                  # For Admin only
+    keyword: str = Query(None),
+    current_user = Depends(auth_service.get_current_user)
 ):
-    data = jsonable_encoder(data)
-    updated_document = await document_controller.update_document(doc_id, data)
+    current_user = jsonable_encoder(current_user)
+    documents = await document_controller.get_faculty_documents(page, limit, doc_type, faculty, keyword, current_user)
     return api_response(
         status_code=200,
-        message="Document information updated successfully.",
-        details=updated_document
+        message="Documents retrieved successfully.",
+        details=documents
     )
+    
+    
+# # Update document information
+# @router.patch("/{doc_id}")
+# async def update_document(
+#     doc_id: str,
+#     data: document_schema.DocumentUpdateSchema
+# ):
+#     data = jsonable_encoder(data)
+#     updated_document = await document_controller.update_document(doc_id, data)
+#     return api_response(
+#         status_code=200,
+#         message="Document information updated successfully.",
+#         details=updated_document
+#     )

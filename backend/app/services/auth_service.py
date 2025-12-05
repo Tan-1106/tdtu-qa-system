@@ -30,7 +30,7 @@ REFRESH_EXPIRATION_TIME_DAYS=int(os.getenv("REFRESH_EXPIRATION_TIME_DAYS") or 7)
 
 
 hasher = PasswordHash.recommended()
-oauth2_access_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
+oauth2_access_scheme = OAuth2PasswordBearer(tokenUrl="auth/login", auto_error=False)
 
 
 # --- ELIT LOGIN ---

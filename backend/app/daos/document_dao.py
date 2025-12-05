@@ -22,40 +22,79 @@ class DocumentDAO:
         return serializer.document_serialize(created_document)
     
     
-    # Count all documents
-    async def count_all_documents(self, doc_type: str = None, department: str = None, faculty: str = None, keyword: str = None) -> int:
-        query = {}
+    # Count general documents with filters
+    async def count_general_documents(self, doc_type: str, department: str, keyword: str) -> int:
+        query = {"faculty": None}
         if doc_type:
             query["doc_type"] = doc_type
         if department:
             query["department"] = department
-        if faculty:
-            query["faculty"] = faculty
         if keyword:
             query["$or"] = [
-            {"file_name": {"$regex": keyword, "$options": "i"}}
-        ]
+                {"title": {"$regex": keyword, "$options": "i"}},
+                {"description": {"$regex": keyword, "$options": "i"}}
+            ]
             
-        count = await self.documents_collection.count_documents(query)
-        return count
+        total = await self.documents_collection.count_documents(query)
+        return total 
     
     
-    # Get documents with pagination and filters
-    async def get_documents(self, skip: int, limit: int, doc_type: str = None, department: str = None, faculty: str = None, keyword: str = None) -> list[dict]:
+    # Get general documents with filters and pagination
+    async def get_general_documents(self, skip: int, limit: int, doc_type: str, department: str, keyword: str) -> list[dict]:
+        query = {"faculty": None}
+        if doc_type:
+            query["doc_type"] = doc_type
+        if department:
+            query["department"] = department
+        if keyword:
+            query["$or"] = [
+                {"title": {"$regex": keyword, "$options": "i"}},
+                {"description": {"$regex": keyword, "$options": "i"}}
+            ]
+            
+        cursor = self.documents_collection.find(query).skip(skip).limit(limit).sort("uploaded_at", -1)
         documents = []
+        async for document in cursor:
+            documents.append(serializer.document_serialize(document))
+        return documents
+    
+    
+    # Count faculty documents with filters
+    async def count_faculty_documents(self, faculty: str, doc_type: str, keyword: str) -> int:
         query = {}
-        if doc_type:
-            query["doc_type"] = doc_type
-        if department:
-            query["department"] = department
         if faculty:
             query["faculty"] = faculty
+        else:
+            query["department"] = None
+        if doc_type:
+            query["doc_type"] = doc_type
         if keyword:
             query["$or"] = [
-            {"file_name": {"$regex": keyword, "$options": "i"}}
-        ]
+                {"title": {"$regex": keyword, "$options": "i"}},
+                {"description": {"$regex": keyword, "$options": "i"}}
+            ]
             
-        cursor = self.documents_collection.find(query).skip(skip).limit(limit)
+        total = await self.documents_collection.count_documents(query)
+        return total
+    
+    
+    # Get faculty documents with filters and pagination
+    async def get_faculty_documents(self, faculty: str, skip: int, limit: int, doc_type: str, keyword: str) -> list[dict]:
+        query = {}
+        if faculty:
+            query["faculty"] = faculty
+        else:
+            query["department"] = None
+        if doc_type:
+            query["doc_type"] = doc_type
+        if keyword:
+            query["$or"] = [
+                {"title": {"$regex": keyword, "$options": "i"}},
+                {"description": {"$regex": keyword, "$options": "i"}}
+            ]
+            
+        cursor = self.documents_collection.find(query).skip(skip).limit(limit).sort("uploaded_at", -1)
+        documents = []
         async for document in cursor:
             documents.append(serializer.document_serialize(document))
         return documents

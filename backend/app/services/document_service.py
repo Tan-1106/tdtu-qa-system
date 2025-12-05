@@ -110,21 +110,28 @@ async def delete_document_record(doc_id: str):
     await DocumentDAO().delete_document(doc_id)
     
     
-# Get documents with pagination and filters
-async def get_documents(
-    page: int,
-    limit: int,
-    doc_type: str = None,
-    department: str = None,
-    faculty: str = None,
-    keyword: str = None
-):
+# Get general documents with filters and pagination
+async def get_general_documents(page: int, limit: int, doc_type: str, department: str, keyword: str):
     skip = (page - 1) * limit
-    total = await DocumentDAO().count_all_documents(doc_type, department, faculty, keyword)
+    total = await DocumentDAO().count_general_documents(doc_type, department, keyword)
     total_pages = (total + limit - 1) // limit
-    documents = await DocumentDAO().get_documents(skip, limit, doc_type, department, faculty, keyword)
+    documents = await DocumentDAO().get_general_documents(skip, limit, doc_type, department, keyword)
     return {
-        "documents": jsonable_encoder(documents),
+        "documents": documents,
+        "total": total,
+        "total_pages": total_pages,
+        "current_page": page
+    }
+    
+    
+# Get faculty documents with filters and pagination
+async def get_faculty_documents(page: int, limit: int, doc_type: str, faculty: str, keyword: str):
+    skip = (page - 1) * limit
+    total = await DocumentDAO().count_faculty_documents(faculty, doc_type, keyword)
+    total_pages = (total + limit - 1) // limit
+    documents = await DocumentDAO().get_faculty_documents(faculty, skip, limit, doc_type, keyword)
+    return {
+        "documents": documents,
         "total": total,
         "total_pages": total_pages,
         "current_page": page

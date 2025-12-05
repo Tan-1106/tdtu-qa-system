@@ -1,5 +1,4 @@
 import os
-from typing import Optional
 from urllib.parse import urlparse
 
 from fastapi import UploadFile, Form
@@ -12,13 +11,15 @@ from app.services import llm_service, embedding_service, document_chunk_service
 # --- ROUTERS ---
 # Upload a new document
 async def upload_document(
-    uploaded_by: str,
     file: UploadFile,
     doc_type: str,
-    department: Optional[str] = None,
-    faculty: Optional[str] = None,
-    file_url: str = Form(...)
+    department: str = None,
+    faculty: str = None,
+    file_url: str = Form(...),
+    current_user: dict = None,
 ):
+    if current_user["role"] not in [Role.ADMIN.value, Role.FACULTY_MANAGER.value]:
+        raise AuthException("You do not have permission to upload documents.")
     if department is None and faculty is None:
         raise UserError("Either department or faculty must be provided.")
     if department is not None and faculty is not None:
@@ -28,6 +29,10 @@ async def upload_document(
     if file.content_type != "application/pdf":
         raise UserError("Only PDF files are allowed.")
     
+    
+    if current_user["role"] == Role.FACULTY_MANAGER.value:
+        department = None
+        faculty = current_user.get("faculty")    
     try:
         # Extract text content from the uploaded PDF file
         document_content = await document_service.extract_file_content(file)
@@ -44,7 +49,7 @@ async def upload_document(
             "department": department,
             "faculty": faculty,
             "file_url": file_url,
-            "uploaded_by": uploaded_by,
+            "uploaded_by": current_user["_id"],
             "file_path": file_path
         }
         new_document = await document_service.store_document_record(document_record)
@@ -81,8 +86,7 @@ async def upload_document(
                     metadatas={
                         "doc_id": new_document["id"],
                         "chunk_index": int(idx),
-                        "faculty": faculty if faculty else "",
-                        "department": department if department else ""
+                        "faculty": faculty if faculty else ""
                     }
                 )
                 chunk_data["embedding_ids"].append(embedding["embedding_id"])               
@@ -100,14 +104,47 @@ async def upload_document(
         raise Exception("Failed to upload document.")
     
 
-# Get documents (Admin)
-async def get_documents(
+# Get general documents
+async def get_general_documents(
     page: int,
     limit: int,
-    doc_type: Optional[str] = None,
-    department: Optional[str] = None,
-    faculty: Optional[str] = None,
-    keyword: Optional[str] = None
+    doc_type: str = None,
+    department: str = None,
+    keyword: str = None
 ):
-    documents = await document_service.get_documents(page, limit, doc_type, department, faculty, keyword)
+    documents = await document_service.get_general_documents(
+        page=page,
+        limit=limit,
+        doc_type=doc_type,
+        department=department,
+        keyword=keyword
+    )
     return documents
+
+
+# Get faculty documents
+async def get_faculty_documents(
+    page: int,
+    limit: int,
+    doc_type: str = None,
+    faculty: str = None,
+    keyword: str = None,
+    current_user: dict = None
+):
+    if current_user["role"] != Role.ADMIN.value:
+        faculty = current_user["faculty"]
+    
+    documents = await document_service.get_faculty_documents(
+        page=page,
+        limit=limit,
+        doc_type=doc_type,
+        faculty=faculty,
+        keyword=keyword
+    )
+    return documents
+
+
+# # Update document information
+# async def update_document(doc_id: str, data: dict):
+#     updated_document = await document_service.update_document_record(doc_id, data)
+#     return updated_document

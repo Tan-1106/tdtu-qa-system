@@ -7,7 +7,7 @@ from app.utils.api_response import api_response
 from app.schemas import auth_schema, user_schema
 
 
-# --- ROUTERS ---
+# --- ROUTER ---
 router = APIRouter(
     prefix="/auth",
     tags=["Authentication"]

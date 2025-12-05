@@ -8,7 +8,7 @@ from app.utils.api_response import api_response
 from app.utils.basic_information import Role, Faculty
 
 
-# --- ROUTERS ---
+# --- ROUTER ---
 router = APIRouter(
     prefix="/users",
     tags=["Users"],

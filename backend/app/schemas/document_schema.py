@@ -36,6 +36,7 @@ class DocumentUploadSchema(BaseModel):
         
 # Document Update Schema
 class DocumentUpdateSchema(BaseModel):
+    file_name: Optional[str] = None
     doc_type: Optional[str] = None
     department: Optional[str] = None
     faculty: Optional[str] = None

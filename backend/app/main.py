@@ -5,9 +5,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.utils.api_response import api_response, UserError, NotFoundException, DatabaseException
+from app.utils.api_response import api_response, UserError, NotFoundException, DatabaseException, AuthException
 from app.databases.mongo import connect_to_mongo, close_mongo_connection
-from app.routes import auth_route, user_route, document_route
+from app.routes import auth_route, user_route, document_route, embedding_route
 from app.routes import llm_route
 
 
@@ -54,6 +54,16 @@ app.add_middleware(
 
 
 # --- EXCEPTION HANDLERS ---
+# Authentication Exception
+@app.exception_handler(AuthException)
+async def auth_exception_handler(request: Request, exc: AuthException):
+    return api_response(
+        status_code=401,
+        message="Authentication Error",
+        details=exc.message
+    )
+
+
 # User Error
 @app.exception_handler(UserError)
 async def user_error_handler(request, exc: UserError):
@@ -138,15 +148,17 @@ app.include_router(llm_route.router, prefix="/api")
 
 # # Document routes
 app.include_router(document_route.router, prefix="/api")
-# app.include_router(document_route.user_router, prefix="/api")
+
+
+# Embedding routes
+app.include_router(embedding_route.router, prefix="/api")
 
 
 # # Question Embedding routes
 # app.include_router(question_embedding_route.router, prefix="/api")
 
 
-# # Prototype routes
-# app.include_router(prototype_route.router, prefix="/api")
+
 
 
 # # Potential Question routes

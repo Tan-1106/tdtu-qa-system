@@ -30,6 +30,6 @@ class DatabaseException(Exception):
         self.message = message
         
 
-class AuthException(HTTPException):
+class AuthException(Exception):
     def __init__(self, message: str = "Unauthorized"):
-        super().__init__(status_code=status.HTTP_401_UNAUTHORIZED, detail=message)
+        self.message = message

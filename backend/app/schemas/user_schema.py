@@ -12,7 +12,7 @@ class UserRecord(BaseModel):
     email: EmailStr
     image: Optional[str] = None
     role: str
-    faculty: str
+    faculty: Optional[str] = None
     banned: bool
     created_at: datetime
     class Config:

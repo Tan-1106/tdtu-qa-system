@@ -9,7 +9,7 @@ from app.utils.basic_information import Role
 from app.utils.api_response import api_response
 
 
-# --- ROUTERS ---
+# --- ROUTER ---
 router = APIRouter(
     prefix="/model",
     tags=["Model"],

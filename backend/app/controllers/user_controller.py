@@ -12,24 +12,21 @@ async def get_users(
     keyword: str = None,
     current_user: dict = None
 ):
-    user_role = current_user["role"]
-    user_faculty = current_user.get("faculty")
-    
     if role and role not in [r.value for r in Role]:
         raise UserError("Invalid role specified.")
     if faculty and faculty not in [fac.value.name for fac in Faculty]:
         raise UserError("Invalid faculty specified.")
     if keyword and not isinstance(keyword, str):
         raise UserError("Invalid keyword specified.")
-    if user_role == Role.STUDENT.value:
+    if current_user["role"] == Role.STUDENT.value:
         raise AuthException("Students are not allowed to view user list.")
     
-    if user_role == Role.ADMIN.value:
+    if current_user["role"] == Role.ADMIN.value:
         users = await user_service.get_users(page, limit, role, faculty, banned, keyword)
         return users
     
-    elif (user_role == Role.FACULTY_MANAGER.value):
-        users = await user_service.get_students(page, limit, user_faculty, banned, keyword)
+    elif (current_user["role"] == Role.FACULTY_MANAGER.value):
+        users = await user_service.get_students(page, limit, current_user["faculty"], banned, keyword)
         return users
     
     return {"users": [], "total": 0, "total_pages": 0, "current_page": page}
