@@ -10,10 +10,19 @@ from app.controllers import document_controller
 
 # --- ROUTERS ---
 admin_router = APIRouter(
-    prefix="/document",
+    prefix="/documents",
     tags=["Document"],
     dependencies=[
         Depends(auth_service.require_role([Role.ADMIN.value]))
+    ]
+)
+
+
+faculty_router = APIRouter(
+    prefix="/documents",
+    tags=["Document"],
+    dependencies=[
+        Depends(auth_service.get_current_user)
     ]
 )
 
@@ -41,5 +50,23 @@ async def upload_document(
     return api_response(
         status_code=201,
         message="Document uploaded successfully.",
-        details=None
+        details=uploaded_document
+    )
+    
+    
+# Get documents (with pagination)
+@admin_router.get("/")
+async def get_documents(
+    page: int = Query(1, ge=1),
+    limit: int = Query(10, ge=1, le=100),
+    doc_type: str = Query(None),
+    department: str = Query(None),
+    faculty: str = Query(None),
+    keyword: str = Query(None)
+):
+    documents = await document_controller.get_documents(page, limit, doc_type, department, faculty, keyword)
+    return api_response(
+        status_code=200,
+        message="Get documents list successfully.",
+        details=documents
     )

@@ -30,7 +30,7 @@ class UserDAO:
     
     
     # Count all users
-    async def count_all_users(self, role: str = None, faculty: str = None, banned: bool = None) -> int:
+    async def count_all_users(self, role: str = None, faculty: str = None, banned: bool = None, keyword: str = None) -> int:
         query = {}
         if role:
             query["role"] = role
@@ -38,13 +38,18 @@ class UserDAO:
             query["faculty"] = faculty
         if banned is not None:
             query["banned"] = banned
+        if keyword:
+            query["$or"] = [
+            {"name": {"$regex": keyword, "$options": "i"}},
+            {"sub": {"$regex": keyword, "$options": "i"}}
+        ]
             
         count = await self.users_collection.count_documents(query)
         return count
     
     
     # Get all users
-    async def get_users(self, skip: int, limit: int, role: str = None, faculty: str = None, banned: bool = None) -> list[user_schema.UserRecord]:
+    async def get_users(self, skip: int, limit: int, role: str = None, faculty: str = None, banned: bool = None, keyword: str = None) -> list[user_schema.UserRecord]:
         users = []
         query = {}
         if role:
@@ -53,6 +58,12 @@ class UserDAO:
             query["faculty"] = faculty
         if banned is not None:
             query["banned"] = banned
+        if keyword:
+            query["$or"] = [
+            {"name": {"$regex": keyword, "$options": "i"}},
+            {"sub": {"$regex": keyword, "$options": "i"}}
+        ]
+            
         cursor = self.users_collection.find(query).skip(skip).limit(limit)
         async for user in cursor:
             users.append(user_schema.UserRecord(**serializer.user_serialize(user)))
@@ -76,20 +87,32 @@ class UserDAO:
     
     
     # Count students by faculty
-    async def count_students_by_faculty(self, faculty: str, banned: bool = None) -> int:
+    async def count_students_by_faculty(self, faculty: str, banned: bool = None, keyword: str = None) -> int:
         query = {"faculty": faculty, "role": Role.STUDENT.value}
         if banned is not None:
             query["banned"] = banned
+        if keyword:
+            query["$or"] = [
+            {"name": {"$regex": keyword, "$options": "i"}},
+            {"sub": {"$regex": keyword, "$options": "i"}}
+        ]
+            
         count = await self.users_collection.count_documents(query)
         return count
     
     
     # Get students by faculty with pagination
-    async def get_students_by_faculty(self, faculty: str, skip: int, limit: int, banned: bool = None) -> list[user_schema.UserRecord]:
+    async def get_students_by_faculty(self, faculty: str, skip: int, limit: int, banned: bool = None, keyword: str = None) -> list[user_schema.UserRecord]:
         students = []
         query = {"faculty": faculty, "role": Role.STUDENT.value}
         if banned is not None:
             query["banned"] = banned
+        if keyword:
+            query["$or"] = [
+            {"name": {"$regex": keyword, "$options": "i"}},
+            {"sub": {"$regex": keyword, "$options": "i"}}
+        ]
+            
         cursor = self.users_collection.find(query).skip(skip).limit(limit)
         async for user in cursor:
             students.append(user_schema.UserRecord(**serializer.user_serialize(user)))

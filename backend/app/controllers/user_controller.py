@@ -3,19 +3,39 @@ from app.utils.basic_information import Role, Faculty
 from app.utils.api_response import UserError, AuthException
 
 # Get list of users
-async def get_users(page: int, limit: int, role: str = None, faculty: str = None, banned: bool = None):
+async def get_users(
+    page: int,
+    limit: int,
+    role: str = None,
+    faculty: str = None,
+    banned: bool = None,
+    keyword: str = None
+):
     if role and role not in [r.value for r in Role]:
         raise UserError("Invalid role specified")
     if faculty and faculty not in [fac.value.name for fac in Faculty]:
         raise UserError("Invalid faculty specified")
+    if keyword and not isinstance(keyword, str):
+        raise UserError("Invalid keyword specified")
     
-    users = await user_service.get_users(page, limit, role, faculty, banned)
+    users = await user_service.get_users(page, limit, role, faculty, banned, keyword)
     return users
 
 
 # Get list of students
-async def get_students(faculty: str, page: int, limit: int, banned: bool = None):
-    students = await user_service.get_students(faculty, page, limit, banned)
+async def get_students(
+    page: int,
+    limit: int,
+    faculty: str,
+    banned: bool = None,
+    keyword: str = None
+):
+    if faculty not in [fac.value.name for fac in Faculty]:
+        raise UserError("Invalid faculty specified")
+    if keyword and not isinstance(keyword, str):
+        raise UserError("Invalid keyword specified")
+    
+    students = await user_service.get_students(page, limit, faculty, banned, keyword)
     return students
 
 
@@ -62,7 +82,10 @@ async def ban_user(user_id: str, current_user: dict):
 
 
 # Unban a user
-async def unban_user(user_id: str, current_user: dict):
+async def unban_user(
+    user_id: str,
+    current_user: dict
+):
     if current_user["_id"] == user_id:
         raise UserError("You cannot unban yourself")
     

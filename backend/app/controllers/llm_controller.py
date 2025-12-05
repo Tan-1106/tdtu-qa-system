@@ -16,7 +16,10 @@ async def create_api_key(data: dict):
 
 
 # Get all API keys
-async def get_all_api_keys(page: int, limit: int, provider: Optional[str] = None):
+async def get_all_api_keys(
+    page: int, limit: int,
+    provider: Optional[str] = None
+):
     if provider and provider not in [prov.value for prov in api_key_schema.APIKeyProvider]:
         raise UserError("Invalid API key provider. Supported providers are: " + ", ".join([prov.value for prov in api_key_schema.APIKeyProvider]))
     
@@ -37,7 +40,10 @@ async def get_current_api_key():
 
 
 # Update an existing API key
-async def update_api_key(key_id: str, update_data: dict):
+async def update_api_key(
+    key_id: str,
+    update_data: dict
+):
     if update_data == {}:
         raise UserError("No data provided for update.")
     

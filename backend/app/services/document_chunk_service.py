@@ -1,6 +1,6 @@
 from app.daos.document_chunk_dao import DocumentChunkDAO
 
-
+# Store a new document chunks record
 async def store_document_chunks_record(document_chunks_record: dict):
     embedding = await DocumentChunkDAO().create_document_chunks_record(document_chunks_record)
     return embedding

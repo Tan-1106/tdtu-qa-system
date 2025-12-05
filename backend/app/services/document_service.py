@@ -1,14 +1,10 @@
 import os
 import re
-import json
 import fitz
 import shutil
 import asyncio
-import camelot
 import tempfile
-import pdfplumber
 import pytesseract
-from io import BytesIO
 from fastapi import UploadFile
 from tiktoken import get_encoding
 from pdf2image import convert_from_path
@@ -112,6 +108,27 @@ async def store_document_record(document_record: dict):
 # Delete document record from MongoDB
 async def delete_document_record(doc_id: str):
     await DocumentDAO().delete_document(doc_id)
+    
+    
+# Get documents with pagination and filters
+async def get_documents(
+    page: int,
+    limit: int,
+    doc_type: str = None,
+    department: str = None,
+    faculty: str = None,
+    keyword: str = None
+):
+    skip = (page - 1) * limit
+    total = await DocumentDAO().count_all_documents(doc_type, department, faculty, keyword)
+    total_pages = (total + limit - 1) // limit
+    documents = await DocumentDAO().get_documents(skip, limit, doc_type, department, faculty, keyword)
+    return {
+        "documents": jsonable_encoder(documents),
+        "total": total,
+        "total_pages": total_pages,
+        "current_page": page
+    }
 
 
 # --- SUPPORTING FUNCTIONS ---

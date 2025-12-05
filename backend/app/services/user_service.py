@@ -9,11 +9,18 @@ async def get_user_by_id(user_id: str):
 
 
 # Get list of users
-async def get_users(page: int, limit: int, role: str = None, faculty: str = None, banned: bool = None):
+async def get_users(
+    page: int,
+    limit: int,
+    role: str = None,
+    faculty: str = None,
+    banned: bool = None,
+    keyword: str = None
+):
     skip = (page - 1) * limit
-    total = await UserDAO().count_all_users(role, faculty, banned)
+    total = await UserDAO().count_all_users(role, faculty, banned, keyword)
     total_pages = (total + limit - 1) // limit
-    users = await UserDAO().get_users(skip, limit, role, faculty, banned)
+    users = await UserDAO().get_users(skip, limit, role, faculty, banned, keyword)
     return {
         "users": jsonable_encoder(users),
         "total": total,
@@ -23,11 +30,17 @@ async def get_users(page: int, limit: int, role: str = None, faculty: str = None
 
 
 # Get list of students
-async def get_students(faculty: str, page: int, limit: int, banned: bool = None):
+async def get_students(
+    page: int,
+    limit: int,
+    faculty: str,
+    banned: bool = None,
+    keyword: str = None
+):
     skip = (page - 1) * limit
-    total = await UserDAO().count_students_by_faculty(faculty, banned)
+    total = await UserDAO().count_students_by_faculty(faculty, banned, keyword)
     total_pages = (total + limit - 1) // limit
-    students = await UserDAO().get_students_by_faculty(faculty, skip, limit, banned)
+    students = await UserDAO().get_students_by_faculty(faculty, skip, limit, banned, keyword)
     return {
         "students": jsonable_encoder(students),
         "total": total,

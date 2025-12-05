@@ -131,7 +131,6 @@ app.include_router(auth_route.router, prefix="/api")
 # User routes
 app.include_router(user_route.admin_router, prefix="/api")
 app.include_router(user_route.faculty_manager_router, prefix="/api")
-app.include_router(user_route.student_router, prefix="/api")
 app.include_router(user_route.general_router, prefix="/api")
 
 

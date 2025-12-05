@@ -22,6 +22,45 @@ class DocumentDAO:
         return serializer.document_serialize(created_document)
     
     
+    # Count all documents
+    async def count_all_documents(self, doc_type: str = None, department: str = None, faculty: str = None, keyword: str = None) -> int:
+        query = {}
+        if doc_type:
+            query["doc_type"] = doc_type
+        if department:
+            query["department"] = department
+        if faculty:
+            query["faculty"] = faculty
+        if keyword:
+            query["$or"] = [
+            {"file_name": {"$regex": keyword, "$options": "i"}}
+        ]
+            
+        count = await self.documents_collection.count_documents(query)
+        return count
+    
+    
+    # Get documents with pagination and filters
+    async def get_documents(self, skip: int, limit: int, doc_type: str = None, department: str = None, faculty: str = None, keyword: str = None) -> list[dict]:
+        documents = []
+        query = {}
+        if doc_type:
+            query["doc_type"] = doc_type
+        if department:
+            query["department"] = department
+        if faculty:
+            query["faculty"] = faculty
+        if keyword:
+            query["$or"] = [
+            {"file_name": {"$regex": keyword, "$options": "i"}}
+        ]
+            
+        cursor = self.documents_collection.find(query).skip(skip).limit(limit)
+        async for document in cursor:
+            documents.append(serializer.document_serialize(document))
+        return documents
+    
+    
     # Delete a document by ID
     async def delete_document(self, doc_id: str):
         result = await self.documents_collection.delete_one({"_id": ObjectId(doc_id)})

@@ -3,8 +3,9 @@ from typing import Optional
 from urllib.parse import urlparse
 
 from fastapi import UploadFile, Form
-from app.utils.api_response import UserError
+from app.utils.api_response import UserError, AuthException
 from app.services import document_service
+from app.utils.basic_information import Faculty, Role
 from app.services import llm_service, embedding_service, document_chunk_service
 
 
@@ -38,7 +39,7 @@ async def upload_document(
         # Create document record in database
         file_name = os.path.splitext(file.filename)[0]
         document_record = {
-            "filename": file_name,
+            "file_name": file_name,
             "doc_type": doc_type,
             "department": department,
             "faculty": faculty,
@@ -88,6 +89,7 @@ async def upload_document(
                 
         # Store document chunks record in database
         await document_chunk_service.store_document_chunks_record(document_chunks_record)
+        return new_document
         
     except Exception as e:
         await document_service.delete_document_file(file_path)
@@ -97,3 +99,15 @@ async def upload_document(
         
         raise Exception("Failed to upload document.")
     
+
+# Get documents (Admin)
+async def get_documents(
+    page: int,
+    limit: int,
+    doc_type: Optional[str] = None,
+    department: Optional[str] = None,
+    faculty: Optional[str] = None,
+    keyword: Optional[str] = None
+):
+    documents = await document_service.get_documents(page, limit, doc_type, department, faculty, keyword)
+    return documents
