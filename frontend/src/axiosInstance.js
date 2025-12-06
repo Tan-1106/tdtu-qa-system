@@ -33,16 +33,13 @@ export const setTokens = ({ access_token, refresh_token }) => {
     }
 };
 
-// Hàm xóa token (để đăng xuất hoặc khi refresh token hết hạn)
 export const clearTokens = () => {
     if (typeof window !== 'undefined') {
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
     }
-    // TODO: Thêm logic chuyển hướng người dùng về trang đăng nhập ở đây nếu cần thiết
-    // Ví dụ: window.location.href = '/login'; 
-};
 
+};
 
 const refreshAccessToken = async () => {
     const refreshToken = getRefreshToken();

@@ -11,7 +11,7 @@ class UserRecord(BaseModel):
     name: str
     email: EmailStr
     image: Optional[str] = None
-    role: str
+    role: Optional[str] = None
     faculty: Optional[str] = None
     banned: bool
     created_at: datetime

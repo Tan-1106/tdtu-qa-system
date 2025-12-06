@@ -19,6 +19,7 @@ const roleColor = {
   'Admin': 'error',
   'Faculty Manager': 'warning',
   'Student': 'success',
+    
 };
 
 const statusOptions = [
@@ -199,8 +200,8 @@ const UserManagementPage = () => {
           </Typography>
         </Box>
         
-        <Paper elevation={1} sx={{ p: 2, mb: 2, borderRadius: 3, borderLeft: '5px solid #1976d2' }}>
-            <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 700, color: 'primary.main' }}>Tìm kiếm & Lọc</Typography>
+        <Paper elevation={1} sx={{ p: 2, mb: 3, borderRadius: 3, borderLeft: '5px solid #1976d2' }}>
+            <Typography variant="subtitle1" sx={{ mb: -2, fontWeight: 700, color: 'primary.main' }}>Tìm kiếm & Lọc</Typography>
             <Grid container spacing={2} alignItems="flex-end">
                 
                 <Grid item xs={12} sm={6} md={3.5}>
@@ -327,7 +328,7 @@ const UserManagementPage = () => {
                 <TableCell>{user.faculty || 'N/A'}</TableCell>
                 <TableCell>
                   <Chip
-                    label={user.role}
+                    label={user.role || 'N/A'}
                     color={roleColor[user.role]}
                     sx={{ fontWeight: 600, borderRadius: 2 }} 
                   />
