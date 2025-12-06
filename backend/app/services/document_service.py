@@ -3,6 +3,7 @@ import re
 import fitz
 import shutil
 import asyncio
+import aiofiles
 import tempfile
 import pytesseract
 from fastapi import UploadFile
@@ -26,29 +27,41 @@ async def extract_file_content(file: UploadFile):
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
         shutil.copyfileobj(file.file, tmp)
         tmp_path = tmp.name
-        
-    # Scanned
-    if not is_text_based_pdf(tmp_path):
-        try:
-            images = convert_from_path(tmp_path)
-            for img in images:
-                page_text = pytesseract.image_to_string(img, lang='vie+eng')
-                clean_text = re.sub(r'\s+', ' ', page_text)
-                document_content += clean_text
-        except Exception as e:
-            raise Exception("Failed to convert scanned PDF to text.") from e
-        
-    # Text-based
-    else:
-        try:
-            doc = fitz.open(tmp_path)
-            for page in doc:
-                page_text = page.get_text().strip()
-                clean_text = re.sub(r'\s+', ' ', page_text)
-                document_content += clean_text
-            doc.close()
-        except Exception as e:
-            raise Exception("Failed to extract text from PDF.") from e
+    
+    try:
+        # Scanned
+        is_text_pdf = await asyncio.to_thread(is_text_based_pdf, tmp_path)
+        if not is_text_pdf:
+            try:
+                images = await asyncio.to_thread(convert_from_path, tmp_path)
+                for img in images:
+                    page_text = await asyncio.to_thread(pytesseract.image_to_string, img, 'vie+eng')
+                    clean_text = re.sub(r'\s+', ' ', page_text)
+                    document_content += clean_text
+            except Exception as e:
+                raise Exception("Failed to convert scanned PDF to text.") from e
+            
+        # Text-based
+        else:
+            try:
+                # Run PDF text extraction in thread pool
+                def extract_text_from_pdf(path):
+                    doc = fitz.open(path)
+                    content = ""
+                    for page in doc:
+                        page_text = page.get_text().strip()
+                        clean_text = re.sub(r'\s+', ' ', page_text)
+                        content += clean_text
+                    doc.close()
+                    return content
+                
+                document_content = await asyncio.to_thread(extract_text_from_pdf, tmp_path)
+            except Exception as e:
+                raise Exception("Failed to extract text from PDF.") from e
+    finally:
+        # Clean up temp file
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
         
     return document_content
 
@@ -81,14 +94,9 @@ async def split_text_into_chunks(text: str, words_per_chunk: int, overlap: int) 
 async def save_document_file(file: UploadFile):
     os.makedirs(UPLOAD_DIRECTORY, exist_ok=True)
     file_path = os.path.join(UPLOAD_DIRECTORY, file.filename)
-
     contents = await file.read()
-    
-    loop = asyncio.get_event_loop()
-    await loop.run_in_executor(
-        None,
-        lambda: open(file_path, "wb").write(contents)
-    )
+    async with aiofiles.open(file_path, "wb") as f:
+        await f.write(contents)
         
     return file_path
 

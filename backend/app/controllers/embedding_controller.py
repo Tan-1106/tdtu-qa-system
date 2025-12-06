@@ -11,3 +11,9 @@ async def get_embedding_vectors(page: int, limit: int):
 async def reset_embeddings():
     success = await embedding_service.reset_embeddings()
     return success
+
+
+# Recreate embeddings for document chunks
+async def recreate_embeddings():
+    success = await embedding_service.recreate_embeddings()
+    return success

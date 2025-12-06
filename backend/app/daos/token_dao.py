@@ -1,3 +1,4 @@
+import asyncio
 from pwdlib import PasswordHash
 from datetime import datetime, timezone
 
@@ -34,7 +35,9 @@ class TokenDAO:
         tokens = await self.tokens_collection.find({"sub": sub}).to_list(length=None)
         
         for token in tokens:
-            if hasher.verify(refresh_token, token["refresh_token"]) and not token["revoked"]:
+            is_match = await asyncio.to_thread(hasher.verify, refresh_token, token["refresh_token"])
+            
+            if is_match and not token["revoked"]:
                 result = await self.tokens_collection.update_one(
                     {"_id": token["_id"]},
                     {"$set": {"revoked": True, "revoked_at": datetime.now(timezone.utc)}}
@@ -43,7 +46,7 @@ class TokenDAO:
                     raise DatabaseException("Unable to revoke refresh token.")
                 return True
             
-            elif hasher.verify(refresh_token, token["refresh_token"]) and token["revoked"]:
+            elif is_match and token["revoked"]:
                 raise AuthException("Refresh token has already been revoked.")
         raise DatabaseException("Refresh token not found.")
     

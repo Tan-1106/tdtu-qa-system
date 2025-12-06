@@ -161,35 +161,41 @@ async def get_available_models(request: dict):
     
     if provider == APIKeyProvider.OPENAI.value:
         try:
-            # Try to fetch models from OpenAI
-            openai_client = OpenAI(api_key=api_key)
-            models = openai_client.models.list()
-            models = [model.id for model in models.data]
-            models = [
-                model for model in models
-                if re.search(r"gpt", model, re.IGNORECASE) and
-                   not re.search(r"realtime|chatgpt|transcribe|chat|audio|image|preview|codex|instruct", model, re.IGNORECASE)
-            ]
-            return models
+            # Run API call in thread pool to avoid blocking
+            def fetch_openai_models():
+                openai_client = OpenAI(api_key=api_key)
+                models = openai_client.models.list()
+                models = [model.id for model in models.data]
+                models = [
+                    model for model in models
+                    if re.search(r"gpt", model, re.IGNORECASE) and
+                       not re.search(r"realtime|chatgpt|transcribe|chat|audio|image|preview|codex|instruct", model, re.IGNORECASE)
+                ]
+                return models
+            
+            return await asyncio.to_thread(fetch_openai_models)
         except Exception as e:
             raise UserError("Invalid API key or unable to connect to OpenAI.")
     elif provider == APIKeyProvider.GEMINI.value:
         try:
-            genai.configure(api_key=api_key)
-            models = jsonable_encoder(genai.list_models())
-            models = [model["name"].replace("models/", "") for model in models]
-            models = [
-                model for model in models
-                if re.search(r"gemini", model, re.IGNORECASE) and
-                   not re.search(r"embedding|preview|image|exp|audio|live", model, re.IGNORECASE)
-            ]
-            return models
+            def fetch_gemini_models():
+                genai.configure(api_key=api_key)
+                models = jsonable_encoder(genai.list_models())
+                models = [model["name"].replace("models/", "") for model in models]
+                models = [
+                    model for model in models
+                    if re.search(r"gemini", model, re.IGNORECASE) and
+                       not re.search(r"embedding|preview|image|exp|audio|live", model, re.IGNORECASE)
+                ]
+                return models
+            
+            return await asyncio.to_thread(fetch_gemini_models)
         except Exception as ge:
             raise UserError("Invalid API key or unable to connect to Google Generative AI.")
         
         
 # Generate potential questions from text chunks
-def generate_potential_questions(api_key: dict, context: str, num_questions: int) -> list[str]:
+async def generate_potential_questions(api_key: dict, context: str, num_questions: int) -> list[str]:
     prompt = f"""
     Bạn là một trợ lý tạo câu hỏi thông minh.
 
@@ -214,23 +220,29 @@ def generate_potential_questions(api_key: dict, context: str, num_questions: int
     output_text = []
     
     if api_key["provider"] == APIKeyProvider.OPENAI.value:
-        openai_client = OpenAI(api_key=api_key["api_key"])
-        response = openai_client.responses.create(
-            model=api_key["using_model"],
-            input=prompt,
-            store=False
-        )
-        output_text = response.output_text
+        def call_openai():
+            openai_client = OpenAI(api_key=api_key["api_key"])
+            response = openai_client.responses.create(
+                model=api_key["using_model"],
+                input=prompt,
+                store=False
+            )
+            return response.output_text
+        
+        output_text = await asyncio.to_thread(call_openai)
         output_text = normalize_text(output_text)
         
     elif api_key["provider"] == APIKeyProvider.GEMINI.value:
-        genai.configure(api_key=api_key["api_key"])
-        model = genai.GenerativeModel(api_key["using_model"])
-        response = model.generate_content(
-            prompt,
-            generation_config={"max_output_tokens": 1024}
-        )
-        output_text = response.text
+        def call_gemini():
+            genai.configure(api_key=api_key["api_key"])
+            model = genai.GenerativeModel(api_key["using_model"])
+            response = model.generate_content(
+                prompt,
+                generation_config={"max_output_tokens": 1024}
+            )
+            return response.text
+        
+        output_text = await asyncio.to_thread(call_gemini)
         output_text = normalize_text(output_text)
     
     return output_text

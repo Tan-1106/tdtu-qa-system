@@ -31,7 +31,7 @@ async def get_embedding_vectors(
         details=vectors
     )
     
-
+    
 # Reset collection
 @router.delete("/reset")
 async def reset_embeddings():
@@ -39,5 +39,17 @@ async def reset_embeddings():
     return api_response(
         status_code=200,
         message="Reset embeddings successfully.",
+        details=success
+    )
+    
+    
+# --- ROUTES ---
+# Scan document chunk collection and recreate embeddings
+@router.post("/recreate")
+async def recreate_embeddings():
+    success = await embedding_controller.recreate_embeddings()
+    return api_response(
+        status_code=200,
+        message="Recreate embeddings successfully.",
         details=success
     )

@@ -18,21 +18,23 @@ async def upload_document(
     file_url: str = Form(...),
     current_user: dict = None,
 ):
-    if current_user["role"] not in [Role.ADMIN.value, Role.FACULTY_MANAGER.value]:
+    if current_user["role"] == Role.STUDENT.value:
         raise AuthException("You do not have permission to upload documents.")
-    if department is None and faculty is None:
-        raise UserError("Either department or faculty must be provided.")
-    if department is not None and faculty is not None:
-        raise UserError("Only one of department or faculty can be provided.")
+    if current_user["role"] == Role.ADMIN.value:
+        if department is None and faculty is None:
+            raise UserError("Either department or faculty must be provided.")
+        if department is not None and faculty is not None:
+            raise UserError("Only one of department or faculty can be provided.")
+        if faculty is not None and faculty not in [f.value.name for f in Faculty]:
+            raise UserError("Invalid faculty provided.")
     if not all([urlparse(file_url).scheme, urlparse(file_url).netloc]):
         raise UserError("Invalid file URL provided.")
     if file.content_type != "application/pdf":
         raise UserError("Only PDF files are allowed.")
     
-    
     if current_user["role"] == Role.FACULTY_MANAGER.value:
         department = None
-        faculty = current_user.get("faculty")    
+        faculty = current_user["faculty"]    
     try:
         # Extract text content from the uploaded PDF file
         document_content = await document_service.extract_file_content(file)
@@ -67,7 +69,7 @@ async def upload_document(
             "chunks": {}
         }
         for idx, chunk in enumerate(chunks):
-            potential_questions = llm_service.generate_potential_questions(
+            potential_questions = await llm_service.generate_potential_questions(
                 api_key=api_key,
                 context=chunk,
                 num_questions=2

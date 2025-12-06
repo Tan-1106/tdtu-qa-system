@@ -2,6 +2,7 @@ import os
 import jwt
 import httpx
 import base64
+import asyncio
 from fastapi import Depends
 from pwdlib import PasswordHash
 from fastapi.encoders import jsonable_encoder
@@ -74,7 +75,12 @@ async def elit_login(code: str) -> dict:
     if (user["banned"]):
         raise AuthException("User is banned from the system.")
     
-    await TokenDAO().create_tokens(user_data["sub"], hasher.hash(access_token), hasher.hash(refresh_token))
+    # Hash tokens in thread pool to avoid blocking
+    hashed_access, hashed_refresh = await asyncio.gather(
+        asyncio.to_thread(hasher.hash, access_token),
+        asyncio.to_thread(hasher.hash, refresh_token)
+    )
+    await TokenDAO().create_tokens(user_data["sub"], hashed_access, hashed_refresh)
     
     return {
         "user": user,
@@ -175,8 +181,9 @@ async def refresh_tokens(refresh_token: str) -> str:
     user = await UserDAO().get_user_by_sub(user_sub)
     user = jsonable_encoder(user)
     
-    # Check if refresh token is revoked
-    revoked_refresh_token = await TokenDAO().is_refresh_token_revoked(user_sub, hasher.hash(refresh_token["token"]))
+    # Check if refresh token is revoked (hash in thread to avoid blocking)
+    hashed_refresh = await asyncio.to_thread(hasher.hash, refresh_token["token"])
+    revoked_refresh_token = await TokenDAO().is_refresh_token_revoked(user_sub, hashed_refresh)
     if revoked_refresh_token:
         raise AuthException("Refresh token has been revoked")
         
@@ -201,7 +208,12 @@ async def refresh_tokens(refresh_token: str) -> str:
     }
     new_refresh_token = jwt.encode(new_refresh_payload, SECRET_KEY, algorithm=ALGORITHM)
     
-    await TokenDAO().create_tokens(user_sub, hasher.hash(new_access_token), hasher.hash(new_refresh_token))
+    # Hash tokens in thread pool to avoid blocking
+    hashed_new_access, hashed_new_refresh = await asyncio.gather(
+        asyncio.to_thread(hasher.hash, new_access_token),
+        asyncio.to_thread(hasher.hash, new_refresh_token)
+    )
+    await TokenDAO().create_tokens(user_sub, hashed_new_access, hashed_new_refresh)
     return {
         "access_token": new_access_token,
         "refresh_token": new_refresh_token,

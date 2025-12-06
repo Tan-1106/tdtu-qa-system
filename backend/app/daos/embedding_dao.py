@@ -70,6 +70,6 @@ class EmbeddingDAO:
         try:
             chroma.client.delete_collection(name="embeddings")
         except Exception:
-            pass
+            raise DatabaseException("Failed to reset embeddings collection.")
         chroma.embeddings_collection = chroma.client.get_or_create_collection(name="embeddings")
         return True

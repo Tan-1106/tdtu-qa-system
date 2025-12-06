@@ -100,6 +100,14 @@ class DocumentDAO:
         return documents
     
     
+    # Get a document by ID
+    async def get_document_by_id(self, doc_id: str) -> dict:
+        document = await self.documents_collection.find_one({"_id": ObjectId(doc_id)})
+        if not document:
+            raise DatabaseException("Document not found.")
+        return serializer.document_serialize(document)
+    
+    
     # Delete a document by ID
     async def delete_document(self, doc_id: str):
         result = await self.documents_collection.delete_one({"_id": ObjectId(doc_id)})
