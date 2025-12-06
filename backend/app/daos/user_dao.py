@@ -172,7 +172,7 @@ class UserDAO:
     async def assign_admin_role(self, user_id: str) -> user_schema.UserRecord:
         result = await self.users_collection.update_one(
             {"_id": ObjectId(user_id)},
-            {"$set": {"role": Role.ADMIN.value, "faculty": "N/A"}}
+            {"$set": {"role": Role.ADMIN.value, "faculty": None}}
         )
         if result.matched_count == 0:
             raise DatabaseException("User not found")

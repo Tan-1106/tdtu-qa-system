@@ -146,7 +146,40 @@ async def get_faculty_documents(
     return documents
 
 
-# # Update document information
-# async def update_document(doc_id: str, data: dict):
-#     updated_document = await document_service.update_document_record(doc_id, data)
-#     return updated_document
+# Update document information
+async def update_document(
+    doc_id: str,
+    data: dict,
+    current_user: dict = None
+):
+    document = await document_service.get_document_by_id(doc_id)
+    
+    if current_user["role"] == Role.ADMIN.value:
+        if data["department"] is not None and data["faculty"] is not None:
+            raise UserError("Only one of department or faculty can be provided.")
+        if data["faculty"] is not None and data["faculty"] not in [f.value.name for f in Faculty]:
+            raise UserError("Invalid faculty provided.")
+        if data["faculty"] is not None:
+            data["department"] = None
+        if data["department"] is not None:
+            data["faculty"] = None
+    
+    if current_user["role"] == Role.FACULTY_MANAGER.value:
+        if document["faculty"] != current_user["faculty"]:
+            raise AuthException("You do not have permission to update this document.")
+        if document["department"] is not None:
+            raise AuthException("You do not have permission to update department documents.")
+        if data["faculty"] is not None or data["department"] is not None:
+            raise AuthException("You do not have permission to update faculty or department.")
+    
+    if current_user["role"] == Role.STUDENT.value:
+        raise AuthException("You do not have permission to update documents.")
+    
+    data["updated_by"] = current_user["_id"]
+    data = {
+        k: v for k, v in data.items() 
+        if v is not None or (k in ['faculty', 'department'] and not (data.get('faculty') is None and data.get('department') is None))
+    }
+    
+    updated_document = await document_service.update_document_record(doc_id, data)
+    return updated_document

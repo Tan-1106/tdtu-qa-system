@@ -144,6 +144,12 @@ async def get_faculty_documents(page: int, limit: int, doc_type: str, faculty: s
         "total_pages": total_pages,
         "current_page": page
     }
+    
+
+# Get document by ID
+async def get_document_by_id(doc_id: str):
+    document = await DocumentDAO().get_document_by_id(doc_id)
+    return jsonable_encoder(document)
 
 
 # --- SUPPORTING FUNCTIONS ---
@@ -197,3 +203,9 @@ async def merge_chunks(chunks: list[str], target_max_length: int) -> list[str]:
     if buffer:
         final_chunks.append(buffer.strip())
     return final_chunks
+
+
+# Update document record
+async def update_document_record(doc_id: str, data: dict):
+    updated_document = await DocumentDAO().update_document(doc_id, data)
+    return jsonable_encoder(updated_document)

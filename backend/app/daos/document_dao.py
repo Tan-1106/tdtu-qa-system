@@ -108,6 +108,20 @@ class DocumentDAO:
         return serializer.document_serialize(document)
     
     
+    # Update a document by ID
+    async def update_document(self, doc_id: str, data: dict) -> dict:
+        data["updated_at"] = datetime.now(timezone.utc)
+        result = await self.documents_collection.update_one(
+            {"_id": ObjectId(doc_id)},
+            {"$set": data}
+        )
+        if result.matched_count == 0:
+            raise DatabaseException("Document not found.")
+        
+        updated_document = await self.documents_collection.find_one({"_id": ObjectId(doc_id)})
+        return serializer.document_serialize(updated_document)
+    
+    
     # Delete a document by ID
     async def delete_document(self, doc_id: str):
         result = await self.documents_collection.delete_one({"_id": ObjectId(doc_id)})

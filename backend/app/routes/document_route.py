@@ -81,16 +81,18 @@ async def get_faculty_documents(
     )
     
     
-# # Update document information
-# @router.patch("/{doc_id}")
-# async def update_document(
-#     doc_id: str,
-#     data: document_schema.DocumentUpdateSchema
-# ):
-#     data = jsonable_encoder(data)
-#     updated_document = await document_controller.update_document(doc_id, data)
-#     return api_response(
-#         status_code=200,
-#         message="Document information updated successfully.",
-#         details=updated_document
-#     )
+# Update document information
+@router.patch("/{doc_id}")
+async def update_document(
+    doc_id: str,
+    data: document_schema.DocumentUpdateSchema,
+    current_user = Depends(auth_service.get_current_user)
+):
+    data = jsonable_encoder(data)
+    current_user = jsonable_encoder(current_user)
+    updated_document = await document_controller.update_document(doc_id, data, current_user)
+    return api_response(
+        status_code=200,
+        message="Document information updated successfully.",
+        details=updated_document
+    )
