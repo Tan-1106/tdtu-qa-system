@@ -34,7 +34,11 @@ async def upload_document(
     
     if current_user["role"] == Role.FACULTY_MANAGER.value:
         department = None
-        faculty = current_user["faculty"]    
+        faculty = current_user["faculty"]
+   
+    file_path = None
+    new_document = None
+    
     try:
         # Extract text content from the uploaded PDF file
         document_content = await document_service.extract_file_content(file)
@@ -98,12 +102,14 @@ async def upload_document(
         return new_document
         
     except Exception as e:
-        await document_service.delete_document_file(file_path)
-        await document_service.delete_document_record(new_document["id"])        
-        await embedding_service.delete_embeddings_by_doc_id(new_document["id"])
-        await document_chunk_service.delete_document_chunks_by_doc_id(new_document["id"])
+        if file_path:
+            await document_service.delete_document_file(file_path)
+        if new_document:
+            await document_service.delete_document_record(new_document["id"])        
+            await embedding_service.delete_embeddings_by_doc_id(new_document["id"])
+            await document_chunk_service.delete_document_chunks_by_doc_id(new_document["id"])
         
-        raise Exception("Failed to upload document.")
+        raise Exception(f"Failed to upload document: {str(e)}")
     
 
 # Get general documents
@@ -213,4 +219,4 @@ async def delete_document(
     # Delete embeddings from ChromaDB
     await embedding_service.delete_embeddings_by_doc_id(doc_id)
     
-    return {"message": "Document deleted successfully."}
+    return True

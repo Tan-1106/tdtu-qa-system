@@ -108,5 +108,6 @@ async def delete_document(
     await document_controller.delete_document(doc_id, current_user)
     return api_response(
         status_code=200,
-        message="Document deleted successfully."
+        message="Document deleted successfully.", 
+        details=None
     )

@@ -65,9 +65,7 @@ async def ban_user(user_id: str, current_user: dict):
     if user_to_ban["banned"]:
         raise UserError("User is already banned")
     
-    if (current_user["role"] == Role.STUDENT.value) or \
-        current_user["role"] == Role.FACULTY_MANAGER.value and user_to_ban["role"] != Role.STUDENT.value or \
-            current_user["role"] == Role.FACULTY_MANAGER.value and user_to_ban["faculty"] != current_user["faculty"]:
+    if (current_user["role"] != Role.ADMIN.value):
         raise AuthException("You do not have permission to ban this user")
         
     response = await user_service.ban_user(user_id)
@@ -86,14 +84,11 @@ async def unban_user(
     if not user_to_unban["banned"]:
         raise UserError("User is not banned")
     
-    if (current_user["role"] == Role.STUDENT.value) or \
-        current_user["role"] == Role.FACULTY_MANAGER.value and user_to_unban["role"] != Role.STUDENT.value or \
-            current_user["role"] == Role.FACULTY_MANAGER.value and user_to_unban["faculty"] != current_user["faculty"]:
+    if (current_user["role"] != Role.ADMIN.value):
         raise AuthException("You do not have permission to unban this user")
     
     response = await user_service.unban_user(user_id)
     return response
-
 
 
 # Logout user by revoking refresh token

@@ -53,13 +53,12 @@ class EmbeddingDAO:
     
     # Delete embeddings by document ID
     async def delete_embeddings_by_doc_id(self, doc_id: str):
-        # Retrieve all embeddings metadata
-        all_metadatas = chroma.embeddings_collection.get(include=["metadatas"])
+        all_data = chroma.embeddings_collection.get(include=["metadatas"])
         ids_to_delete = []
         
-        for idx, metadata in enumerate(all_metadatas):
+        for idx, metadata in enumerate(all_data["metadatas"]):
             if metadata.get("doc_id") == doc_id:
-                ids_to_delete.append(chroma.embeddings_collection.get(include=["ids"])["ids"][idx])
+                ids_to_delete.append(all_data["ids"][idx])
         
         if ids_to_delete:
             chroma.embeddings_collection.delete(ids=ids_to_delete)
