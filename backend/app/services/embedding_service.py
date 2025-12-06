@@ -88,6 +88,11 @@ async def recreate_embeddings():
                 )
     
 
+# Delete embeddings by ID
+async def delete_embedding_by_id(embedding_id: str):
+    await EmbeddingDAO().delete_embedding_by_id(embedding_id)
+    
+
 # --- SUPPORTING FUNCTIONS ---
 # Get embedding for a given text
 async def get_embedding(text: str):

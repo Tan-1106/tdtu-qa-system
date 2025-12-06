@@ -63,6 +63,11 @@ class EmbeddingDAO:
         if ids_to_delete:
             chroma.embeddings_collection.delete(ids=ids_to_delete)
             
+        
+    # Delete embedding by embedding ID
+    async def delete_embedding_by_id(self, embedding_id: str):
+        chroma.embeddings_collection.delete(ids=[embedding_id])
+            
             
     # Reset embeddings collection
     async def reset_embeddings(self):

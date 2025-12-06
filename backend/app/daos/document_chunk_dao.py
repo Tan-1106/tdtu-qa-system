@@ -22,6 +22,16 @@ class DocumentChunkDAO:
         return serializer.document_chunk_serialize(created_record)
     
     
+    # Update document chunks record
+    async def update_document_chunks_record(self, doc_id: str, updated_chunks_record: dict):
+        result = await self.document_chunks_collection.update_one(
+            {"doc_id": doc_id},
+            {"$set": {"chunks": updated_chunks_record, "updated_at": datetime.now(timezone.utc)}}
+        )
+        if result.matched_count == 0:
+            raise DatabaseException(f"Document chunks record with doc_id {doc_id} not found")
+        return result.modified_count > 0
+    
     # Get all document chunks
     async def get_all_document_chunks(self) -> list[dict]:
         cursor = self.document_chunks_collection.find({})
