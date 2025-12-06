@@ -25,8 +25,12 @@ class APIKeyDAO:
 
 
     # Count all API keys
-    async def count_all_api_keys(self, provider: str = None) -> int:
+    async def count_all_api_keys(self, name: str = None, description: str = None, provider: str = None) -> int:
         query = {}
+        if name:
+            query["name"] = {"$regex": name, "$options": "i"}
+        if description:
+            query["description"] = {"$regex": description, "$options": "i"}
         if provider:
             query["provider"] = provider
         count = await self.api_keys_collection.count_documents(query)
@@ -43,9 +47,13 @@ class APIKeyDAO:
     
     
     # Get all API keys (Pagination)
-    async def get_api_keys(self, skip: int, limit: int, provider: str = None) -> list[api_key_schema.APIKeyRecord]:
+    async def get_api_keys(self, skip: int, limit: int, name: str = None, description: str = None, provider: str = None) -> list[api_key_schema.APIKeyRecord]:
         api_keys = []
         query = {}
+        if name:
+            query["name"] = {"$regex": name, "$options": "i"}
+        if description:
+            query["description"] = {"$regex": description, "$options": "i"}
         if provider:
             query["provider"] = provider
         cursor = self.api_keys_collection.find(query).skip(skip).limit(limit)

@@ -183,3 +183,34 @@ async def update_document(
     
     updated_document = await document_service.update_document_record(doc_id, data)
     return updated_document
+
+
+# Delete a document
+async def delete_document(
+    doc_id: str,
+    current_user: dict = None
+):
+    document = await document_service.get_document_by_id(doc_id)
+    
+    if current_user["role"] == Role.FACULTY_MANAGER.value:
+        if document["faculty"] != current_user["faculty"]:
+            raise AuthException("You do not have permission to delete this document.")
+        if document["department"] is not None:
+            raise AuthException("You do not have permission to delete department documents.")
+    
+    if current_user["role"] == Role.STUDENT.value:
+        raise AuthException("You do not have permission to delete documents.")
+    
+    # Delete document file from server
+    await document_service.delete_document_file(document["file_path"])
+    
+    # Delete document record from database
+    await document_service.delete_document_record(doc_id)
+    
+    # Delete document chunks from database
+    await document_chunk_service.delete_document_chunks_by_doc_id(doc_id)
+    
+    # Delete embeddings from ChromaDB
+    await embedding_service.delete_embeddings_by_doc_id(doc_id)
+    
+    return {"message": "Document deleted successfully."}

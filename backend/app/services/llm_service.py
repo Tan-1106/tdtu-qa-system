@@ -65,11 +65,11 @@ async def create_api_key(data: dict):
     
 
 # Get all API keys
-async def get_all_api_keys(page: int, limit: int, provider: str = None):
+async def get_all_api_keys(page: int, limit: int, name: str = None, description: str = None, provider: str = None):
     encryptor = APIKeyEncryptor()
     
     skip = (page - 1) * limit
-    total = await APIKeyDAO().count_all_api_keys(provider)
+    total = await APIKeyDAO().count_all_api_keys(name, description, provider)
     total_pages = (total + limit - 1) // limit
     if total == 0:
         return {
@@ -79,7 +79,7 @@ async def get_all_api_keys(page: int, limit: int, provider: str = None):
             "current_page": page
         }
     
-    api_keys = jsonable_encoder(await APIKeyDAO().get_api_keys(skip, limit, provider))
+    api_keys = jsonable_encoder(await APIKeyDAO().get_api_keys(skip, limit, name, description, provider))
     for api_key in api_keys:
         decrypted = encryptor.decrypt(api_key["api_key"])
         api_key["api_key"] = decrypted

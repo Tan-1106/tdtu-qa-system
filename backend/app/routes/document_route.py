@@ -96,3 +96,17 @@ async def update_document(
         message="Document information updated successfully.",
         details=updated_document
     )
+    
+    
+# Delete a document
+@router.delete("/{doc_id}")
+async def delete_document(
+    doc_id: str,
+    current_user = Depends(auth_service.get_current_user)
+):
+    current_user = jsonable_encoder(current_user)
+    await document_controller.delete_document(doc_id, current_user)
+    return api_response(
+        status_code=200,
+        message="Document deleted successfully."
+    )

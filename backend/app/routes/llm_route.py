@@ -37,9 +37,11 @@ async def create_api_key(data: api_key_schema.APIKeyCreationSchema):
 async def get_api_keys(
     page: int = Query(1, ge=1),
     limit: int = Query(10, ge=1, le=100),
+    name: str = Query(None),
+    description: str = Query(None),
     provider: str = Query(None)
 ):
-    api_keys = await llm_controller.get_all_api_keys(page=page, limit=limit, provider=provider)
+    api_keys = await llm_controller.get_all_api_keys(page=page, limit=limit, name=name, description=description, provider=provider)
     return api_response(
         status_code=200,
         message="Get API keys successfully.",
