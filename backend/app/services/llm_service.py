@@ -9,6 +9,7 @@ import google.generativeai as genai
 from pyvi.ViTokenizer import tokenize
 from cryptography.fernet import Fernet
 from fastapi.encoders import jsonable_encoder
+from app.utils.text_process import normalize_text
 from app.schemas.api_key_schema import APIKeyProvider
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 from sentence_transformers import SentenceTransformer, CrossEncoder
@@ -246,34 +247,3 @@ async def generate_potential_questions(api_key: dict, context: str, num_question
         output_text = normalize_text(output_text)
     
     return output_text
-
-
-# --- SUPPORTING FUNCTIONS ---
-# Normalize text input
-def normalize_text(text: str):
-    if isinstance(text, str):
-        cleaned = text.strip()
-        if cleaned.startswith("```"):
-            cleaned = re.sub(r"^```(?:python)?|```$", "", cleaned, flags=re.IGNORECASE).strip()
-        try:
-            data = json.loads(cleaned)
-        except Exception:
-            try:
-                data = ast.literal_eval(cleaned)
-            except Exception:
-                data = cleaned
-    else:
-        data = text
-
-    if isinstance(data, list):
-        out = []
-        for item in data:
-            if isinstance(item, str):
-                s = re.sub(r"\s+", " ", item.replace("\n", " ")).strip()
-                out.append(s)
-        return out
-
-    if isinstance(data, str):
-        return re.sub(r"\s+", " ", data.replace("\n", " ")).strip()
-
-    return data

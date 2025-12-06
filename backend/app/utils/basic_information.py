@@ -9,28 +9,29 @@ class FacultyInfo:
     
 
 class Faculty(Enum):
-    FFL = FacultyInfo("0", "Khoa Ngoại Ngữ")
-    IFA = FacultyInfo("1", "Khoa Mỹ Thuật Công Nghiệp")
-    AAF = FacultyInfo("2", "Khoa Kế Toán")
-    SSH = FacultyInfo("3", "Khoa KHXH & Nhân Văn")
-    FEEE = FacultyInfo("4", "Khoa Điện - Điện Tử")
-    IT = FacultyInfo("5", "Khoa Công Nghệ Thông Tin")
-    FAS = FacultyInfo("6", "Khoa Khoa Học Ứng Dụng")
-    FBA = FacultyInfo("7", "Khoa Quản Trị Kinh Doanh")
-    CIVIL = FacultyInfo("8", "Khoa Kỹ Thuật Công Trình")
-    ENLABSAFE = FacultyInfo("9", "Khoa Môi Trường & BHLĐ")
-    LRTU = FacultyInfo("A", "Khoa Lao Động Công Đoàn")
-    FINANCE = FacultyInfo("B", "Khoa Tài Chính Ngân Hàng")
-    FMS = FacultyInfo("C", "Khoa Toán - Thống Kê")
-    FSS = FacultyInfo("D", "Khoa Khoa Học Thể Thao")
-    LAW = FacultyInfo("E", "Khoa Luật")
-    FOP = FacultyInfo("H", "Khoa Dược")
+    A = FacultyInfo("0", "Khoa Ngoại Ngữ")
+    B = FacultyInfo("1", "Khoa Mỹ Thuật Công Nghiệp")
+    C = FacultyInfo("2", "Khoa Kế Toán")
+    D = FacultyInfo("3", "Khoa KHXH & Nhân Văn")
+    E = FacultyInfo("4", "Khoa Điện - Điện Tử")
+    F = FacultyInfo("5", "Khoa Công Nghệ Thông Tin")
+    G = FacultyInfo("6", "Khoa Khoa Học Ứng Dụng")
+    H = FacultyInfo("7", "Khoa Quản Trị Kinh Doanh")
+    I = FacultyInfo("8", "Khoa Kỹ Thuật Công Trình")
+    J = FacultyInfo("9", "Khoa Môi Trường & BHLĐ")
+    K = FacultyInfo("A", "Khoa Lao Động Công Đoàn")
+    L = FacultyInfo("B", "Khoa Tài Chính Ngân Hàng")
+    M = FacultyInfo("C", "Khoa Toán - Thống Kê")
+    N = FacultyInfo("D", "Khoa Khoa Học Thể Thao")
+    O = FacultyInfo("E", "Khoa Luật")
+    P = FacultyInfo("H", "Khoa Dược")
     
     
     
 class Role(Enum):
     ADMIN = "Admin"
     FACULTY_MANAGER = "Faculty Manager"
+    TEACHER = "Teacher"
     STUDENT = "Student"
 
 

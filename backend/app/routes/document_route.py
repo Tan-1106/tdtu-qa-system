@@ -45,6 +45,31 @@ async def upload_document(
     )
     
     
+# Upload appendix document
+@router.post("/upload-appendix")
+async def upload_appendix_document(
+    file: UploadFile,
+    doc_type: str = Form(...),
+    department: str = Form(None),                           # For Admin only
+    faculty: str = Form(None),                              # For Admin only                           
+    file_url: str = Form(...),
+    current_user = Depends(auth_service.get_current_user)
+):
+    current_user = jsonable_encoder(current_user)
+    uploaded_document = await document_controller.upload_appendix_document(
+        file=file,
+        doc_type=doc_type,
+        department=department,
+        faculty=faculty,
+        file_url=file_url,
+        current_user=current_user
+    )
+    return api_response(
+        status_code=201,
+        message="Document uploaded successfully.",
+        details=uploaded_document
+    )
+    
 # Get general documents
 @router.get("/general")
 async def get_documents(
@@ -79,6 +104,17 @@ async def get_faculty_documents(
         message="Documents retrieved successfully.",
         details=documents
     )
+    
+    
+# View document
+@router.get("/view/{doc_id}")
+async def view_document(
+    doc_id: str,
+    current_user = Depends(auth_service.get_current_user)
+):
+    current_user = jsonable_encoder(current_user)
+    file_content = await document_controller.view_document_file(doc_id, current_user)
+    return file_content
     
     
 # Update document information

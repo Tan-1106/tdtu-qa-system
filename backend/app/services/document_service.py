@@ -2,25 +2,25 @@ import os
 import re
 import fitz
 import shutil
+import camelot
 import asyncio
 import aiofiles
 import tempfile
 import pytesseract
+from io import BytesIO
 from fastapi import UploadFile
-from tiktoken import get_encoding
 from pdf2image import convert_from_path
 from fastapi.encoders import jsonable_encoder
-from langchain_text_splitters import RecursiveCharacterTextSplitter
 
+from app.utils import text_process
 from app.daos.document_dao import DocumentDAO
 
 
 # --- CONFIGURATION ---
-enc = get_encoding("cl100k_base")
 UPLOAD_DIRECTORY = "uploads/documents"
 
 
-# --- MAIN SERVICE FUNCTIONS ---
+# --- SERVICE FUNCTIONS ---
 # Extract text content from PDF documents, handling both text-based and scanned PDFs.
 async def extract_file_content(file: UploadFile):
     document_content = ""
@@ -30,7 +30,7 @@ async def extract_file_content(file: UploadFile):
     
     try:
         # Scanned
-        is_text_pdf = await asyncio.to_thread(is_text_based_pdf, tmp_path)
+        is_text_pdf = await asyncio.to_thread(text_process.is_text_based_pdf, tmp_path)
         if not is_text_pdf:
             try:
                 images = await asyncio.to_thread(convert_from_path, tmp_path)
@@ -66,28 +66,45 @@ async def extract_file_content(file: UploadFile):
     return document_content
 
 
-# Split text into chunks for embedding
-async def split_text_into_chunks(text: str, words_per_chunk: int, overlap: int) -> list[str]:
-    text = text.strip()
-    chunks = []
-    splitter = RecursiveCharacterTextSplitter(
-        chunk_size=words_per_chunk,
-        chunk_overlap=overlap,
-        separators=[
-            "CHƯƠNG", "Chương",
-            "ĐIỀU", "Điều",
-            "MỤC", "Mục",
-            "I.", "II.", "III.", "IV.", "V.", "VI.", "VII.", "VIII.", "IX.", "X.", "XI.", "XII.", "XIII.", "XIV.", "XV.", "XVI.", "XVII.", "XVIII.", "XIX.", "XX.",
-            "1.", "2.", "3.", "4.", "5.", "6.", "7.", "8.", "9.", "10.", "11.", "12.", "13.", "14.", "15.", "16.", "17.", "18.", "19.", "20.",
-            "(1)", "(2)", "(3)", "(4)", "(5)", "(6)", "(7)", "(8)", "(9)", "(10)", "(11)", "(12)", "(13)", "(14)", "(15)", "(16)", "(17)", "(18)", "(19)", "(20)",
-            ";", ".", "\n\n", "\n", " ", ""
-            
-        ],
-        length_function=lambda x: len(enc.encode(x))
-    )
-    chunks = splitter.split_text(text)
-    chunks = await merge_chunks(chunks, target_max_length=words_per_chunk)
-    return chunks
+# Extract text and tables from appendix PDF documents
+async def extract_pdf_appendix_content(file: UploadFile):
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+        shutil.copyfileobj(file.file, tmp)
+        tmp_path = tmp.name
+        
+    if not text_process.is_text_based_pdf(tmp_path):
+        raise RuntimeError("Appendix must be a text-based PDF.")
+    
+    try: 
+        # Extract appendix description
+        appendix_description = text_process.extract_appendix_description(tmp_path)
+        appendix_description = text_process.normalize_text(appendix_description)
+        
+        # Extract tables using Camelot
+        tables_data = []
+        tables = camelot.read_pdf(tmp_path, pages='all', flavor='lattice')
+        for table in tables:
+            df = table.df
+            df = df.map(text_process.normalize_cell)
+            tables_data.append(df.values.tolist())
+        flattened_tables = [row for table in tables_data for row in table]
+        
+        # Remove duplicate rows
+        unique_rows = []
+        seen = set()
+        
+        for row in flattened_tables:
+            row_tuple = tuple(row)
+            if row_tuple not in seen:
+                seen.add(row_tuple)
+                unique_rows.append(row)        
+
+        return {
+            "description": appendix_description,
+            "tables": unique_rows
+        }
+    except Exception as e:
+        raise Exception("Failed to extract text and tables from appendix PDF.") from e
 
 
 # Save uploaded document file to server
@@ -152,60 +169,27 @@ async def get_document_by_id(doc_id: str):
     return jsonable_encoder(document)
 
 
-# --- SUPPORTING FUNCTIONS ---
-# check if PDF is text-based
-def is_text_based_pdf(file_path: str) -> bool:
-    try:
-        doc = fitz.open(file_path)
-        for page in doc:
-            page_text = page.get_text().strip()
-            if page_text:
-                doc.close()
-                return True
-        doc.close()
-        return False
-    except Exception as e:
-        raise RuntimeError("Failed to process PDF file.") from e
-    
-    
-# Merge small chunks into larger ones
-async def merge_chunks(chunks: list[str], target_max_length: int) -> list[str]:
-    # First pass: merge small chunks
-    merged_chunks = []
-    current_chunk = ""
-    for chunk in chunks:
-        if len(enc.encode(current_chunk + " " + chunk)) <= target_max_length:
-            if current_chunk:
-                current_chunk += " " + chunk
-            else:
-                current_chunk = chunk
-        else:
-            if current_chunk:
-                merged_chunks.append(current_chunk.strip())
-            current_chunk = chunk
-    if current_chunk:
-        merged_chunks.append(current_chunk.strip())
-
-    # Second pass: ensure no chunks are too small
-    final_chunks = []
-    buffer = ""
-    for chunk in merged_chunks:
-        if len(enc.encode(chunk)) < target_max_length * 0.5:
-            if buffer:
-                buffer += " " + chunk
-            else:
-                buffer = chunk
-        else:
-            if buffer:
-                final_chunks.append(buffer.strip())
-                buffer = ""
-            final_chunks.append(chunk.strip())
-    if buffer:
-        final_chunks.append(buffer.strip())
-    return final_chunks
-
-
 # Update document record
 async def update_document_record(doc_id: str, data: dict):
     updated_document = await DocumentDAO().update_document(doc_id, data)
     return jsonable_encoder(updated_document)
+
+
+# View document file
+async def view_document_file(doc_id: str):
+    doc = await DocumentDAO().get_document_by_id(doc_id)
+    doc = jsonable_encoder(doc)
+        
+    file_name = doc.get("file_name", "document.pdf")
+    file_path = doc.get("file_path", "")
+    
+    if not os.path.exists(file_path):
+        raise FileNotFoundError("Document file not found")
+    
+    loop = asyncio.get_event_loop()
+    file_content = await loop.run_in_executor(
+        None,
+        lambda: open(file_path, "rb").read()
+    )
+    
+    return file_name, BytesIO(file_content)

@@ -15,7 +15,7 @@ class UserDAO:
 
     # Create a new user or return existing user
     async def create_user(self, user: dict) -> user_schema.UserRecord:
-        existing_user = await self.users_collection.find_one({"email": user["email"]})
+        existing_user = await self.users_collection.find_one({"sub": user["sub"]})
         if existing_user:
             return user_schema.UserRecord(**serializer.user_serialize(existing_user))
 

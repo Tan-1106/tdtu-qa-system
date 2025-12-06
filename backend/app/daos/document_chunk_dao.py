@@ -31,6 +31,29 @@ class DocumentChunkDAO:
         return document_chunks
     
     
+    # Count document chunks by document ID
+    async def count_document_chunks(self, doc_id: str) -> int:
+        chunks_record = await self.document_chunks_collection.find_one({"doc_id": doc_id})
+        if not chunks_record:
+            return 0
+        chunks = chunks_record.get("chunks", {})
+        return len(chunks)
+    
+    
+    # Get document chunks by document ID
+    async def get_document_chunks(self, doc_id: str, skip: int, limit: int) -> dict:
+        chunks_record = await self.document_chunks_collection.find_one({"doc_id": doc_id})
+        if not chunks_record:
+            return {}
+        
+        chunks = chunks_record.get("chunks", {})
+        chunks_list = sorted(chunks.items(), key=lambda x: int(x[0]))
+        paginated_items = chunks_list[skip:skip + limit]
+        
+        paginated_chunks = {k: v for k, v in paginated_items}
+        return paginated_chunks
+    
+    
     # Update chunk's embedding_id by document ID and chunk index
     async def update_chunk_embedding_id(
         self,
