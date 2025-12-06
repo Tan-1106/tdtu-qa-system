@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box, Button, Typography, Table, TableBody, TableCell, TableContainer,
-  TableHead, TableRow, Paper, IconButton, Chip, TablePagination, CircularProgress, Alert
+  TableHead, TableRow, Paper, IconButton, Chip, TablePagination, CircularProgress, Alert,
+  TextField, FormControl, InputLabel, Select, MenuItem, Grid, Stack 
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import BlockIcon from '@mui/icons-material/Block'; 
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'; 
-import { getUsersList, banUser, unbanUser, getStudentsList, banStudent, unbanStudent} from '../../api/adminApi'; // 💡 Import API
+import SearchIcon from '@mui/icons-material/Search'; 
+import { 
+    getUsersList, banUser, unbanUser, 
+    getRoles, getFaculties 
+} from '../../api/adminApi'; 
 import UserFormModal from './UserFormModal';    
 import useUserAuth from '../../hooks/useUserAuth';
 
@@ -15,6 +20,11 @@ const roleColor = {
   'Faculty Manager': 'warning',
   'Student': 'success',
 };
+
+const statusOptions = [
+    { value: 'active', label: 'Hoạt động' },
+    { value: 'banned', label: 'Bị Chặn' }
+];
 
 const UserManagementPage = () => {
     const { user: currentUser } = useUserAuth(); 
@@ -25,33 +35,54 @@ const UserManagementPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   
+  const [searchKeyword, setSearchKeyword] = useState(''); 
+  const [filterRole, setFilterRole] = useState('');
+  const [filterFaculty, setFilterFaculty] = useState('');
+  const [filterStatus, setFilterStatus] = useState(''); 
+
+  const [availableRoles, setAvailableRoles] = useState([]);
+  const [availableFaculties, setAvailableFaculties] = useState([]);
+  
   const [page, setPage] = useState(0); 
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [totalUsers, setTotalUsers] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  const fetchFilterOptions = async () => {
+      try {
+          if (isAdmin) {
+              const roles = await getRoles();
+              setAvailableRoles(roles);
+              const faculties = await getFaculties();
+              setAvailableFaculties(faculties);
+          }
+      } catch (err) {
+           console.error("Error fetching filter options:", err);
+      }
+  };
 
-  const fetchUsers = async (currentPage, limit) => {
+  const fetchUsers = async (currentPage, limit, role, faculty, banned, keyword) => {
     setIsLoading(true);
     setError(null);
+    
+    const params = {
+        page: currentPage + 1,
+        limit: limit,
+        keyword: keyword || undefined, 
+        role: isAdmin ? role : undefined, 
+        faculty: isAdmin ? faculty : undefined, 
+        banned: banned === 'banned' ? true : banned === 'active' ? false : undefined 
+    };
+    
     try {
-        let data;
+        const data = await getUsersList(params); 
         
-        if (isAdmin) {
-            data = await getUsersList(currentPage + 1, limit); 
-        } else if (isFacultyManager) {
-            console.log(`[FM Load] Đang tải người dùng cho Khoa: ${currentUser.department}`); 
-            
-            data = await getStudentsList(currentPage + 1, limit);
-        } else {
-            throw new Error("Tài khoản không có quyền truy cập trang này.");
+        if (!data || !data.users) {
+            setUsers([]);
+            setTotalUsers(0);
+            return;
         }
-        
-        if (!data || !data.users) {
-            setUsers([]);
-            setTotalUsers(0);
-            return;
-        }
 
         setUsers(data.users.map(u => ({
           ...u,
@@ -66,32 +97,51 @@ const UserManagementPage = () => {
       setTotalUsers(data.total);
     } catch (err) {
       console.error("Error fetching users:", err);
-
-      let defaultError = isFacultyManager 
-          ? 'Không thể tải danh sách người dùng trong khoa.'
-          : 'Không thể tải danh sách người dùng. Kiểm tra quyền Admin.';
-
-      let finalError = defaultError;
-
-      if (err.response && err.response.data && err.response.data.message) {
-          finalError = err.response.data.message;
-      } else if (err.message && err.message !== "Tài khoản không có quyền truy cập trang này.") {
-          finalError = err.message;
-      } else if (err.message === "Tài khoản không có quyền truy cập trang này.") {
-          finalError = err.message;
-      }
-      
-      setError(finalError);
+      let finalError = (err.response?.data?.details || err.message) || 'Lỗi không xác định.';
+      setError(finalError);
     } finally {
       setIsLoading(false);
     }
   };
 
-  useEffect(() => {
-        if (currentUser) { 
-            fetchUsers(page, rowsPerPage);
-        }
-    }, [page, rowsPerPage, currentUser]);
+  const loadUsersWithFilters = (resetPage = true) => {
+      const targetPage = resetPage ? 0 : page;
+      const currentRole = isAdmin ? filterRole : undefined;
+      const currentFaculty = isAdmin ? filterFaculty : undefined;
+      
+      fetchUsers(
+          targetPage, 
+          rowsPerPage, 
+          currentRole, 
+          currentFaculty, 
+          filterStatus, 
+          searchKeyword 
+      );
+      
+      if (resetPage && page !== 0) {
+          setPage(0);
+      }
+  };
+
+  const handleSearchClick = () => {
+      loadUsersWithFilters(true); 
+  };
+
+  useEffect(() => {
+      if (currentUser) {
+          fetchFilterOptions();
+          loadUsersWithFilters(true);
+      }
+  }, [currentUser]);
+
+
+  useEffect(() => {
+      if (!currentUser) return; 
+      
+      loadUsersWithFilters(true); 
+      
+  }, [filterRole, filterFaculty, filterStatus, rowsPerPage]);
+
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -101,7 +151,6 @@ const UserManagementPage = () => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0); 
   };
-
 
   const handleEdit = (user) => {
         if (isFacultyManager) {
@@ -114,12 +163,11 @@ const UserManagementPage = () => {
 
   const handleToggleBan = async (user) => {
         try {
-
-            const apiCall = user.banned ? (isAdmin ? unbanUser : unbanStudent) : (isAdmin ? banUser : banStudent);
-
+            const apiCall = user.banned ? unbanUser : banUser;
+            
             await apiCall(user.id);
             
-            fetchUsers(page, rowsPerPage); 
+            loadUsersWithFilters(false); 
         } catch (error) {
             console.error("Error toggling ban status:", error);
             setError(error.message || "Thao tác Chặn/Bỏ chặn thất bại.");
@@ -129,10 +177,10 @@ const UserManagementPage = () => {
   const handleSave = (userData) => {
     console.log("Saving user data via modal, initiating fetch...");
     setIsModalOpen(false);
-    fetchUsers(page, rowsPerPage);
+    loadUsersWithFilters(false); 
   };
     
-  if (isLoading || !currentUser) {
+  if (isLoading || !currentUser) { 
         return (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
                 <CircularProgress />
@@ -150,6 +198,102 @@ const UserManagementPage = () => {
             Quản lý người dùng
           </Typography>
         </Box>
+        
+        <Paper elevation={1} sx={{ p: 2, mb: 2, borderRadius: 3, borderLeft: '5px solid #1976d2' }}>
+            <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 700, color: 'primary.main' }}>Tìm kiếm & Lọc</Typography>
+            <Grid container spacing={2} alignItems="flex-end">
+                
+                <Grid item xs={12} sm={6} md={3.5}>
+                    <Stack direction="row" spacing={1} alignItems="flex-end">
+                         <TextField
+                            fullWidth
+                            label="Tên hoặc MSSV"
+                            variant="outlined"
+                            value={searchKeyword} 
+                            onChange={(e) => setSearchKeyword(e.target.value)} 
+                            size="small"
+                            onKeyDown={(e) => e.key === 'Enter' && handleSearchClick()} 
+                        />
+                        <Button
+                            variant="contained"
+                            onClick={handleSearchClick}
+                            size="small"
+                            sx={{ minWidth: '40px', height: '40px', borderRadius: '8px' }}
+                        >
+                            <SearchIcon />
+                        </Button>
+                    </Stack>
+                </Grid>
+                
+                {isAdmin && (
+                    <Grid item xs={12} sm={6} md={2.5}> 
+                        <Typography variant="caption" display="block" sx={{ color: 'text.secondary', mb: 0.5 }}>
+                            Vai trò
+                        </Typography>
+                        <FormControl fullWidth size="small" variant="outlined">
+                            <Select
+                                value={filterRole}
+                                displayEmpty
+                                onChange={(e) => setFilterRole(e.target.value)} 
+                                renderValue={(selected) => (selected ? selected : <em>Tất cả</em>)} 
+                            >
+                                <MenuItem value="">
+                                    <em>Tất cả</em>
+                                </MenuItem>
+                                {availableRoles.map((role) => (
+                                    <MenuItem key={role} value={role}>{role}</MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    </Grid>
+                )}
+                
+                {isAdmin && (
+                    <Grid item xs={12} sm={6} md={3}>
+                        <Typography variant="caption" display="block" sx={{ color: 'text.secondary', mb: 0.5 }}>
+                            Khoa
+                        </Typography>
+                        <FormControl fullWidth size="small" variant="outlined">
+                            <Select
+                                value={filterFaculty}
+                                displayEmpty
+                                onChange={(e) => setFilterFaculty(e.target.value)}
+                                renderValue={(selected) => (selected ? selected : <em>Tất cả</em>)} 
+                            >
+                                <MenuItem value="">
+                                    <em>Tất cả</em>
+                                </MenuItem>
+                                {availableFaculties.map((faculty) => (
+                                    <MenuItem key={faculty} value={faculty}>{faculty}</MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    </Grid>
+                )}
+                
+                <Grid item xs={12} sm={6} md={2.5}> 
+                    <Typography variant="caption" display="block" sx={{ color: 'text.secondary', mb: 0.5 }}>
+                        Trạng thái
+                    </Typography>
+                    <FormControl fullWidth size="small" variant="outlined">
+                        <Select
+                            value={filterStatus}
+                            displayEmpty
+                            onChange={(e) => setFilterStatus(e.target.value)}
+                            renderValue={(selected) => (selected ? statusOptions.find(s => s.value === selected)?.label : <em>Tất cả</em>)} 
+                        >
+                            <MenuItem value="">
+                                <em>Tất cả</em>
+                            </MenuItem>
+                            {statusOptions.map((status) => (
+                                <MenuItem key={status.value} value={status.value}>{status.label}</MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+                </Grid>
+            </Grid>
+        </Paper>
+
 
         {isAdmin && (
             <UserFormModal
@@ -206,7 +350,7 @@ const UserManagementPage = () => {
                     
                     <IconButton 
                         onClick={() => handleToggleBan(user)} 
-                        sx={{ color: user.banned ? 'success.main' : 'error.main' }} 
+                        sx={{ color: user.banned ? 'error.main' : 'success.main' }} 
                         title={user.banned ? 'Bỏ chặn' : 'Chặn người dùng'}
                     >
                         {user.banned ? <CheckCircleOutlineIcon /> : <BlockIcon />}
