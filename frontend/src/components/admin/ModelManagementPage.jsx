@@ -2,18 +2,18 @@ import React, { useState, useEffect } from 'react';
 import {
   Box, Button, Typography, Table, TableBody, TableCell, TableContainer,
   TableHead, TableRow, Paper, IconButton, Chip, TablePagination, CircularProgress, Alert,
-  // 💡 Thêm components cho Filter
-  TextField, FormControl, InputLabel, Select, MenuItem, Grid, Stack
+  TextField, FormControl, InputLabel, Select, MenuItem, Grid, Stack 
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 import StopCircleOutlinedIcon from '@mui/icons-material/StopCircleOutlined';
-import SearchIcon from '@mui/icons-material/Search';
+import SearchIcon from '@mui/icons-material/Search'; 
 import APIKeyFormModal from './APIKeyFormModal'; 
 import { getApiKeysList, toggleApiKeyUsage, deleteApiKey } from '../../api/modelApi';
 
+// Màu cho Provider
 const providerColor = {
   'OpenAI': 'primary',
   'Google': 'secondary',
@@ -29,10 +29,12 @@ const ModelManagementPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingKey, setEditingKey] = useState(null);
   
+  // 💡 STATE CHO BỘ LỌC
   const [searchKeyword, setSearchKeyword] = useState(''); 
   const [filterProvider, setFilterProvider] = useState(''); 
   const [filterUsage, setFilterUsage] = useState(''); 
   
+  // State phân trang và loading
   const [page, setPage] = useState(0); 
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [totalKeys, setTotalKeys] = useState(0);
@@ -40,8 +42,9 @@ const ModelManagementPage = () => {
   const [error, setError] = useState(null);
   const [successMsg, setSuccessMsg] = useState(null);
 
-
-  const fetchKeys = async (currentPage, limit, keyword, provider, isUsing) => {
+  const [allKeys, setAllKeys] = useState([]);
+  
+  const fetchKeys = async (currentPage, limit, keyword, provider) => {
     setIsLoading(true);
     setError(null);
     setSuccessMsg(null);
@@ -52,19 +55,23 @@ const ModelManagementPage = () => {
         name: keyword || undefined,
         description: keyword || undefined, 
         provider: provider || undefined,
-        is_using: isUsing === 'true' ? true : undefined
     };
     
     Object.keys(params).forEach(key => params[key] === undefined && delete params[key]);
     
     try {
       const data = await getApiKeysList(params); 
-      
-      setApiKeys(data.api_keys.map(key => ({
-          ...key,
-          id: key._id, 
-      })));
-      setTotalKeys(data.total);
+      
+      const mappedKeys = data.api_keys.map(key => ({ ...key, id: key._id }));
+      
+      let filteredKeys = mappedKeys;
+
+      if (filterUsage === 'true') {
+          filteredKeys = mappedKeys.filter(key => key.is_using === true);
+      }
+      
+      setApiKeys(filteredKeys);
+      setTotalKeys(data.total); 
     } catch (err) {
       console.error("Error fetching keys:", err);
       setError(err.message || 'Không thể tải danh sách API Keys.');
@@ -81,7 +88,7 @@ const ModelManagementPage = () => {
           rowsPerPage, 
           searchKeyword, 
           filterProvider, 
-          filterUsage
+          filterUsage 
       );
       
       if (resetPage && page !== 0) {
@@ -123,21 +130,23 @@ const ModelManagementPage = () => {
   const handleSaveKey = () => {
     setIsModalOpen(false);
     setSuccessMsg('Thao tác thành công! Danh sách đang được cập nhật.');
-    loadKeysWithFilters(true); 
+    loadKeysWithFilters(true); // Tải lại trang hiện tại
   };
   
+  // Hành động Bật/Tắt sử dụng Key (Toggle Usage)
   const handleToggleUsage = async (keyId, currentStatus) => {
     setError(null);
     setSuccessMsg(null);
     try {
         await toggleApiKeyUsage(keyId);
         setSuccessMsg(currentStatus ? 'Đã tắt sử dụng API Key.' : 'Đã kích hoạt API Key thành công.');
-        loadKeysWithFilters(false); 
+        loadKeysWithFilters(false); // Tải lại dữ liệu (không reset page)
     } catch (err) {
         setError(err.message || "Thao tác Bật/Tắt thất bại.");
     }
   };
 
+  // Hành động Xóa Key
   const handleDeleteKey = async (keyId, keyName) => {
     if (!window.confirm(`Bạn có chắc chắn muốn xóa API Key: ${keyName} không?`)) {
         return;
