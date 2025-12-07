@@ -23,21 +23,24 @@ async def upload_document(
     file_url: str = Form(...),
     current_user: dict = None,
 ):
-    if current_user["role"] == Role.STUDENT.value:
+    if not (current_user["role"] == Role.ADMIN.value or current_user["is_faculty_manager"]):
         raise AuthException("You do not have permission to upload documents.")
+    
     if current_user["role"] == Role.ADMIN.value:
         if department is None and faculty is None:
             raise UserError("Either department or faculty must be provided.")
         if department is not None and faculty is not None:
             raise UserError("Only one of department or faculty can be provided.")
-        if faculty is not None and faculty not in [f.value.name for f in Faculty]:
+        if faculty is not None and faculty not in await user_service.get_all_existing_faculties():
             raise UserError("Invalid faculty provided.")
+    
     if not all([urlparse(file_url).scheme, urlparse(file_url).netloc]):
         raise UserError("Invalid file URL provided.")
+    
     if file.content_type != "application/pdf":
         raise UserError("Only PDF files are allowed.")
     
-    if current_user["role"] == Role.FACULTY_MANAGER.value:
+    if current_user["is_faculty_manager"]:
         department = None
         faculty = current_user["faculty"]
    
@@ -126,21 +129,24 @@ async def upload_appendix_document(
     file_url: str = Form(...),
     current_user: dict = None,
 ):
-    if current_user["role"] == Role.STUDENT.value:
+    if not (current_user["role"] == Role.ADMIN.value or current_user["is_faculty_manager"]):
         raise AuthException("You do not have permission to upload documents.")
+    
     if current_user["role"] == Role.ADMIN.value:
         if department is None and faculty is None:
             raise UserError("Either department or faculty must be provided.")
         if department is not None and faculty is not None:
             raise UserError("Only one of department or faculty can be provided.")
-        if faculty is not None and faculty not in [f.value.name for f in Faculty]:
+        if faculty is not None and faculty not in await user_service.get_all_existing_faculties():
             raise UserError("Invalid faculty provided.")
+    
     if not all([urlparse(file_url).scheme, urlparse(file_url).netloc]):
         raise UserError("Invalid file URL provided.")
+    
     if file.content_type != "application/pdf":
         raise UserError("Only PDF files are allowed.")
     
-    if current_user["role"] == Role.FACULTY_MANAGER.value:
+    if current_user["is_faculty_manager"]:
         department = None
         faculty = current_user["faculty"]
    
@@ -251,7 +257,6 @@ async def get_faculty_documents(
 ):
     if current_user["role"] != Role.ADMIN.value:
         faculty = current_user["faculty"]
-    
     documents = await document_service.get_faculty_documents(
         page=page,
         limit=limit,
@@ -273,22 +278,20 @@ async def update_document(
     if current_user["role"] == Role.ADMIN.value:
         if data["department"] is not None and data["faculty"] is not None:
             raise UserError("Only one of department or faculty can be provided.")
-        if data["faculty"] is not None and data["faculty"] not in user_service.get_all_existing_faculties():
+        if data["faculty"] is not None and data["faculty"] not in await user_service.get_all_existing_faculties():
             raise UserError("Invalid faculty provided.")
         if data["faculty"] is not None:
             data["department"] = None
         if data["department"] is not None:
             data["faculty"] = None
-    
-    if current_user["role"] == Role.FACULTY_MANAGER.value:
+    elif current_user["is_faculty_manager"]:
         if document["faculty"] != current_user["faculty"]:
             raise AuthException("You do not have permission to update this document.")
         if document["department"] is not None:
             raise AuthException("You do not have permission to update department documents.")
         if data["faculty"] is not None or data["department"] is not None:
             raise AuthException("You do not have permission to update faculty or department.")
-    
-    if current_user["role"] == Role.STUDENT.value:
+    else:
         raise AuthException("You do not have permission to update documents.")
     
     data["updated_by"] = current_user["_id"]
@@ -307,14 +310,13 @@ async def delete_document(
     current_user: dict = None
 ):
     document = await document_service.get_document_by_id(doc_id)
-    
-    if current_user["role"] == Role.FACULTY_MANAGER.value:
+            
+    if current_user["is_faculty_manager"]:
         if document["faculty"] != current_user["faculty"]:
             raise AuthException("You do not have permission to delete this document.")
         if document["department"] is not None:
             raise AuthException("You do not have permission to delete department documents.")
-    
-    if current_user["role"] == Role.STUDENT.value:
+    if not (current_user["role"] == Role.ADMIN.value or current_user["is_faculty_manager"]):
         raise AuthException("You do not have permission to delete documents.")
     
     # Delete document file from server
@@ -336,7 +338,7 @@ async def delete_document(
 # Xem tài liệu
 async def view_document_file(doc_id: str, current_user: dict = None):
     document = await document_service.get_document_by_id(doc_id)
-    if current_user["role"] == Role.FACULTY_MANAGER.value or current_user["role"] == Role.STUDENT.value:
+    if current_user["role"] != Role.ADMIN.value:
         if document["faculty"] is not None and document["faculty"] != current_user["faculty"]:
             raise AuthException("You do not have permission to view this document.")
     

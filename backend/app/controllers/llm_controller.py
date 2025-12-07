@@ -18,14 +18,13 @@ async def create_api_key(data: dict):
 # Get all API keys
 async def get_all_api_keys(
     page: int, limit: int,
-    name: Optional[str] = None,
-    description: Optional[str] = None,
+    keyword: Optional[str] = None,
     provider: Optional[str] = None
 ):
     if provider and provider not in [prov.value for prov in api_key_schema.APIKeyProvider]:
         raise UserError("Invalid API key provider. Supported providers are: " + ", ".join([prov.value for prov in api_key_schema.APIKeyProvider]))
     
-    api_keys = await llm_service.get_all_api_keys(page, limit, name, description, provider)
+    api_keys = await llm_service.get_all_api_keys(page, limit, keyword, provider)
     return api_keys
 
 
