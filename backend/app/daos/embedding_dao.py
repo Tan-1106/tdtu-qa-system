@@ -1,11 +1,7 @@
 import uuid
-from bson import ObjectId
-from datetime import datetime, timezone
 
 from app.databases import chroma
-from app.utils import serializer
 from app.utils.api_response import DatabaseException
-from app.utils.basic_information import Role, Faculty
 
 class EmbeddingDAO:
     # Create a new embedding

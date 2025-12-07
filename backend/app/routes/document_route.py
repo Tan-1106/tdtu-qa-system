@@ -1,4 +1,3 @@
-# --- ROUTERS ---
 from fastapi.encoders import jsonable_encoder
 from fastapi import APIRouter, Depends, UploadFile, Form, Query
 

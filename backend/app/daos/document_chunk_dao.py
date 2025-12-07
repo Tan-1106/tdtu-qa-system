@@ -1,10 +1,8 @@
-from bson import ObjectId
 from datetime import datetime, timezone
 
 from app.databases import mongo
 from app.utils import serializer
 from app.utils.api_response import DatabaseException
-from app.utils.basic_information import Role, Faculty
 
 class DocumentChunkDAO:
     def __init__(self):

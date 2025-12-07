@@ -15,19 +15,51 @@ class UserDAO:
 
     # Create a new user or return existing user
     async def create_user(self, user: dict) -> user_schema.UserRecord:
-        existing_user = await self.users_collection.find_one({"sub": user["sub"]})
-        if existing_user:
-            return user_schema.UserRecord(**serializer.user_serialize(existing_user))
+        role_map = {
+            "is_admin": Role.ADMIN.value,
+            "is_teacher": Role.TEACHER.value,
+            "is_student": Role.STUDENT.value,
+        }
+        role = next(
+            (value for key, value in role_map.items() if user.get(key)),
+            ""
+        )
 
-        user["banned"] = False
-        user["created_at"] = datetime.now(timezone.utc)
-        result = await self.users_collection.insert_one(user)
+        # Check if user already exists and check user system role assignment
+        existing_user = await self.users_collection.find_one({"sub": user["sub"]})
+        
+        if existing_user and existing_user.get("system_role_assigned"):
+            return user_schema.UserRecord(**serializer.user_serialize(existing_user))
+        elif existing_user and not existing_user.get("system_role_assigned"):
+            user_update = {
+                "role": role,
+                "faculty": user["faculty"],
+                "is_faculty_manager": user["is_faculty_manager"]
+            }
+            await self.users_collection.update_one({"_id": existing_user["_id"]}, {"$set": user_update})
+            updated_user = await self.users_collection.find_one({"_id": existing_user["_id"]})
+            return user_schema.UserRecord(**serializer.user_serialize(updated_user))
+        
+        new_user_record = {
+            "sub": user["sub"],
+            "name": user["name"],
+            "email": user["email"],
+            "image": user["image"],
+            "role": role,
+            "faculty": user["faculty"],
+            "is_faculty_manager": user["is_faculty_manager"],
+            "system_role_assigned": False,
+            "banned": False,
+            "created_at": datetime.now(timezone.utc)
+        }
+        
+        result = await self.users_collection.insert_one(new_user_record)
         created_user = await self.users_collection.find_one({"_id": result.inserted_id})
         if not created_user:
             raise DatabaseException("Failed to create user")
-        
+            
         return user_schema.UserRecord(**serializer.user_serialize(created_user))
-    
+        
     
     # Count all users
     async def count_all_users(self, role: str = None, faculty: str = None, banned: bool = None, keyword: str = None) -> int:
@@ -68,6 +100,12 @@ class UserDAO:
         async for user in cursor:
             users.append(user_schema.UserRecord(**serializer.user_serialize(user)))
         return users
+    
+    
+    # Get all existing faculty options
+    async def get_all_existing_faculties(self) -> list[str]:
+        faculties = await self.users_collection.distinct("faculty", {"faculty": {"$ne": None}})
+        return faculties
     
     
     # Get user by id
@@ -172,18 +210,18 @@ class UserDAO:
     async def assign_admin_role(self, user_id: str) -> user_schema.UserRecord:
         result = await self.users_collection.update_one(
             {"_id": ObjectId(user_id)},
-            {"$set": {"role": Role.ADMIN.value, "faculty": None}}
+            {"$set": {"role": Role.ADMIN.value, "faculty": None, "is_faculty_manager": False, "system_role_assigned": True}}
         )
         if result.matched_count == 0:
             raise DatabaseException("User not found")
         updated_user = await self.users_collection.find_one({"_id": ObjectId(user_id)})
         return user_schema.UserRecord(**serializer.user_serialize(updated_user))
     
-    # Assign faculty manager role to user
-    async def assign_faculty_manager_role(self, user_id: str, faculty: str) -> user_schema.UserRecord:
+    # Assign teacher role to user
+    async def assign_teacher_role(self, user_id: str, faculty: str) -> user_schema.UserRecord:
         result = await self.users_collection.update_one(
             {"_id": ObjectId(user_id)},
-            {"$set": {"role": Role.FACULTY_MANAGER.value, "faculty": faculty}}
+            {"$set": {"role": Role.TEACHER.value, "faculty": faculty, "system_role_assigned": True}}
         )
         if result.matched_count == 0:
             raise DatabaseException("User not found")
@@ -195,7 +233,31 @@ class UserDAO:
     async def assign_student_role(self, user_id: str, faculty: str) -> user_schema.UserRecord:
         result = await self.users_collection.update_one(
             {"_id": ObjectId(user_id)},
-            {"$set": {"role": Role.STUDENT.value, "faculty": faculty}}
+            {"$set": {"role": Role.STUDENT.value, "faculty": faculty, "system_role_assigned": True}}
+        )
+        if result.matched_count == 0:
+            raise DatabaseException("User not found")
+        updated_user = await self.users_collection.find_one({"_id": ObjectId(user_id)})
+        return user_schema.UserRecord(**serializer.user_serialize(updated_user))
+    
+    
+    # Assign faculty manager role to user
+    async def assign_faculty_manager_role(self, user_id: str, faculty: str) -> user_schema.UserRecord:
+        result = await self.users_collection.update_one(
+            {"_id": ObjectId(user_id)},
+            {"$set": {"faculty": faculty, "is_faculty_manager": True,  "system_role_assigned": True}}
+        )
+        if result.matched_count == 0:
+            raise DatabaseException("User not found")
+        updated_user = await self.users_collection.find_one({"_id": ObjectId(user_id)})
+        return user_schema.UserRecord(**serializer.user_serialize(updated_user))
+    
+    
+    # Revoke faculty manager role from user
+    async def revoke_permissions(self, user_id: str) -> user_schema.UserRecord:
+        result = await self.users_collection.update_one(
+            {"_id": ObjectId(user_id)},
+            {"$set": {"system_role_assigned": False}}
         )
         if result.matched_count == 0:
             raise DatabaseException("User not found")

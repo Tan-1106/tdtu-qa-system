@@ -1,4 +1,5 @@
 from fastapi.encoders import jsonable_encoder
+
 from app.daos.user_dao import UserDAO
 
 
@@ -47,6 +48,12 @@ async def get_students(
         "total_pages": total_pages,
         "current_page": page
     }
+    
+    
+# Get all existing faculty options
+async def get_all_existing_faculties():
+    faculties = await UserDAO().get_all_existing_faculties()
+    return jsonable_encoder(faculties)
 
 
 # Assign admin role to user
@@ -55,9 +62,9 @@ async def assign_admin(user_id: str):
     return jsonable_encoder(updated_user)
 
     
-# Assign faculty manager role to user
-async def assign_faculty_manager(user_id: str, faculty: str):
-    updated_user = await UserDAO().assign_faculty_manager_role(user_id, faculty)
+# Assign teacher role to user
+async def assign_teacher(user_id: str, faculty: str):
+    updated_user = await UserDAO().assign_teacher_role(user_id, faculty)
     return jsonable_encoder(updated_user)
 
 
@@ -66,6 +73,17 @@ async def assign_student(user_id: str, faculty: str):
     updated_user = await UserDAO().assign_student_role(user_id, faculty)
     return jsonable_encoder(updated_user)
 
+
+# Assign faculty manager permission to user
+async def assign_faculty_manager(user_id: str, faculty: str):
+    updated_user = await UserDAO().assign_faculty_manager_role(user_id, faculty)
+    return jsonable_encoder(updated_user)
+
+
+# Revoke faculty manager permission from user
+async def revoke_permissions(user_id: str):
+    updated_user = await UserDAO().revoke_permissions(user_id)
+    return jsonable_encoder(updated_user)
 
 # Ban a user
 async def ban_user(user_id: str):

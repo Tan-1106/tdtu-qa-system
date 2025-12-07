@@ -4,17 +4,14 @@ from fastapi.encoders import jsonable_encoder
 from app.schemas import user_schema
 from app.services import auth_service
 from app.controllers import user_controller
+from app.utils.basic_information import Role
 from app.utils.api_response import api_response
-from app.utils.basic_information import Role, Faculty
-
 
 # --- ROUTER ---
 router = APIRouter(
     prefix="/users",
     tags=["Users"],
-    dependencies=[
-        Depends(auth_service.get_current_user)
-    ]
+    dependencies=[Depends(auth_service.get_current_user)]
 )
 
 
@@ -52,12 +49,12 @@ async def get_role_options(
     )
     
 
-# Get all faculty options
+# Get all existing faculty options
 @router.get("/faculties")
 async def get_faculty_options(
     check_admin = Depends(auth_service.require_role([Role.ADMIN.value]))
 ):
-    faculties = [faculty.value.name for faculty in Faculty]
+    faculties = await user_controller.get_all_existing_faculties()
     return api_response(
         status_code=200,
         message="Get faculty options successfully.",
@@ -79,18 +76,19 @@ async def assign_admin(
     )
 
     
-# Assign role faculty manager to user or change manager's faculty
-@router.post("/{user_id}/assign-faculty-manager")
-async def assign_faculty_manager(
+# Assign role teacher to user
+@router.post("/{user_id}/assign-teacher")
+async def assign_teacher(
     user_id: str,
     assign_data: user_schema.AssignFacultySchema,
-    check_admin = Depends(auth_service.require_role([Role.ADMIN.value]))
+    current_user = Depends(auth_service.get_current_user)
 ):
     assign_data = jsonable_encoder(assign_data)
-    response = await user_controller.assign_faculty_manager(user_id, assign_data["faculty"])
+    current_user = jsonable_encoder(current_user)
+    response = await user_controller.assign_teacher(user_id, assign_data["faculty"], current_user)
     return api_response(
         status_code=200,
-        message="Assign faculty manager role successfully.",
+        message="Assign teacher role successfully.",
         details=response
     )
     
@@ -100,13 +98,45 @@ async def assign_faculty_manager(
 async def assign_student(
     user_id: str,
     assign_data: user_schema.AssignFacultySchema,
-    check_admin = Depends(auth_service.require_role([Role.ADMIN.value]))
+    current_user = Depends(auth_service.get_current_user)
 ):
     assign_data = jsonable_encoder(assign_data)
-    response = await user_controller.assign_student(user_id, assign_data["faculty"])
+    current_user = jsonable_encoder(current_user)
+    response = await user_controller.assign_student(user_id, assign_data["faculty"], current_user)
     return api_response(
         status_code=200,
         message="Assign student role successfully.",
+        details=response
+    )
+    
+
+# Assign faculty manager permission to user
+@router.post("/{user_id}/assign-faculty-manager")
+async def assign_faculty_manager(
+    user_id: str,
+    assign_data: user_schema.AssignFacultySchema,
+    current_user = Depends(auth_service.get_current_user)
+):
+    assign_data = jsonable_encoder(assign_data)
+    current_user = jsonable_encoder(current_user)
+    response = await user_controller.assign_faculty_manager(user_id, assign_data["faculty"], current_user)
+    return api_response(
+        status_code=200,
+        message="Assign faculty manager role successfully.",
+        details=response
+    )
+    
+    
+# Revoke system-granted permissions from user
+@router.post("/{user_id}/revoke-permissions")
+async def revoke_permissions(
+    user_id: str,
+    current_user = Depends(auth_service.get_current_user)
+):
+    response = await user_controller.revoke_permissions(user_id, current_user)
+    return api_response(
+        status_code=200,
+        message="Revoke permissions successfully.",
         details=response
     )
     

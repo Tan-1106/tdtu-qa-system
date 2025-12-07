@@ -247,3 +247,58 @@ async def generate_potential_questions(api_key: dict, context: str, num_question
         output_text = normalize_text(output_text)
     
     return output_text
+
+
+# Generate potential questions from text chunks
+async def generate_potential_questions_appendix(api_key: dict, context: str, num_questions: int) -> list[str]:
+    prompt = f"""
+    Bạn là một trợ lý tạo câu hỏi tiềm năng dựa trên nội dung phụ lục quy định được cung cấp.
+    
+    Nhiệm vụ:
+    Sinh ra đúng {num_questions} câu hỏi tiềm năng đáp ứng toàn bộ tiêu chí sau:
+    - Ngắn gọn, rõ ràng, không trùng lặp, tự nhiên.
+    - Là những câu hỏi mà một sinh viên tại Trường Đại học Tôn Đức Thắng có thể đặt ra liên quan đến quy định, quy chế của trường dựa trên đoạn văn bạn được cung cấp bên dưới bằng hệ thống Retrieval-Augmented Generation (RAG).
+    - Không được hỏi dựa theo cú pháp hoặc câu chữ cụ thể trong văn bản, chỉ dựa trên chủ đề có thể được văn bản đề cập.
+    - Không được nhắc đến bản thân văn bản hoặc vị trí văn bản (ví dụ: "Theo Description", "theo Content", “dựa trên nội dung đã cho”, “quy định này”,...).
+    - Câu hỏi phải có ý nghĩa đầy đủ, người đọc không cần xem đoạn văn bản vẫn hiểu được.
+    - Chỉ tạo những câu hỏi trong phạm vi mà phần "Content" của phụ lục đang đề cập đến.
+    
+    Đoạn văn bản:
+    \"\"\"{context}\"\"\"
+
+    Định dạng đầu ra:
+    - Trả về **duy nhất một danh sách Python hợp lệ**, chứa đúng {num_questions} chuỗi (string).  
+    - Không thêm bất kỳ mô tả, lời giải thích hoặc ký tự thừa nào khác ngoài danh sách.  
+    - Ví dụ đầu ra:
+    ["Câu hỏi 1", "Câu hỏi 2", ..., "Câu hỏi {num_questions}"]
+    """
+
+    output_text = []
+    
+    if api_key["provider"] == APIKeyProvider.OPENAI.value:
+        def call_openai():
+            openai_client = OpenAI(api_key=api_key["api_key"])
+            response = openai_client.responses.create(
+                model=api_key["using_model"],
+                input=prompt,
+                store=False
+            )
+            return response.output_text
+        
+        output_text = await asyncio.to_thread(call_openai)
+        output_text = normalize_text(output_text)
+        
+    elif api_key["provider"] == APIKeyProvider.GEMINI.value:
+        def call_gemini():
+            genai.configure(api_key=api_key["api_key"])
+            model = genai.GenerativeModel(api_key["using_model"])
+            response = model.generate_content(
+                prompt,
+                generation_config={"max_output_tokens": 1024}
+            )
+            return response.text
+        
+        output_text = await asyncio.to_thread(call_gemini)
+        output_text = normalize_text(output_text)
+    
+    return output_text

@@ -7,8 +7,8 @@ from fastapi.responses import StreamingResponse
 
 
 from app.utils import text_process
-from app.services import document_service
-from app.utils.basic_information import Faculty, Role
+from app.utils.basic_information import Role
+from app.services import document_service, user_service
 from app.utils.api_response import UserError, AuthException
 from app.services import llm_service, embedding_service, document_chunk_service
 
@@ -183,7 +183,7 @@ async def upload_appendix_document(
             "chunks": {}
         }
         for idx, chunk in enumerate(chunks):
-            potential_questions = await llm_service.generate_potential_questions(
+            potential_questions = await llm_service.generate_potential_questions_appendix(
                 api_key=api_key,
                 context=chunk,
                 num_questions=2
@@ -273,7 +273,7 @@ async def update_document(
     if current_user["role"] == Role.ADMIN.value:
         if data["department"] is not None and data["faculty"] is not None:
             raise UserError("Only one of department or faculty can be provided.")
-        if data["faculty"] is not None and data["faculty"] not in [f.value.name for f in Faculty]:
+        if data["faculty"] is not None and data["faculty"] not in user_service.get_all_existing_faculties():
             raise UserError("Invalid faculty provided.")
         if data["faculty"] is not None:
             data["department"] = None

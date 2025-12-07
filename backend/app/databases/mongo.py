@@ -81,13 +81,13 @@ def get_document_chunks_collection():
     return db.get_collection("document_chunks")
 
 
-# Questions collection
-def get_questions_collection():
+# Question-Answer collection
+def get_qa_collection():
     global db
     if db is None:
         raise RuntimeError("Database has not been initialized.")
-    logging.info(f"Accessing collection: questions in database: {DB_NAME}")
-    return db.get_collection("questions")
+    logging.info(f"Accessing collection: qa in database: {DB_NAME}")
+    return db.get_collection("qa")
 
 
 # Answers collection

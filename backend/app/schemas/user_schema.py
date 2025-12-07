@@ -11,8 +11,10 @@ class UserRecord(BaseModel):
     name: str
     email: EmailStr
     image: Optional[str] = None
-    role: Optional[str] = None
+    role: str
     faculty: Optional[str] = None
+    is_faculty_manager: bool
+    system_role_assigned: bool
     banned: bool
     created_at: datetime
     class Config:

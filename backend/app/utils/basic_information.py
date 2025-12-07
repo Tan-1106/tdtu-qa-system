@@ -1,49 +1,39 @@
 from enum import Enum
 from dataclasses import dataclass
-
-
-@dataclass(frozen=True)
-class FacultyInfo:
-    first_char: str
-    name: str
-    
-
-class Faculty(Enum):
-    A = FacultyInfo("0", "Khoa Ngoại Ngữ")
-    B = FacultyInfo("1", "Khoa Mỹ Thuật Công Nghiệp")
-    C = FacultyInfo("2", "Khoa Kế Toán")
-    D = FacultyInfo("3", "Khoa KHXH & Nhân Văn")
-    E = FacultyInfo("4", "Khoa Điện - Điện Tử")
-    F = FacultyInfo("5", "Khoa Công Nghệ Thông Tin")
-    G = FacultyInfo("6", "Khoa Khoa Học Ứng Dụng")
-    H = FacultyInfo("7", "Khoa Quản Trị Kinh Doanh")
-    I = FacultyInfo("8", "Khoa Kỹ Thuật Công Trình")
-    J = FacultyInfo("9", "Khoa Môi Trường & BHLĐ")
-    K = FacultyInfo("A", "Khoa Lao Động Công Đoàn")
-    L = FacultyInfo("B", "Khoa Tài Chính Ngân Hàng")
-    M = FacultyInfo("C", "Khoa Toán - Thống Kê")
-    N = FacultyInfo("D", "Khoa Khoa Học Thể Thao")
-    O = FacultyInfo("E", "Khoa Luật")
-    P = FacultyInfo("H", "Khoa Dược")
-    
-    
     
 class Role(Enum):
     ADMIN = "Admin"
-    FACULTY_MANAGER = "Faculty Manager"
     TEACHER = "Teacher"
     STUDENT = "Student"
 
-
-def get_user_info(user_sub: str):
-    first_char = user_sub[0].upper()
-    for faculty in Faculty:
-        if faculty.value.first_char == first_char and len(user_sub) == 8:
-            return {
-                "faculty": faculty.value.name,
-                "role": Role.STUDENT.value
-            }
-    return {
-        "role": None,
-        "faculty": None
-    }
+'''
+{
+    'provider': 'ELIT Auth',
+    'uid': '111083632316595044145',
+    'sub': '52200081',
+    'username': 'S52200081',
+    'nickname': 'Nguyễn Nhật Tân',
+    'name': 'Nguyễn Nhật Tân',
+    'email': '52200081@student.tdtu.edu.vn',
+    'image': 'https://lh3.googleusercontent.com/a/ACg8ocKPbiWhOLTfHRPn55i5ZkDVQgMtgVI9clBP1rbBwnWmfe4osA=s96-c',
+    'email_verified': True,
+    'given_name': 'Tân', 
+    'family_name': 'Nguyễn Nhật',
+    'info': {
+        'image': 'https://lh3.googleusercontent.com/a/ACg8ocKPbiWhOLTfHRPn55i5ZkDVQgMtgVI9clBP1rbBwnWmfe4osA=s96-c'
+    },
+    'extra': {
+        'raw_info': {
+            'image': 'https://lh3.googleusercontent.com/a/ACg8ocKPbiWhOLTfHRPn55i5ZkDVQgMtgVI9clBP1rbBwnWmfe4osA=s96-c'
+        }
+    },
+    'is_admin': False,
+    'is_teacher': False,
+    'is_student': True,
+    'faculty': 'Khoa Công Nghệ Thông Tin',
+    'faculty_code': '5',
+    'is_faculty_manager': False,
+    'access_token': 'e9db6b739a0cf90a3e118d34ecabab655f4108ba',
+    'refresh_token': '1d20df1a-cbd9-4045-a5dd-da4b1abfc839'
+}
+'''

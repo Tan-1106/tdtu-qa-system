@@ -28,6 +28,14 @@ class TokenDAO:
             raise DatabaseException("Unable to create token record.")
         return auth_schema.TokensRecord(**created_token)
     
+    
+    # Revoke all tokens of a user
+    async def revoke_all_tokens_of_user(self, sub: str) -> bool:
+        result = await self.tokens_collection.update_many(
+            {"sub": sub, "revoked": False},
+            {"$set": {"revoked": True, "revoked_at": datetime.now(timezone.utc)}}
+        )
+        return result.modified_count > 0
 
     # Revoke tokens
     async def revoke_refresh_token(self, sub: str, refresh_token: str) -> bool:

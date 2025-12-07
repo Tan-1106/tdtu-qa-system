@@ -13,7 +13,7 @@ from app.utils.api_response import NotFoundException, AuthException
 from app.schemas import auth_schema
 from app.daos.user_dao import UserDAO
 from app.daos.token_dao import TokenDAO
-from app.utils.basic_information import get_user_info, Role, Faculty
+from app.utils.basic_information import Role
 
 
 # --- ELIT CONFIGURATIONS ---
@@ -63,15 +63,12 @@ async def elit_login(code: str) -> dict:
         raise Exception(f"ELIT returned an error when fetching token: {res.status_code} - {res.text}")
 
     # Process user data
-    user_data = auth_schema.ELITLoginResponse(**res.json()).model_dump()
-    user_info = get_user_info(user_data["sub"])
-    user_data["role"] = user_info["role"]
-    user_data["faculty"] = user_info["faculty"]    
+    user_data = auth_schema.ELITLoginResponse(**res.json()).model_dump()   
     
     # Generate tokens and store user & tokens in DB
-    access_token, refresh_token = await generate_tokens(user_data)
     user = await UserDAO().create_user(user_data)
     user = jsonable_encoder(user)
+    access_token, refresh_token = await generate_tokens(user)
     if (user["banned"]):
         raise AuthException("User is banned from the system.")
     
@@ -225,6 +222,12 @@ async def revoke_refresh_token(refresh_token: str):
     refresh_token = await verify_refresh_token(refresh_token)
     user_sub = refresh_token["payload"]["sub"]
     await TokenDAO().revoke_refresh_token(user_sub, refresh_token["token"])
+    
+    
+# Revoke all tokens of a user
+async def revoke_all_tokens_of_user(sub: str):
+    revoked = await TokenDAO().revoke_all_tokens_of_user(sub)
+    return revoked
 
         
 # --- SYSTEM AUTHENTICATION ---
@@ -240,8 +243,6 @@ async def get_current_user(access_token: dict = Depends(verify_access_token)) ->
     
     if user_role not in (r.value for r in Role):
         raise AuthException("Your role does not have permission to access the system.")
-    if user_role != Role.ADMIN.value and user_faculty not in (f.value.name for f in Faculty):
-        raise AuthException("Invalid faculty assigned to your account.")
     if user_banned:
         raise AuthException("User is banned from the system.")
 

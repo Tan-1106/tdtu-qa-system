@@ -13,9 +13,7 @@ from app.utils.api_response import api_response
 router = APIRouter(
     prefix="/model",
     tags=["Model"],
-    dependencies=[
-        Depends(auth_service.require_role([Role.ADMIN.value]))
-    ]
+    dependencies=[Depends(auth_service.require_role([Role.ADMIN.value]))]
 )
 
 

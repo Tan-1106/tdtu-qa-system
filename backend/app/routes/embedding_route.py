@@ -1,5 +1,4 @@
-from fastapi.encoders import jsonable_encoder
-from fastapi import APIRouter, Depends, UploadFile, Form, Query
+from fastapi import APIRouter, Depends, Query
 
 from app.services import auth_service
 from app.utils.basic_information import Role

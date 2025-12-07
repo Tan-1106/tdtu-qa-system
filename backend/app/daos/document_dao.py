@@ -4,7 +4,6 @@ from datetime import datetime, timezone
 from app.databases import mongo
 from app.utils import serializer
 from app.utils.api_response import DatabaseException
-from app.utils.basic_information import Role, Faculty
 
 class DocumentDAO:
     def __init__(self):

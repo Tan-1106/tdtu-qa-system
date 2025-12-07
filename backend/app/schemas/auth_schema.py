@@ -17,6 +17,12 @@ class ELITLoginResponse(BaseModel):
     name: str = Field(..., description="Full name of the user")
     email: EmailStr = Field(..., description="Email address of the user")
     image: Optional[str] = Field(None, description="URL of the user's profile image")
+    is_admin: bool = Field(False, description="Indicates if the user has admin privileges")
+    is_teacher: bool = Field(False, description="Indicates if the user is a teacher")
+    is_student: bool = Field(True, description="Indicates if the user is a student")
+    faculty: Optional[str] = Field(None, description="Faculty name of the user")
+    faculty_code: Optional[str] = Field(None, description="Faculty code of the user")
+    is_faculty_manager: bool = Field(False, description="Indicates if the user is a faculty manager")
     class Config:
         extra = "ignore"
 

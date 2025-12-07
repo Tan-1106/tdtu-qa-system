@@ -8,6 +8,8 @@ def user_serialize(user) -> dict:
         "image": user.get("image"),
         "role": user.get("role"),
         "faculty": user.get("faculty"),
+        "is_faculty_manager": user.get("is_faculty_manager", False),
+        "system_role_assigned": user.get("system_role_assigned", False),
         "banned": user.get("banned", False),
         "created_at": user.get("created_at").isoformat() if user.get("created_at") else None
     }
