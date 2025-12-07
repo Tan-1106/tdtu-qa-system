@@ -17,7 +17,7 @@ import useUserAuth from '../../hooks/useUserAuth';
 
 const roleColor = {
   'Admin': 'error',
-  'Faculty Manager': 'warning',
+  'Teacher': 'warning',
   'Student': 'success',
     
 };
@@ -29,7 +29,7 @@ const statusOptions = [
 
 const UserManagementPage = () => {
     const { user: currentUser } = useUserAuth(); 
-    const isFacultyManager = currentUser?.role === 'Faculty Manager';
+    const isOnlyManager = currentUser?.is_faculty_manager === true && currentUser?.role !== 'Admin';
     const isAdmin = currentUser?.role === 'Admin';
     
   const [users, setUsers] = useState([]);
@@ -163,6 +163,10 @@ const UserManagementPage = () => {
     };
 
   const handleToggleBan = async (user) => {
+        if (!isAdmin) { 
+                setError('Bạn không có quyền Chặn/Bỏ chặn người dùng.');
+                return;
+            }
         try {
             const apiCall = user.banned ? unbanUser : banUser;
             
@@ -201,7 +205,12 @@ const UserManagementPage = () => {
         </Box>
         
         <Paper elevation={1} sx={{ p: 2, mb: 3, borderRadius: 3, borderLeft: '5px solid #1976d2' }}>
-            <Typography variant="subtitle1" sx={{ mb: -2, fontWeight: 700, color: 'primary.main' }}>Tìm kiếm & Lọc</Typography>
+            {isAdmin && (
+                <Typography variant="subtitle1" sx={{ mb: -2, fontWeight: 700, color: 'primary.main' }}>Tìm kiếm & Lọc</Typography>
+            )}
+            {isOnlyManager && (
+                <Typography variant="subtitle1" sx={{ mb: 0, fontWeight: 700, color: 'primary.main' }}>Tìm kiếm & Lọc</Typography>
+            )}
             <Grid container spacing={2} alignItems="flex-end">
                 
                 <Grid item xs={12} sm={6} md={3.5}>
@@ -272,7 +281,8 @@ const UserManagementPage = () => {
                     </Grid>
                 )}
                 
-                <Grid item xs={12} sm={6} md={2.5}> 
+                {isAdmin && (
+                    <Grid item xs={12} sm={6} md={2.5}> 
                     <Typography variant="caption" display="block" sx={{ color: 'text.secondary', mb: 0.5 }}>
                         Trạng thái
                     </Typography>
@@ -292,6 +302,7 @@ const UserManagementPage = () => {
                         </Select>
                     </FormControl>
                 </Grid>
+                )}
             </Grid>
         </Paper>
 

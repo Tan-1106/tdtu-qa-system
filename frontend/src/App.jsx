@@ -41,7 +41,7 @@ const RoleRedirector = () => {
     }
 
     // Nếu là Admin hoặc Faculty Manager, chuyển hướng đến trang Admin
-    if (user.role === 'Admin' || user.role === 'Faculty Manager') {
+    if (user.role === 'Admin' || user.is_faculty_manager === true) {
         return <Navigate to="/admin/dashboard" replace />;
     }
 

@@ -30,8 +30,7 @@ const AdminLayout = () => {
   
   // 💡 2. LOGIC TÍNH TOÁN VAI TRÒ
   const isAdmin = currentUser?.role === 'Admin';
-  const isFacultyManager = currentUser?.role === 'Faculty Manager';
-  
+    const isFacultyManager = currentUser?.is_faculty_manager === true;  
   const sidebarTitle = isAdmin 
     ? "TDTU Admin" 
     : (isFacultyManager ? "TDTU Manager" : "Quản trị"); 

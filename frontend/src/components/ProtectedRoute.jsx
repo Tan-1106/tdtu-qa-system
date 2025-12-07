@@ -42,7 +42,7 @@ const ProtectedRoute = () => {
         return <Navigate to="/login" replace />;
     }
 
-    const isAdminOrManager = user && (user.role === 'Admin' || user.role === 'Faculty Manager');
+    const isAdminOrManager = user && (user.role === 'Admin' || user.is_faculty_manager === true);
     
     if (isAdminOrManager) {
         // Nếu là Admin, chuyển hướng ra khỏi khu vực Student và đến Admin Dashboard

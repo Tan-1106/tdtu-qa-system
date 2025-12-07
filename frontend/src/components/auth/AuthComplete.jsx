@@ -48,6 +48,7 @@ const AuthComplete = () => {
                 studentId: userData.sub,
                 role: userData.role,
                 faculty: userData.faculty,
+                is_faculty_manager: userData.is_faculty_manager,
             }));
         }
 

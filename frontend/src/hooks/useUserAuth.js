@@ -26,6 +26,7 @@ const useUserAuth = () => {
                     department: userData.faculty, 
                     avatar: userData.name.charAt(0).toUpperCase(),
                     role: userData.role, 
+                    is_faculty_manager: userData.is_faculty_manager,
                 });
                 setIsAuthenticated(true);
             } catch (error) {

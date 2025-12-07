@@ -52,8 +52,7 @@ const ModelManagementPage = () => {
     const params = {
         page: currentPage + 1,
         limit: limit,
-        name: keyword || undefined,
-        description: keyword || undefined, 
+        keyword: keyword || undefined,
         provider: provider || undefined,
     };
     
@@ -87,8 +86,7 @@ const ModelManagementPage = () => {
           targetPage, 
           rowsPerPage, 
           searchKeyword, 
-          filterProvider, 
-          filterUsage 
+          filterProvider
       );
       
       if (resetPage && page !== 0) {

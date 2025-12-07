@@ -40,8 +40,13 @@ const AdminRoute = () => {
     }
 
     // Định nghĩa các vai trò có quyền truy cập
-    const allowedRoles = ['Admin', 'Faculty Manager']; 
-    const isAuthorized = user && allowedRoles.includes(user.role);
+    const allowedRoles = ['Admin']; 
+    const isAuthorized = 
+        user && 
+        (
+            allowedRoles.includes(user.role) || 
+            user.is_faculty_manager === true         
+        );
 
     // 2. Check Authentication
     if (!isAuthenticated) {
