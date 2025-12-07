@@ -67,3 +67,19 @@ def document_chunk_serialize(document_chunk) -> dict:
         "created_at": document_chunk.get("created_at").isoformat() if document_chunk.get("created_at") else None,
         "updated_at": document_chunk.get("updated_at").isoformat() if document_chunk.get("updated_at") else None
     }
+    
+    
+# QA Session
+def qa_session_serialize(qa_session) -> dict:
+    return {
+        "id": str(qa_session["_id"]),
+        "user_id": qa_session.get("user_id"),
+        "user_sub": qa_session.get("user_sub"),
+        "user_faculty": qa_session.get("user_faculty"),
+        "question": qa_session.get("question"),
+        "answer": qa_session.get("answer"),
+        "feedback": qa_session.get("feedback"),
+        "manager_answer": qa_session.get("manager_answer"),
+        "created_at": qa_session.get("created_at").isoformat() if qa_session.get("created_at") else None,
+        "updated_at": qa_session.get("updated_at").isoformat() if qa_session.get("updated_at") else None
+    }

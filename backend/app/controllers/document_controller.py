@@ -146,7 +146,7 @@ async def upload_appendix_document(
     if file.content_type != "application/pdf":
         raise UserError("Only PDF files are allowed.")
     
-    if current_user["is_faculty_manager"]:
+    if current_user["is_faculty_manager"] and not current_user["role"] == Role.ADMIN.value:
         department = None
         faculty = current_user["faculty"]
    

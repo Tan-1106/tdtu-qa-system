@@ -107,6 +107,16 @@ class DocumentDAO:
         return serializer.document_serialize(document)
     
     
+    # Get document file info by ID
+    async def get_document_file_info(self, doc_id: str) -> tuple[str, str]:
+        document = await self.documents_collection.find_one({"_id": ObjectId(doc_id)})
+        if not document:
+            raise DatabaseException("Document not found.")
+        file_name = document.get("file_name", "")
+        file_url = document.get("file_url", "")
+        return file_name, file_url
+    
+    
     # Update a document by ID
     async def update_document(self, doc_id: str, data: dict) -> dict:
         data["updated_at"] = datetime.now(timezone.utc)

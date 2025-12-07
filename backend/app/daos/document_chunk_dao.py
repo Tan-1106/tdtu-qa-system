@@ -62,6 +62,20 @@ class DocumentChunkDAO:
         return paginated_chunks
     
     
+    # Get document chunk by document ID and chunk index
+    async def get_document_chunk_by_index(self, doc_id: str, chunk_index: int) -> dict:
+        chunks_record = await self.document_chunks_collection.find_one({"doc_id": doc_id})
+        if not chunks_record:
+            raise DatabaseException(f"Document chunks record with doc_id {doc_id} not found")
+        
+        chunks = chunks_record.get("chunks", {})
+        chunk_data = chunks.get(str(chunk_index))
+        if not chunk_data:
+            raise DatabaseException(f"Chunk index {chunk_index} not found in document chunks for doc_id {doc_id}")
+        
+        return chunk_data
+    
+    
     # Update chunk's embedding_id by document ID and chunk index
     async def update_chunk_embedding_id(
         self,

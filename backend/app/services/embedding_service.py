@@ -4,8 +4,7 @@ import asyncio
 import logging
 from pyvi.ViTokenizer import tokenize
 from fastapi.encoders import jsonable_encoder
-from sentence_transformers import SentenceTransformer, CrossEncoder
-
+from sentence_transformers import SentenceTransformer
 
 from app.daos.document_dao import DocumentDAO
 from app.daos.embedding_dao import EmbeddingDAO
@@ -17,8 +16,6 @@ logging.getLogger("sentence_transformers").setLevel(logging.WARNING)
 
 # --- CONFIGURATION ---
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "dangvantuan/vietnamese-embedding")
-
-
 embedding_model = SentenceTransformer(EMBEDDING_MODEL)
 
 
@@ -92,6 +89,19 @@ async def recreate_embeddings():
 async def delete_embedding_by_id(embedding_id: str):
     await EmbeddingDAO().delete_embedding_by_id(embedding_id)
     
+    
+# Semantic search embeddings
+async def find_relevant_potential_questions(
+    top_k: int,
+    embedding_vector: list[float],
+    user_faculty: str
+):
+    potenial_question_embeddings = await EmbeddingDAO().semantic_search_embeddings(
+        top_k = top_k,
+        embedded_question = embedding_vector,
+        faculty = user_faculty
+    )
+    return potenial_question_embeddings
 
 # --- SUPPORTING FUNCTIONS ---
 # Get embedding for a given text

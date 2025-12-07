@@ -1,33 +1,17 @@
 import os
 import re
-import ast
-import json
 import asyncio
 import logging
 from openai import OpenAI
 import google.generativeai as genai
-from pyvi.ViTokenizer import tokenize
 from cryptography.fernet import Fernet
 from fastapi.encoders import jsonable_encoder
 from app.utils.text_process import normalize_text
 from app.schemas.api_key_schema import APIKeyProvider
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
-from sentence_transformers import SentenceTransformer, CrossEncoder
 logging.getLogger("sentence_transformers").setLevel(logging.WARNING)
 
 from app.daos.api_key_dao import APIKeyDAO
 from app.utils.api_response import UserError, DatabaseException
-
-
-# --- CONFIGURATION ---
-TRANSLATE_MODEL = os.getenv("TRANSLATE_MODEL", "VietAI/envit5-translation")
-CROSS_ENCODER_MODEL = os.getenv("CROSS_ENCODER_MODEL", "cross-encoder/mmarco-mMiniLMv2-L12-H384-v1")
-
-
-# Load Models
-# translate_tokenizer = AutoTokenizer.from_pretrained(TRANSLATE_MODEL)
-# translate_model = AutoModelForSeq2SeqLM.from_pretrained(TRANSLATE_MODEL)
-# cross_encoder_model = CrossEncoder(CROSS_ENCODER_MODEL)
 
 
 # --- API KEYS SERVICE ---
@@ -272,6 +256,86 @@ async def generate_potential_questions_appendix(api_key: dict, context: str, num
     - Ví dụ đầu ra:
     ["Câu hỏi 1", "Câu hỏi 2", ..., "Câu hỏi {num_questions}"]
     """
+
+    output_text = []
+    
+    if api_key["provider"] == APIKeyProvider.OPENAI.value:
+        def call_openai():
+            openai_client = OpenAI(api_key=api_key["api_key"])
+            response = openai_client.responses.create(
+                model=api_key["using_model"],
+                input=prompt,
+                store=False
+            )
+            return response.output_text
+        
+        output_text = await asyncio.to_thread(call_openai)
+        output_text = normalize_text(output_text)
+        
+    elif api_key["provider"] == APIKeyProvider.GEMINI.value:
+        def call_gemini():
+            genai.configure(api_key=api_key["api_key"])
+            model = genai.GenerativeModel(api_key["using_model"])
+            response = model.generate_content(
+                prompt,
+                generation_config={"max_output_tokens": 1024}
+            )
+            return response.text
+        
+        output_text = await asyncio.to_thread(call_gemini)
+        output_text = normalize_text(output_text)
+    
+    return output_text
+
+
+# Generate answer
+async def generate_answer(api_key: str, chunks: list[str], question: str, question_language: str) -> str:
+    context = "\n\n".join([f"Đoạn {i+1}: {chunk}" for i, chunk in enumerate(chunks)])
+    if question_language == 'vi':
+        prompt = f"""
+        Bạn là một trợ lý thông minh có nhiệm vụ trả lời câu hỏi về quy định, quy chế của Trường Đại học Tôn Đức Thắng dựa trên các đoạn văn bản được cung cấp thông qua hệ thống Retrieval Augmented Generation (RAG).
+
+        Hướng dẫn:
+        1. Sử dụng **chính xác** thông tin trong các đoạn văn bản để trả lời câu hỏi một cách đầy đủ, tự nhiên, có chủ ngữ và vị ngữ rõ ràng.
+        2. Nếu văn bản là **phụ lục**, cần chú ý đến cấu trúc bảng: các thông tin trong cùng một hàng thuộc về cùng một đối tượng, và cần đọc theo thứ tự từ trái sang phải để hiểu đúng ý.
+        3. Nếu thông tin liên quan có trong nhiều đoạn, hãy **tổng hợp và diễn đạt lại** thành một câu trả lời hoàn chỉnh.
+        4. Nếu có đáp án, thì ở cuối câu trả lời, hãy thêm mục **Nguồn tham khảo** gồm danh sách các tài liệu đã được sử dụng (mỗi mục gồm tiêu đề và URL ở cuối đoạn văn bản).
+        5. Nếu **không tìm thấy** thông tin phù hợp trong các đoạn văn bản, hãy trả lời rằng không thể tìm được tài liệu trong kho dữ liệu liên quan đến câu hỏi của người dùng, không đề cập đến các tài liệu bạn được cung cấp và không cần dẫn nguồn tham khảo.
+        6. Nếu người dùng cố gắng trò chuyện về các chủ đề không phù hợp hoặc ngoài phạm vi thay vì hỏi về nội dung thuộc phạm vi của Trường Đại học Tôn Đức Thắng, hãy trả lời một cách lịch sự rằng bạn chỉ có thể hỗ trợ các câu hỏi liên quan đến quy định, quy chế của Trường Đại học Tôn Đức Thắng và không được thiết kế để tham gia vào các cuộc trò chuyện ngoài phạm vi này, ngoài ra không cung cấp thông tin gì thêm về tài liệu nhận được từ hệ thống RAG.
+
+        Ngữ cảnh từ hệ thống RAG:
+        {context}
+
+        Câu hỏi:
+        {question}
+
+        Định dạng đầu ra:
+        - Trả về đúng **một chuỗi (string)** chứa câu trả lời hoàn chỉnh, có thể bao gồm mục "Nguồn tham khảo:" nếu có.
+        - Nếu có mục "Nguồn tham khảo", hãy liệt kê các tài liệu đã sử dụng dưới dạng danh sách, mỗi mục gồm tiêu đề, URL và không bị trùng lặp.
+        """
+    else:
+        prompt = f"""
+        You are a smart assistant tasked with answering questions about the regulations and policies of Ton Duc Thang University based on the text passages provided through the Retrieval Augmented Generation (RAG) system.
+
+        Instructions:
+        1. Use the **exact** information from the text passages to answer the question completely, naturally, with clear subject and predicate.
+        2. If the text is **appendix**, pay attention to the table structure: information in the same row belongs to the same subject, and read from left to right to understand correctly.
+        3. If relevant information is found in multiple passages, **synthesize and rephrase** it into a complete answer. The relevant information may be in Vietnamese, so make sure to translate your response completly to English.
+        4. If there is an answer, at the end of the response, add a **References** section listing the documents used (each item includes the title and URL at the end of the passage).
+        5. If **no relevant information** is found in the text passages, respond that you could not find documents related to the user's question in the database, do not mention the documents you were provided, and do not include a references section.
+        6. If the user tries to chat about inappropriate or out-of-scope topics instead of asking about the scope of Ton Duc Thang University, politely respond that you can only assist with questions related to the scope of Ton Duc Thang University and are not designed to engage in out-of-scope conversations, without providing any additional information about the documents received from the RAG system.
+        7. If the question is not in Vietnamese or English, politely inform the user that you can only process questions in Vietnamese or English. This response language is the question language if you can detect it, otherwise respond in English.
+
+        Context from RAG system:
+        {context}
+
+        Question:
+        {question}
+
+        Output format:
+        - Return exactly **one string** containing the complete answer, which may include a "References:" section if applicable.
+        - If there is a "References" section, list the documents used as a list, each item including the title, URL, and no duplicates.
+        """
 
     output_text = []
     

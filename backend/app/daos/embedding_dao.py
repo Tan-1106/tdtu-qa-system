@@ -73,3 +73,42 @@ class EmbeddingDAO:
             raise DatabaseException("Failed to reset embeddings collection.")
         chroma.embeddings_collection = chroma.client.get_or_create_collection(name="embeddings")
         return True
+    
+    
+    # Semantic search embeddings
+    async def semantic_search_embeddings(
+        self,
+        top_k: int,
+        embedded_question: list[float],
+        faculty: str
+    ) -> list[dict]:
+        # Build where filter based on faculty
+        where_filter = None
+        if faculty and faculty != "":
+            where_filter = {
+                "$or": [
+                    {"faculty": faculty},
+                    {"faculty": ""}
+                ]
+            }
+        
+        # Perform semantic search with ChromaDB
+        results = chroma.embeddings_collection.query(
+            query_embeddings=[embedded_question],
+            n_results=top_k,
+            where=where_filter,
+            include=["metadatas", "distances"]
+        )
+        
+        # Format results
+        search_results = []
+        if results["ids"] and len(results["ids"][0]) > 0:
+            for idx in range(len(results["ids"][0])):
+                search_results.append({
+                    "embedding_id": results["ids"][0][idx],
+                    "metadata": results["metadatas"][0][idx],
+                    "distance": results["distances"][0][idx]
+                })
+        
+        return search_results
+        
