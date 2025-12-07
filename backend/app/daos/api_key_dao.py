@@ -25,17 +25,35 @@ class APIKeyDAO:
 
 
     # Count all API keys
+    # async def count_all_api_keys(self, name: str = None, description: str = None, provider: str = None) -> int:
+    #     query = {}
+    #     if name:
+    #         query["name"] = {"$regex": name, "$options": "i"}
+    #     if description:
+    #         query["description"] = {"$regex": description, "$options": "i"}
+    #     if provider:
+    #         query["provider"] = provider
+    #     count = await self.api_keys_collection.count_documents(query)
+    #     return count
+    
+    # Count all API keys
     async def count_all_api_keys(self, name: str = None, description: str = None, provider: str = None) -> int:
         query = {}
+        search_conditions = []
+        
         if name:
-            query["name"] = {"$regex": name, "$options": "i"}
+            search_conditions.append({"name": {"$regex": name, "$options": "i"}})
         if description:
-            query["description"] = {"$regex": description, "$options": "i"}
+            search_conditions.append({"description": {"$regex": description, "$options": "i"}})
+            
         if provider:
             query["provider"] = provider
+            
+        if search_conditions:
+            query["$or"] = search_conditions
+            
         count = await self.api_keys_collection.count_documents(query)
         return count
-    
     
     # Get all API keys
     async def get_all_api_keys(self) -> list[api_key_schema.APIKeyRecord]:
@@ -47,20 +65,37 @@ class APIKeyDAO:
     
     
     # Get all API keys (Pagination)
+    # async def get_api_keys(self, skip: int, limit: int, name: str = None, description: str = None, provider: str = None) -> list[api_key_schema.APIKeyRecord]:
+    #     api_keys = []
+    #     query = {}
+    #     if name:
+    #         query["name"] = {"$regex": name, "$options": "i"}
+    #     if description:
+    #         query["description"] = {"$regex": description, "$options": "i"}
+    #     if provider:
+    #         query["provider"] = provider
+    #     cursor = self.api_keys_collection.find(query).skip(skip).limit(limit)
+    #     async for key in cursor:
+    #         api_keys.append(api_key_schema.APIKeyRecord(**api_key_serialize(key)))
+    #     return api_keys
+    
+    # Get all API keys (Pagination)
     async def get_api_keys(self, skip: int, limit: int, name: str = None, description: str = None, provider: str = None) -> list[api_key_schema.APIKeyRecord]:
         api_keys = []
         query = {}
+        search_conditions = []
         if name:
-            query["name"] = {"$regex": name, "$options": "i"}
+            search_conditions.append({"name": {"$regex": name, "$options": "i"}})
         if description:
-            query["description"] = {"$regex": description, "$options": "i"}
+            search_conditions.append({"description": {"$regex": description, "$options": "i"}})
         if provider:
             query["provider"] = provider
+        if search_conditions:
+            query["$or"] = search_conditions
         cursor = self.api_keys_collection.find(query).skip(skip).limit(limit)
         async for key in cursor:
             api_keys.append(api_key_schema.APIKeyRecord(**api_key_serialize(key)))
         return api_keys
-        
         
     # Get a single API key by ID
     async def get_api_key_by_id(self, key_id: str) -> dict | None:

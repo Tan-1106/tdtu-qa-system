@@ -11,14 +11,18 @@ export const createApiKey = async (data) => {
     throw new Error(response.data.message || 'Failed to create API key.');
 };
 
-export const getApiKeysList = async (page = 1, limit = 10) => {
-    const response = await axiosInstance.get(BASE_URL, {
-        params: { page, limit }
-    });
-    if (response.data.status_code === 200) {
-        return response.data.details;
-    }
-    throw new Error(response.data.message || 'Failed to fetch API keys list.');
+export const getApiKeysList = async (params = { page: 1, limit: 10 }) => {
+    try {
+        const response = await axiosInstance.get(BASE_URL, {
+            params: params 
+        });
+        if (response.data.status_code === 200) {
+            return response.data.details;
+        }
+        throw new Error(response.data.message || 'Failed to fetch API keys list.');
+    } catch (error) {
+        throw error;
+    }
 };
 
 export const updateApiKeyInfo = async (keyId, updateData) => {
