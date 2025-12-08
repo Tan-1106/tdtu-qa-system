@@ -84,7 +84,7 @@ async def upload_document(
             potential_questions = await llm_service.generate_potential_questions(
                 api_key=api_key,
                 context=chunk,
-                num_questions=2
+                num_questions=5
             )
             document_chunks_record["chunks"][str(idx)] = {
                 "text": chunk,
@@ -192,7 +192,7 @@ async def upload_appendix_document(
             potential_questions = await llm_service.generate_potential_questions_appendix(
                 api_key=api_key,
                 context=chunk,
-                num_questions=2
+                num_questions=5
             )
             document_chunks_record["chunks"][str(idx)] = {
                 "text": chunk,

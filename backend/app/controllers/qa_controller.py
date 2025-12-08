@@ -20,10 +20,10 @@ async def get_answer(question: str, current_user: dict):
     
     user_faculty = current_user["faculty"] if current_user["faculty"] is not None else ""
     if question_language == "vi":
-        answer = await qa_service.get_answer(question, user_faculty, "vi")
+        answer = await qa_service.get_answer(question, question, user_faculty, "vi")
     else:
         question_in_vietnamese = await qa_service.translate_to_vietnamese(question)
-        answer = await qa_service.get_answer(question_in_vietnamese, user_faculty, "en")
+        answer = await qa_service.get_answer(question, question_in_vietnamese, user_faculty, "en")
         
     question_record = await qa_service.update_question_record_with_answer(question_record["_id"], answer)
         

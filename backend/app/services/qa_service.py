@@ -62,14 +62,14 @@ async def translate_to_vietnamese(text: str) -> str:
 
 
 # Get answer for the question
-async def get_answer(question: str, user_faculty: str, question_language: str) -> str:
-    embedded_question = await embedding_service.get_embedding(question)
+async def get_answer(question: str, question_in_vietnamese: str, user_faculty: str, question_language: str) -> str:
     api_key = await llm_service.get_current_api_key()
     if not api_key:
         raise UserError("No active API key found. Please activate an API key to proceed.")
     
+    embedded_question = await embedding_service.get_embedding(question_in_vietnamese)
     relevant_potential_question_embeddings = await embedding_service.find_relevant_potential_questions(
-        top_k = 50,
+        top_k = 100,
         embedding_vector = embedded_question,
         user_faculty = user_faculty
     )
@@ -82,7 +82,7 @@ async def get_answer(question: str, user_faculty: str, question_language: str) -
         chunks.append(chunk_content)
     unique_chunks = set(chunks)
     chunks = list(unique_chunks)
-    chunks = rerank_chunks(question, chunks, top_k=10)
+    chunks = rerank_chunks(question_in_vietnamese, chunks, top_k=20)
     
     answer = await llm_service.generate_answer(api_key, chunks, question, question_language)
     return answer

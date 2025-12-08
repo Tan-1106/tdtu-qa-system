@@ -90,15 +90,6 @@ def get_qa_collection():
     return db.get_collection("qa")
 
 
-# Answers collection
-def get_answers_collection():
-    global db
-    if db is None:
-        raise RuntimeError("Database has not been initialized.")
-    logging.info(f"Accessing collection: answers in database: {DB_NAME}")
-    return db.get_collection("answers")
-
-
 # Popular questions collection
 def get_popular_questions_collection():
     global db
