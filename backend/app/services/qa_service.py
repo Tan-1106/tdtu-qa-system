@@ -121,6 +121,7 @@ async def get_all_question_records(
     limit: int,
     feedback: str,
     faculty: str,
+    keyword: str,
     has_manager_answer: bool,
     current_user: dict = None
 ) -> list[dict]:
@@ -128,10 +129,11 @@ async def get_all_question_records(
     total = await QADao().count_all_qa_records(
         feedback,
         faculty,
+        keyword,
         has_manager_answer
     )
     total_pages = (total + limit - 1) // limit
-    records = await QADao().get_all_question_records(skip, limit, feedback, faculty, has_manager_answer)
+    records = await QADao().get_all_question_records(skip, limit, feedback, faculty, keyword, has_manager_answer)
     return {
         "questions": jsonable_encoder(records),
         "total": total,
@@ -178,3 +180,12 @@ async def leave_feedback_for_question(
 ) -> bool:
     success = await QADao().leave_feedback_for_question(qa_record_id, feedback, user_id)
     return success
+
+
+# Reply to a question
+async def reply_to_question(
+    qa_record_id: str,
+    manager_answer: str
+) -> dict:
+    updated_record = await QADao().reply_to_question(qa_record_id, manager_answer)
+    return jsonable_encoder(updated_record)

@@ -126,3 +126,20 @@ async def get_all_user_question_records(
         message="Get user's question records successfully.",
         details=records
     )
+    
+    
+# Reply to a question (Admin/Faculty Manager)
+@router.post("/{qa_record_id}/reply")
+async def reply_to_question(
+    qa_record_id: str,
+    data: qa_schema.ManagerAnswerSchema,
+    current_user = Depends(auth_service.get_current_user)
+):
+    data = jsonable_encoder(data)
+    current_user = jsonable_encoder(current_user)
+    updated_record = await qa_controller.reply_to_question(qa_record_id, data["manager_answer"], current_user)
+    return api_response(
+        status_code=200,
+        message="Reply to question successfully.",
+        details=updated_record
+    )

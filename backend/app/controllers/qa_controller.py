@@ -101,3 +101,16 @@ async def get_qa_record_by_id(qa_record_id: str, current_user: dict):
         raise UserError("You are not authorized to access this question record.")
     
     return qa_record
+
+
+# Reply to a question (Admin/Faculty Manager)
+async def reply_to_question(qa_record_id: str, manager_answer: str, current_user: dict):
+    if current_user["role"] != Role.ADMIN.value and not current_user["is_faculty_manager"]:
+        raise UserError("You do not have permission to reply to questions.")
+    if current_user["is_faculty_manager"]:
+        qa_record = jsonable_encoder(await qa_service.get_qa_record_by_id(qa_record_id))
+        if qa_record["user_faculty"] != current_user["faculty"]:
+            raise UserError("You are not authorized to reply to this question.")
+    
+    updated_record = await qa_service.reply_to_question(qa_record_id, manager_answer)
+    return updated_record
