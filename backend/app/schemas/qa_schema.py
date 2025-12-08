@@ -44,3 +44,11 @@ class FeedbackSchema(BaseModel):
     class Config:
         from_attributes = True
         extra = "forbid"
+        
+        
+# Manager Answer Schema
+class ManagerAnswerSchema(BaseModel):
+    manager_answer: str
+    class Config:
+        from_attributes = True
+        extra = "forbid"

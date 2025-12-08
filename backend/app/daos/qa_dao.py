@@ -34,12 +34,17 @@ class QADao:
     
     
     # Count all QA records
-    async def count_all_qa_records(self, feedback: str, faculty: str, has_manager_answer: bool) -> int:
+    async def count_all_qa_records(self, feedback: str, faculty: str, keyword: str, has_manager_answer: bool) -> int:
         query = {}
         if feedback:
             query["feedback"] = feedback
         if faculty:
             query["user_faculty"] = faculty
+        if keyword:
+            query["$or"] = [
+                {"question": {"$regex": keyword, "$options": "i"}},
+                {"user_sub": {"$regex": keyword, "$options": "i"}}
+            ]
         if has_manager_answer is not None:
             if has_manager_answer:
                 query["manager_answer"] = {"$exists": True, "$nin": [None, ""]}
@@ -54,12 +59,17 @@ class QADao:
     
     
     # Get all QA records
-    async def get_all_question_records(self, skip: int, limit: int, feedback: str, faculty: str, has_manager_answer: bool) -> list[dict]:
+    async def get_all_question_records(self, skip: int, limit: int, feedback: str, faculty: str, keyword: str, has_manager_answer: bool) -> list[dict]:
         query = {}
         if feedback:
             query["feedback"] = feedback
         if faculty:
             query["user_faculty"] = faculty
+        if keyword:
+            query["$or"] = [
+                {"question": {"$regex": keyword, "$options": "i"}},
+                {"user_sub": {"$regex": keyword, "$options": "i"}}
+            ]
         if has_manager_answer is not None:
             if has_manager_answer:
                 query["manager_answer"] = {"$exists": True, "$nin": [None, ""]}
@@ -132,4 +142,15 @@ class QADao:
         if result.matched_count == 0:
             raise DatabaseException(f"QA record with qa_record_id {qa_record_id} not found or user unauthorized")
         return result.modified_count == 1
-        
+    
+    
+    # Reply to a question
+    async def reply_to_question(self, qa_record_id: str, manager_answer: str) -> dict:
+        result = await self.qa_collection.update_one(
+            {"_id": ObjectId(qa_record_id)},
+            {"$set": {"manager_answer": manager_answer, "updated_at": datetime.now(timezone.utc)}}
+        )
+        if result.matched_count == 0:
+            raise DatabaseException(f"QA record with qa_record_id {qa_record_id} not found")
+        updated_record = await self.get_qa_record_by_id(qa_record_id)
+        return updated_record   
