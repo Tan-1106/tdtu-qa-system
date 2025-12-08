@@ -23,6 +23,13 @@ const USAGE_STATUS_OPTIONS = [
     { value: 'true', label: 'Đang dùng' },
 ];
 
+const extractError = (error) => {
+    if (error.response?.data?.details) {
+        return error.response.data.details;
+    }
+    return error.message || 'Lỗi không xác định.';
+};
+
 const ModelManagementPage = () => {
   const [apiKeys, setApiKeys] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -78,7 +85,7 @@ const ModelManagementPage = () => {
       setTotalKeys(data.total); 
     } catch (err) {
       console.error("Error fetching keys:", err);
-      setError(err.message || 'Không thể tải danh sách API Keys.');
+      setError(extractError(err));
     } finally {
       if (isInitialLoad) {
           setIsInitialLoading(false);
@@ -154,7 +161,8 @@ const ModelManagementPage = () => {
         setSuccessMsg(currentStatus ? 'Đã tắt sử dụng API Key.' : 'Đã kích hoạt API Key thành công.');
         loadKeysWithFilters(false); 
     } catch (err) {
-        setError(err.message || "Thao tác Bật/Tắt thất bại.");
+        console.error("Error toggling usage:", err);
+        setError(extractError(err));
     } finally {
         setIsRefetching(false); 
     }
@@ -172,7 +180,8 @@ const ModelManagementPage = () => {
         setSuccessMsg(`API Key "${keyName}" đã được xóa thành công.`);
         loadKeysWithFilters(true); 
     } catch (err) {
-        setError(err.message || "Thao tác Xóa thất bại.");
+        console.error("Error deleting key:", err);
+        setError(extractError(err));
     } finally {
         setIsRefetching(false);
     }

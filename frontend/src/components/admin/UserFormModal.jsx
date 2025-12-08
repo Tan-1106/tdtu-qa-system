@@ -22,6 +22,13 @@ const style = {
     borderRadius: 2,
 };
 
+const extractError = (error, defaultMessage) => {
+    if (error.response?.data?.details) {
+        return error.response.data.details;
+    }
+    return error.message || defaultMessage || 'Lỗi không xác định.'; 
+};
+
 const UserFormModal = ({ open, onClose, user, onSave }) => {
     const [availableRoles, setAvailableRoles] = useState([]);
     const [availableFaculties, setAvailableFaculties] = useState([]);
@@ -53,8 +60,9 @@ const UserFormModal = ({ open, onClose, user, onSave }) => {
                     setIsManager(user?.is_faculty_manager || false);
 
                 } catch (err) {
-                    setError('Không thể tải các tùy chọn Phân quyền/Khoa.');
-                    console.error("Error fetching options:", err);
+                    const errorMessage = extractError(err, 'Không thể tải các tùy chọn Phân quyền/Khoa.');
+                    setError(errorMessage);
+                    console.error("Error fetching options:", err);
                 } finally {
                     setIsLoadingOptions(false);
                 }
@@ -106,7 +114,7 @@ const UserFormModal = ({ open, onClose, user, onSave }) => {
 
         } catch (err) {
             console.error("Error assigning role/permission:", err);
-            setError(err.message || "Lưu thất bại. Vui lòng thử lại.");
+            setError(extractError(err, "Lưu thất bại. Vui lòng thử lại."));
         } finally {
             setIsSaving(false);
         }

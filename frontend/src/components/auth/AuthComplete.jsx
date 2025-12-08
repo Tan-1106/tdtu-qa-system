@@ -4,6 +4,13 @@ import { Box, CircularProgress, Paper, Alert, Typography, Button } from '@mui/ma
 import SchoolIcon from '@mui/icons-material/School';
 import axiosInstance, { setTokens } from '../../axiosInstance'; 
 
+const extractError = (error, defaultMessage) => {
+    if (error.response?.data?.details) {
+        return error.response.data.details; 
+    }
+    return error.message || defaultMessage || 'Lỗi không xác định.';
+};
+
 const AuthComplete = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -56,7 +63,12 @@ const AuthComplete = () => {
         navigate('/role-dispatch'); 
 
       } catch (e) {
-        let finalError = 'Bạn đã bị từ chối cấp quyền hoặc có sự cố xảy ra.'; 
+        let finalError = extractError(e, 'Bạn đã bị từ chối cấp quyền hoặc có sự cố xảy ra.'); 
+        if (finalError.includes("User is banned")) {
+            finalError = "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.";
+        } else if (finalError.includes("Permission denied")) {
+            finalError = "Bạn không có quyền truy cập hệ thống.";
+        }
         setError(finalError);
       } finally {
         setIsProcessing(false);

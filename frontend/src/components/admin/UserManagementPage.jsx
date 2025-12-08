@@ -122,8 +122,8 @@ const UserManagementPage = () => {
       setTotalUsers(data.total);
     } catch (err) {
       console.error("Error fetching users:", err);
-      let finalError = (err.response?.data?.details || err.message) || 'Lỗi không xác định.';
-      setError(finalError);
+      let errorMessage = (err.response?.data?.details || err.message) || 'Lỗi không xác định khi tải danh sách.';
+      setError(errorMessage);
     } finally {
       if (isInitialLoad) {
           setIsInitialLoading(false);
@@ -206,9 +206,21 @@ const UserManagementPage = () => {
             await apiCall(user.id);
             
             loadUsersWithFilters(false); 
-        } catch (error) {
-            console.error("Error toggling ban status:", error);
-            setError(error.message || "Thao tác Chặn/Bỏ chặn thất bại.");
+        } catch (error) { 
+            console.error("Error toggling ban status:", error);
+            let errorMessage = "Thao tác Chặn/Bỏ chặn thất bại."; 
+
+            if (error.response) {
+                const backendDetails = error.response.data?.details; 
+                
+                if (backendDetails) {
+                    errorMessage = backendDetails;
+                }
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+            
+            setError(errorMessage); 
         }
     };
 
@@ -218,7 +230,6 @@ const UserManagementPage = () => {
     loadUsersWithFilters(false); 
   };
     
-  // CHỈ HIỂN THỊ LOADING TOÀN TRANG CHO LẦN TẢI ĐẦU TIÊN
   if (isInitialLoading || !currentUser) { 
         return (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>

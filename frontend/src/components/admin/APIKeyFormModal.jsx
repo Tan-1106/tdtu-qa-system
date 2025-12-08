@@ -19,17 +19,22 @@ const style = {
     borderRadius: 3,
 };
 
+const extractError = (error, defaultMessage) => {
+    if (error.response?.data?.details) {
+        return error.response.data.details;
+    }
+    return error.message || defaultMessage || 'Lỗi không xác định.'; 
+};
+
 const APIKeyFormModal = ({ open, onClose, onSave, editingKey = null }) => {
     const isEditMode = !!editingKey;
     const [activeStep, setActiveStep] = useState(0);
 
-    // Step 1 State
     const [name, setName] = useState(editingKey?.name || '');
     const [description, setDescription] = useState(editingKey?.description || '');
     const [apiKey, setApiKey] = useState(editingKey?.api_key || '');
     const [provider, setProvider] = useState(editingKey?.provider || '');
     
-    // Step 2 State
     const [availableModels, setAvailableModels] = useState([]);
     const [selectedModel, setSelectedModel] = useState(editingKey?.using_model || '');
 
@@ -37,18 +42,16 @@ const APIKeyFormModal = ({ open, onClose, onSave, editingKey = null }) => {
     const [error, setError] = useState(null);
     const [newlyCreatedKeyId, setNewlyCreatedKeyId] = useState(null);
     
-    // Key/Provider đang sử dụng để fetch model (key mới nhập, hoặc key cũ đã lưu)
     const currentKeyForFetch = newlyCreatedKeyId ? apiKey : editingKey?.api_key;
     const currentProviderForFetch = newlyCreatedKeyId ? provider : editingKey?.provider;
 
     const steps = ['Nhập thông tin khóa', 'Chọn Model sử dụng'];
-    const displaySteps = isEditMode ? [steps[1]] : steps; // Edit chỉ có 1 bước hiển thị (chọn model)
+    const displaySteps = isEditMode ? [steps[1]] : steps; 
     const activeDisplayStep = isEditMode ? 0 : activeStep;
 
 
     useEffect(() => {
         if (open) {
-            // 1. Reset/Setup State
             if (!isEditMode) {
                 setName(''); setDescription(''); setApiKey('');
                 setProvider(''); setSelectedModel(''); setNewlyCreatedKeyId(null);
@@ -58,13 +61,12 @@ const APIKeyFormModal = ({ open, onClose, onSave, editingKey = null }) => {
                 setDescription(editingKey?.description || '');
                 setApiKey(editingKey?.api_key || '');
                 setProvider(editingKey?.provider || '');
-                setNewlyCreatedKeyId(editingKey?._id || null); // ID Key đang edit
-                
-                 // 2. Load Models ngay lập tức cho chế độ EDIT
+                setNewlyCreatedKeyId(editingKey?._id || null); 
+
                  if (editingKey?.api_key && editingKey?.provider) {
                     handleFetchModels(editingKey.api_key, editingKey.provider, true);
                  }
-                 setActiveStep(1); // Luôn ở Step Logic 1 cho Edit Mode (Chỉ chọn Model)
+                 setActiveStep(1); 
             }
             setError(null);
         }
@@ -88,15 +90,15 @@ const APIKeyFormModal = ({ open, onClose, onSave, editingKey = null }) => {
                  setSelectedModel('');
             }
         } catch (err) {
-             console.error("Error fetching models:", err);
-             setError(`Lỗi kết nối API ${prov} hoặc Key không hợp lệ. Vẫn có thể lưu Key.`);
-             setAvailableModels([]);
+            console.error("Error fetching models:", err);
+            const backendError = extractError(err);
+            setError(`Lỗi: ${backendError}. Vẫn có thể lưu Key.`);
+            setAvailableModels([]);
         } finally {
             setIsLoading(false);
         }
     };
 
-    // --- HÀM TẠO KEY (ADD MODE - STEP 0) ---
     const handleCreateKeyAndCheckModel = async () => {
         if (!name || !provider || !apiKey) {
             setError('Vui lòng điền đủ Tên, Khóa API và Nhà cung cấp.');
@@ -107,20 +109,17 @@ const APIKeyFormModal = ({ open, onClose, onSave, editingKey = null }) => {
         setError(null);
         
         try {
-            // 1. Tạo key mới
             const newKey = await createApiKey({ name, description, api_key: apiKey, provider });
             const currentKeyId = newKey._id;
             setNewlyCreatedKeyId(currentKeyId);
 
-            // 2. Lấy Models có sẵn (chuyển sang Step 1)
             await handleFetchModels(apiKey, provider);
 
-            setActiveStep(1); // Chuyển sang bước chọn model
+            setActiveStep(1);
 
         } catch (err) {
             console.error("Key creation failed:", err);
-            const backendErrorMsg = err.response?.data?.details || err.message;
-            
+            const backendErrorMsg = extractError(err);            
             if (backendErrorMsg.includes("API key already exists")) {
                  setError("Khóa API này đã tồn tại trong hệ thống. Vui lòng sử dụng khóa khác.");
             } else {
@@ -156,7 +155,7 @@ const APIKeyFormModal = ({ open, onClose, onSave, editingKey = null }) => {
 
         } catch (err) {
             console.error("Error saving model:", err);
-            setError(err.message || "Không thể lưu Model sử dụng.");
+            setError(extractError(err, "Không thể lưu Model sử dụng."));
         } finally {
             setIsLoading(false);
         }
@@ -164,7 +163,6 @@ const APIKeyFormModal = ({ open, onClose, onSave, editingKey = null }) => {
 
 
     const getStepContent = (step) => {
-        // Step 0: Nhập liệu (Chỉ Add Mode)
         if (!isEditMode && step === 0) {
             return (
                 <Stack spacing={2} sx={{ mt: 2 }}>
@@ -181,11 +179,9 @@ const APIKeyFormModal = ({ open, onClose, onSave, editingKey = null }) => {
             );
         }
         
-        // Step 1: Chọn Model (Cả Add và Edit)
-        if (step === 1 || (isEditMode && step === 0)) { // Logic Step 1 cho Add, Display Step 0 cho Edit
+        if (step === 1 || (isEditMode && step === 0)) { 
             return ( 
                 <Stack spacing={2} sx={{ mt: 2 }}>
-                    {/* Luôn cho sửa Tên/Mô tả ở bước này */}
                     <TextField 
                         fullWidth 
                         label="Tên khóa" 
@@ -220,7 +216,6 @@ const APIKeyFormModal = ({ open, onClose, onSave, editingKey = null }) => {
                         )
                     )}
                     
-                    {/* Hiển thị Key Info */}
                     <Divider sx={{ my: 1 }} />
                      <Typography variant="caption" sx={{ opacity: 0.7 }}>
                         Provider: {currentProviderForFetch || 'N/A'}
@@ -239,7 +234,6 @@ const APIKeyFormModal = ({ open, onClose, onSave, editingKey = null }) => {
                     {isEditMode ? "Chỉnh sửa Model & Thông tin" : "Thêm Khóa API mới"}
                 </Typography>
                 
-                {/* Stepper chỉ hiện khi ADD MODE */}
                 {!isEditMode && (
                     <Stepper activeStep={activeStep} alternativeLabel sx={{ mb: 3 }}>
                         {steps.map((label) => (
@@ -257,7 +251,6 @@ const APIKeyFormModal = ({ open, onClose, onSave, editingKey = null }) => {
                 <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 4 }}>
                     <Button onClick={onClose} variant="outlined" disabled={isLoading}>Hủy</Button>
                     
-                    {/* 🛑 BUTTON TẠO KEY (ADD MODE - STEP 0) */}
                     {activeStep === 0 && !isEditMode && (
                         <Button 
                             onClick={handleCreateKeyAndCheckModel} 
@@ -268,7 +261,6 @@ const APIKeyFormModal = ({ open, onClose, onSave, editingKey = null }) => {
                         </Button>
                     )}
                     
-                    {/* 🛑 BUTTON LƯU (EDIT MODE - DISPLAY STEP 0 HOẶC ADD MODE - STEP 1) */}
                     {(activeStep === 1 || isEditMode) && (
                          <Button 
                             onClick={handleSaveInfoAndModel} 
