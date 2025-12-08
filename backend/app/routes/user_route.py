@@ -22,7 +22,7 @@ async def get_users(
     page: int = Query(1, ge=1),
     limit: int = Query(10, ge=1, le=100),
     role: str = Query(None),
-    faculty: str = Query(None),
+    faculty: str = Query(None),                             # Admin only
     banned: bool = Query(None),
     keyword: str = Query(None),
     current_user = Depends(auth_service.get_current_user)

@@ -31,19 +31,20 @@ async def get_users(
 
 
 # Get list of students
-async def get_students(
+async def get_faculty_users(
     page: int,
     limit: int,
+    role: str,
     faculty: str,
     banned: bool = None,
     keyword: str = None
 ):
     skip = (page - 1) * limit
-    total = await UserDAO().count_students_by_faculty(faculty, banned, keyword)
+    total = await UserDAO().count_faculty_users(role, faculty, banned, keyword)
     total_pages = (total + limit - 1) // limit
-    students = await UserDAO().get_students_by_faculty(faculty, skip, limit, banned, keyword)
+    users = await UserDAO().get_faculty_users(role, faculty, skip, limit, banned, keyword)
     return {
-        "students": jsonable_encoder(students),
+        "users": jsonable_encoder(users),
         "total": total,
         "total_pages": total_pages,
         "current_page": page

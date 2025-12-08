@@ -33,6 +33,49 @@ class QADao:
         return qa_schema.QARecordSchema(**serializer.qa_session_serialize(updated_record))
     
     
+    # Count all QA records
+    async def count_all_qa_records(self, feedback: str, faculty: str, has_manager_answer: bool) -> int:
+        query = {}
+        if feedback:
+            query["feedback"] = feedback
+        if faculty:
+            query["user_faculty"] = faculty
+        if has_manager_answer is not None:
+            if has_manager_answer:
+                query["manager_answer"] = {"$exists": True, "$nin": [None, ""]}
+            else:
+                query["$or"] = [
+                    {"manager_answer": {"$exists": False}},
+                    {"manager_answer": None},
+                    {"manager_answer": ""}
+                ]
+        count = await self.qa_collection.count_documents(query)
+        return count
+    
+    
+    # Get all QA records
+    async def get_all_question_records(self, skip: int, limit: int, feedback: str, faculty: str, has_manager_answer: bool) -> list[dict]:
+        query = {}
+        if feedback:
+            query["feedback"] = feedback
+        if faculty:
+            query["user_faculty"] = faculty
+        if has_manager_answer is not None:
+            if has_manager_answer:
+                query["manager_answer"] = {"$exists": True, "$nin": [None, ""]}
+            else:
+                query["$or"] = [
+                    {"manager_answer": {"$exists": False}},
+                    {"manager_answer": None},
+                    {"manager_answer": ""}
+                ]
+        cursor = self.qa_collection.find(query).skip(skip).limit(limit).sort("created_at", -1)
+        records = []
+        async for record in cursor:
+            records.append(qa_schema.QARecordSchema(**serializer.qa_session_serialize(record)))
+        return records
+    
+    
     # Count QA records by user ID
     async def count_qa_records_by_user_id(self, user_id: str, feedback: str, has_manager_answer: bool) -> int:
         query = {"user_id": user_id}

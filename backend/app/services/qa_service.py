@@ -115,6 +115,31 @@ async def update_question_record_with_answer(
     return updated_record
 
 
+# Get all question records
+async def get_all_question_records(
+    page: int,
+    limit: int,
+    feedback: str,
+    faculty: str,
+    has_manager_answer: bool,
+    current_user: dict = None
+) -> list[dict]:
+    skip = (page - 1) * limit
+    total = await QADao().count_all_qa_records(
+        feedback,
+        faculty,
+        has_manager_answer
+    )
+    total_pages = (total + limit - 1) // limit
+    records = await QADao().get_all_question_records(skip, limit, feedback, faculty, has_manager_answer)
+    return {
+        "questions": jsonable_encoder(records),
+        "total": total,
+        "total_pages": total_pages,
+        "current_page": page
+    }
+
+
 # Get question records by user ID
 async def get_question_records_by_user_id(
     page: int,

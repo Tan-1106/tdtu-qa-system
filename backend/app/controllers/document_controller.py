@@ -257,6 +257,10 @@ async def get_faculty_documents(
 ):
     if current_user["role"] != Role.ADMIN.value:
         faculty = current_user["faculty"]
+    else:
+        if faculty is None:
+            raise UserError("Faculty must be provided.")
+        
     documents = await document_service.get_faculty_documents(
         page=page,
         limit=limit,
@@ -311,13 +315,13 @@ async def delete_document(
 ):
     document = await document_service.get_document_by_id(doc_id)
             
+    if not (current_user["role"] == Role.ADMIN.value or current_user["is_faculty_manager"]):
+        raise AuthException("You do not have permission to delete documents.")
     if current_user["is_faculty_manager"]:
         if document["faculty"] != current_user["faculty"]:
             raise AuthException("You do not have permission to delete this document.")
         if document["department"] is not None:
             raise AuthException("You do not have permission to delete department documents.")
-    if not (current_user["role"] == Role.ADMIN.value or current_user["is_faculty_manager"]):
-        raise AuthException("You do not have permission to delete documents.")
     
     # Delete document file from server
     await document_service.delete_document_file(document["file_path"])

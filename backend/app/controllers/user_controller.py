@@ -25,7 +25,7 @@ async def get_users(
         users = await user_service.get_users(page, limit, role, faculty, banned, keyword)
         return users
     elif (current_user["is_faculty_manager"]) and current_user["faculty"] is not None:
-        users = await user_service.get_students(page, limit, current_user["faculty"], banned, keyword)
+        users = await user_service.get_faculty_users(page, limit, role, current_user["faculty"], banned, keyword)
         return users
     else:
         raise AuthException("You do not have permission to access the users list.")
@@ -45,6 +45,8 @@ async def assign_admin(user_id: str):
 
 # Assign teacher role to user
 async def assign_teacher(user_id: str, faculty: str, current_user: dict):
+    if faculty and faculty not in await user_service.get_all_existing_faculties():
+        raise UserError("Invalid faculty specified.")
     user_to_assign = await user_service.get_user_by_id(user_id)
     if current_user["role"] != Role.ADMIN.value:
         raise AuthException("You do not have permission to assign teacher role.")
@@ -57,6 +59,8 @@ async def assign_teacher(user_id: str, faculty: str, current_user: dict):
 
 # Assign student role to user
 async def assign_student(user_id: str, faculty: str, current_user: dict):
+    if faculty and faculty not in await user_service.get_all_existing_faculties():
+        raise UserError("Invalid faculty specified.")
     user_to_assign = await user_service.get_user_by_id(user_id)
     if current_user["role"] != Role.ADMIN.value:
         raise AuthException("You do not have permission to assign student role.")
@@ -69,6 +73,8 @@ async def assign_student(user_id: str, faculty: str, current_user: dict):
 
 # Assign faculty manager permission to user
 async def assign_faculty_manager(user_id: str, faculty: str, current_user: dict):
+    if faculty and faculty not in await user_service.get_all_existing_faculties():
+        raise UserError("Invalid faculty specified.")
     user_to_assign = await user_service.get_user_by_id(user_id)
     if current_user["role"] != Role.ADMIN.value:
         raise AuthException("You do not have permission to assign faculty manager role.")
@@ -89,6 +95,7 @@ async def revoke_permissions(user_id: str, current_user: dict):
     
     permissions_revoked = await user_service.revoke_permissions(user_id)
     tokens_revoked = await auth_service.revoke_all_tokens_of_user(user_to_revoke["sub"])
+    
     return permissions_revoked and tokens_revoked
 
 

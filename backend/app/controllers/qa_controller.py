@@ -1,10 +1,10 @@
 from langdetect import detect
 from fastapi.encoders import jsonable_encoder
 
-from app.services import qa_service
 from app.schemas.qa_schema import Feedback
 from app.utils.basic_information import Role
 from app.utils.api_response import UserError
+from app.services import qa_service, user_service
 
 
 # Question-Answering
@@ -43,21 +43,61 @@ async def leave_feedback(qa_record_id: str, feedback: str, current_user: dict):
     return success
 
 
+# Get all question records
+async def get_all_question_records(
+    page: int,
+    limit: int,
+    feedback: str,
+    faculty: str,
+    has_manager_answer: bool,
+    keyword: str,
+    current_user: dict = None
+):
+    if current_user["role"] != Role.ADMIN.value and not current_user["is_faculty_manager"]:
+        raise UserError("You do not have permission to access all question records.")
+    if current_user["is_faculty_manager"]:
+        faculty = current_user["faculty"]
+    
+    
+    records = await qa_service.get_all_question_records(
+        page, limit,
+        feedback,
+        faculty,
+        has_manager_answer,
+        keyword,
+        current_user
+    )
+    return records
+
+
 # Get current user's question records
 async def get_user_question_records(
+    user_id: str,
     page: int,
     limit: int,
     feedback: str,
     has_manager_answer: bool,
-    current_user: dict
-):
-    if current_user["role"] == Role.ADMIN.value or current_user["is_faculty_manager"]:
-        raise UserError("Only regular users can access their question records.")
+    current_user: dict = None
+):  
+    if current_user:
+        user_to_fetch = await user_service.get_user_by_id(user_id)
+        if current_user["role"] != Role.ADMIN.value and \
+              (current_user["is_faculty_manager"] and user_to_fetch["faculty"] != current_user["faculty"]):
+                  raise UserError("You are not authorized to access this user's question records.")
     
     records = await qa_service.get_question_records_by_user_id(
         page, limit,
         feedback,
         has_manager_answer,
-        current_user["_id"]
+        user_id
     )
     return records
+
+
+# Get qa record by ID
+async def get_qa_record_by_id(qa_record_id: str, current_user: dict):
+    qa_record = jsonable_encoder(await qa_service.get_qa_record_by_id(qa_record_id))
+    if qa_record["user_id"] != current_user["_id"]:
+        raise UserError("You are not authorized to access this question record.")
+    
+    return qa_record
