@@ -7,6 +7,7 @@ async def get_users(
     page: int,
     limit: int,
     role: str = None,
+    is_faculty_manager: bool = None,
     faculty: str = None,
     banned: bool = None,
     keyword: str = None,
@@ -22,9 +23,9 @@ async def get_users(
         raise AuthException("You do not have permission to access the users list.")
     
     if current_user["role"] == Role.ADMIN.value:
-        users = await user_service.get_users(page, limit, role, faculty, banned, keyword)
+        users = await user_service.get_users(page, limit, role, is_faculty_manager, faculty, banned, keyword)
         return users
-    elif (current_user["is_faculty_manager"]) and current_user["faculty"] is not None:
+    elif (current_user["is_faculty_manager"]) and current_user["faculty"] is not None and is_faculty_manager is not None:
         users = await user_service.get_faculty_users(page, limit, role, current_user["faculty"], banned, keyword)
         return users
     else:

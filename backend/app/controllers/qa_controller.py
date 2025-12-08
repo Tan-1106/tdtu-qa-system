@@ -54,7 +54,7 @@ async def get_all_question_records(
     current_user: dict = None
 ):
     if current_user["role"] != Role.ADMIN.value and not current_user["is_faculty_manager"]:
-        raise UserError("You do not have permission to access all question records.")
+        raise UserError("You do not have permission to access all question records.")        
     if current_user["is_faculty_manager"]:
         faculty = current_user["faculty"]
     

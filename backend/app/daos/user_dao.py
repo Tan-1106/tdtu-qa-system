@@ -62,10 +62,12 @@ class UserDAO:
         
     
     # Count all users
-    async def count_all_users(self, role: str = None, faculty: str = None, banned: bool = None, keyword: str = None) -> int:
+    async def count_all_users(self, role: str = None, is_faculty_manager: bool = None, faculty: str = None, banned: bool = None, keyword: str = None) -> int:
         query = {}
         if role:
             query["role"] = role
+        if is_faculty_manager is not None:
+            query["is_faculty_manager"] = is_faculty_manager
         if faculty:
             query["faculty"] = faculty
         if banned is not None:
@@ -81,11 +83,13 @@ class UserDAO:
     
     
     # Get all users
-    async def get_users(self, skip: int, limit: int, role: str = None, faculty: str = None, banned: bool = None, keyword: str = None) -> list[user_schema.UserRecord]:
+    async def get_users(self, skip: int, limit: int, role: str = None, is_faculty_manager: bool = None, faculty: str = None, banned: bool = None, keyword: str = None) -> list[user_schema.UserRecord]:
         users = []
         query = {}
         if role:
             query["role"] = role
+        if is_faculty_manager is not None:
+            query["is_faculty_manager"] = is_faculty_manager
         if faculty:
             query["faculty"] = faculty
         if banned is not None:

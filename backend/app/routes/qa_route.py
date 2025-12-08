@@ -67,21 +67,6 @@ async def get_user_question_records(
     )
     
     
-# Get qa record by ID
-@router.get("/{qa_record_id}")
-async def get_qa_record_by_id(
-    qa_record_id: str,
-    current_user = Depends(auth_service.get_current_user)
-):
-    current_user = jsonable_encoder(current_user)
-    record = await qa_controller.get_qa_record_by_id(qa_record_id, current_user)
-    return api_response(
-        status_code=200,
-        message="Get Q&A record successfully.",
-        details=record
-    )
-    
-    
 # Get all question records (Admin/Faculty Manager)
 @router.get("/all")
 async def get_all_question_records(
@@ -107,7 +92,21 @@ async def get_all_question_records(
         message="Get all question records successfully.",
         details=records
     )
-
+    
+    
+# Get qa record by ID
+@router.get("/{qa_record_id}")
+async def get_qa_record_by_id(
+    qa_record_id: str,
+    current_user = Depends(auth_service.get_current_user)
+):
+    current_user = jsonable_encoder(current_user)
+    record = await qa_controller.get_qa_record_by_id(qa_record_id, current_user)
+    return api_response(
+        status_code=200,
+        message="Get Q&A record successfully.",
+        details=record
+    )
     
     
 # Get all user's question records (Admin/Faculty Manager)

@@ -14,14 +14,15 @@ async def get_users(
     page: int,
     limit: int,
     role: str = None,
+    is_faculty_manager: bool = None,
     faculty: str = None,
     banned: bool = None,
     keyword: str = None
 ):
     skip = (page - 1) * limit
-    total = await UserDAO().count_all_users(role, faculty, banned, keyword)
+    total = await UserDAO().count_all_users(role, is_faculty_manager, faculty, banned, keyword)
     total_pages = (total + limit - 1) // limit
-    users = await UserDAO().get_users(skip, limit, role, faculty, banned, keyword)
+    users = await UserDAO().get_users(skip, limit, role, is_faculty_manager, faculty, banned, keyword)
     return {
         "users": jsonable_encoder(users),
         "total": total,

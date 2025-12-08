@@ -22,13 +22,14 @@ async def get_users(
     page: int = Query(1, ge=1),
     limit: int = Query(10, ge=1, le=100),
     role: str = Query(None),
+    is_faculty_manager: bool = Query(None),                 # Admin only
     faculty: str = Query(None),                             # Admin only
     banned: bool = Query(None),
     keyword: str = Query(None),
     current_user = Depends(auth_service.get_current_user)
 ):
     current_user = jsonable_encoder(current_user)
-    users = await user_controller.get_users(page, limit, role, faculty, banned, keyword, current_user)
+    users = await user_controller.get_users(page, limit, role, is_faculty_manager, faculty, banned, keyword, current_user)
     return api_response(
         status_code=200,
         message="Get users list successfully.",
