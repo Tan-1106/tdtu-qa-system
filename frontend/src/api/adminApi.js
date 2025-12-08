@@ -53,14 +53,21 @@ export const assignAdminRole = async (userId) => {
     return await axiosInstance.post(`/users/${userId}/assign-admin`);
 };
 
-export const assignFacultyManagerRole = async (userId, faculty) => {
-    return await axiosInstance.post(`/users/${userId}/assign-faculty-manager`, { faculty });
+export const assignTeacherRole = async (userId, faculty) => {
+    return await axiosInstance.post(`/users/${userId}/assign-teacher`, { faculty });
 };
 
 export const assignStudentRole = async (userId, faculty) => {
     return await axiosInstance.post(`/users/${userId}/assign-student`, { faculty });
 };
 
+export const assignFacultyManagerPermission = async (userId, faculty) => {
+    return await axiosInstance.post(`/users/${userId}/assign-faculty-manager`, { faculty });
+};
+
+export const revokeFacultyManagerPermission = async (userId) => {
+    return await axiosInstance.post(`/users/${userId}/revoke-permissions`);
+};
 
 export const banUser = async (userId) => {
     return await axiosInstance.patch(`/users/${userId}/ban`);

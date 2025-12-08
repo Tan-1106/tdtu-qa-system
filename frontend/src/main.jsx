@@ -24,6 +24,18 @@ const tdtuTheme = createTheme({
       fontWeight: 600,
     },
   },
+  components: {
+    MuiModal: {
+      defaultProps: {
+        disableScrollLock: true,
+      },
+    },
+    MuiPopover: {
+      defaultProps: {
+        disableScrollLock: true,
+      },
+    },
+  },
 });
 
 ReactDOM.createRoot(document.getElementById('root')).render(
