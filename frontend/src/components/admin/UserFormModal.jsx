@@ -1,12 +1,13 @@
-// File: src/components/admin/UserFormModal.jsx
 import React, { useState, useEffect } from 'react';
 import { 
     Modal, Box, Typography, TextField, Button, Select, MenuItem, 
-    FormControl, InputLabel, CircularProgress, Alert 
+    FormControl, InputLabel, CircularProgress, Alert,
+    Checkbox, FormControlLabel
 } from '@mui/material';
 import { 
     getRoles, getFaculties, assignAdminRole, 
-    assignFacultyManagerRole, assignStudentRole 
+    assignFacultyManagerPermission, revokeFacultyManagerPermission,
+    assignTeacherRole, assignStudentRole 
 } from '../../api/adminApi'; 
 
 const style = {
@@ -21,20 +22,27 @@ const style = {
     borderRadius: 2,
 };
 
+const extractError = (error, defaultMessage) => {
+    if (error.response?.data?.details) {
+        return error.response.data.details;
+    }
+    return error.message || defaultMessage || 'Lỗi không xác định.'; 
+};
+
 const UserFormModal = ({ open, onClose, user, onSave }) => {
-    // State cho tùy chọn Role và Faculty
     const [availableRoles, setAvailableRoles] = useState([]);
     const [availableFaculties, setAvailableFaculties] = useState([]);
     
-    // State cho form
     const [selectedRole, setSelectedRole] = useState(user?.role || '');
     const [selectedFaculty, setSelectedFaculty] = useState(user?.faculty || '');
+
+    const [isManager, setIsManager] = useState(user?.is_faculty_manager || false);
     
     const [isLoadingOptions, setIsLoadingOptions] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState(null);
 
-    // 💡 Lấy danh sách Role và Faculty khi Modal mở (2.1.2 & 2.1.3)
+    // 💡 Lấy danh sách Role và Faculty khi Modal mở
     useEffect(() => {
         if (open) {
             const fetchOptions = async () => {
@@ -47,13 +55,14 @@ const UserFormModal = ({ open, onClose, user, onSave }) => {
                     const faculties = await getFaculties();
                     setAvailableFaculties(faculties);
                     
-                    // Reset selected values nếu có user
                     setSelectedRole(user?.role || '');
                     setSelectedFaculty(user?.faculty || '');
+                    setIsManager(user?.is_faculty_manager || false);
 
                 } catch (err) {
-                    setError('Không thể tải các tùy chọn Phân quyền/Khoa.');
-                    console.error("Error fetching options:", err);
+                    const errorMessage = extractError(err, 'Không thể tải các tùy chọn Phân quyền/Khoa.');
+                    setError(errorMessage);
+                    console.error("Error fetching options:", err);
                 } finally {
                     setIsLoadingOptions(false);
                 }
@@ -62,40 +71,58 @@ const UserFormModal = ({ open, onClose, user, onSave }) => {
         }
     }, [open, user]);
 
-    // Xử lý lưu (Phân quyền: 2.1.4, 2.1.5, 2.1.6)
     const handleSave = async () => {
         if (!user || !selectedRole) return;
         
         setIsSaving(true);
         setError(null);
         try {
-            let result;
-            
-            if (selectedRole === 'Admin') {
-                result = await assignAdminRole(user.id);
-            } else if (selectedRole === 'Faculty Manager') {
-                if (!selectedFaculty) throw new Error("Vui lòng chọn Khoa cho Faculty Manager.");
-                result = await assignFacultyManagerRole(user.id, selectedFaculty);
-            } else if (selectedRole === 'Student') {
-                 if (!selectedFaculty) throw new Error("Vui lòng chọn Khoa cho Sinh viên.");
-                result = await assignStudentRole(user.id, selectedFaculty);
-            } else {
-                 throw new Error("Vai trò không hợp lệ.");
+            const userId = user.id;
+            const originalRole = user.role;
+            const originalFaculty = user.faculty;
+            const originalIsManager = user.is_faculty_manager;
+
+            let roleOrFacultyChanged = selectedRole !== originalRole || 
+                                       (selectedFaculty !== originalFaculty && isFacultyRequired);
+
+            if (roleOrFacultyChanged) {
+                
+                if (selectedRole === 'Admin') {
+                    await assignAdminRole(userId);
+                } 
+                else if (selectedRole === 'Teacher') {
+                    if (!selectedFaculty) throw new Error("Vui lòng chọn Khoa cho Teacher.");
+                    await assignTeacherRole(userId, selectedFaculty);
+                } else if (selectedRole === 'Student') {
+                    if (!selectedFaculty) throw new Error("Vui lòng chọn Khoa cho Sinh viên.");
+                    await assignStudentRole(userId, selectedFaculty);
+                }
             }
+
+            const newIsManagerStatus = isManager;
             
-            // Gọi onSave để component cha (UserManagementPage) tải lại danh sách
-            onSave(result.details); 
+            if (newIsManagerStatus !== originalIsManager && selectedRole !== 'Admin') {
+                if (newIsManagerStatus) {
+                    if (!selectedFaculty || selectedFaculty === 'N/A') throw new Error("Vui lòng chọn Khoa để gán quyền Manager.");
+                    await assignFacultyManagerPermission(userId, selectedFaculty);
+                } else {
+                    await revokeFacultyManagerPermission(userId);
+                }
+            }
+
+            onSave({}); 
 
         } catch (err) {
-            console.error("Error assigning role:", err);
-            // Hiển thị thông báo lỗi cụ thể từ API (ví dụ: Khoa không hợp lệ - 400)
-            setError(err.message || "Lưu thất bại. Vui lòng thử lại.");
+            console.error("Error assigning role/permission:", err);
+            setError(extractError(err, "Lưu thất bại. Vui lòng thử lại."));
         } finally {
             setIsSaving(false);
         }
     };
 
     const isFacultyRequired = selectedRole !== 'Admin';
+
+    const showManagerCheckbox = selectedRole !== 'Admin' && selectedRole !== '';
 
     return (
         <Modal open={open} onClose={onClose}>
@@ -131,8 +158,10 @@ const UserFormModal = ({ open, onClose, user, onSave }) => {
                                 label="Vai trò"
                                 onChange={(e) => {
                                     setSelectedRole(e.target.value);
-                                    // Reset khoa khi đổi vai trò sang Admin
-                                    if(e.target.value === 'Admin') setSelectedFaculty('N/A');
+                                    if(e.target.value === 'Admin') {
+                                      setSelectedFaculty('N/A');
+                                      setIsManager(false);
+                                    }
                                 }}
                             >
                                 {availableRoles.map((role) => (
@@ -156,6 +185,20 @@ const UserFormModal = ({ open, onClose, user, onSave }) => {
                                     ))}
                                 </Select>
                             </FormControl>
+                        )}
+                        {/* Checkbox Manager (Chỉ hiện khi không phải Admin) */}
+                        {showManagerCheckbox && (
+                            <FormControlLabel
+                                control={
+                                    <Checkbox 
+                                        checked={isManager} 
+                                        onChange={(e) => setIsManager(e.target.checked)}
+                                        disabled={isSaving || !selectedFaculty} 
+                                    />
+                                }
+                                label="Quyền Quản lý Khoa"
+                                sx={{ mb: 2 }}
+                            />
                         )}
                     </>
                 )}

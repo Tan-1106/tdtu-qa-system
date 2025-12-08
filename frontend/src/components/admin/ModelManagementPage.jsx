@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Box, Button, Typography, Table, TableBody, TableCell, TableContainer,
   TableHead, TableRow, Paper, IconButton, Chip, TablePagination, CircularProgress, Alert,
-  TextField, FormControl, InputLabel, Select, MenuItem, Grid, Stack 
+  TextField, FormControl, InputLabel, Select, MenuItem, Grid, Stack 
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -13,7 +13,6 @@ import SearchIcon from '@mui/icons-material/Search';
 import APIKeyFormModal from './APIKeyFormModal'; 
 import { getApiKeysList, toggleApiKeyUsage, deleteApiKey } from '../../api/modelApi';
 
-// Màu cho Provider
 const providerColor = {
   'OpenAI': 'primary',
   'Google': 'secondary',
@@ -21,98 +20,120 @@ const providerColor = {
 
 const PROVIDER_OPTIONS = ['OpenAI', 'Google'];
 const USAGE_STATUS_OPTIONS = [
-    { value: 'true', label: 'Đang dùng' },
+    { value: 'true', label: 'Đang dùng' },
 ];
+
+const extractError = (error) => {
+    if (error.response?.data?.details) {
+        return error.response.data.details;
+    }
+    return error.message || 'Lỗi không xác định.';
+};
 
 const ModelManagementPage = () => {
   const [apiKeys, setApiKeys] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingKey, setEditingKey] = useState(null);
   
-  // 💡 STATE CHO BỘ LỌC
   const [searchKeyword, setSearchKeyword] = useState(''); 
   const [filterProvider, setFilterProvider] = useState(''); 
   const [filterUsage, setFilterUsage] = useState(''); 
   
-  // State phân trang và loading
   const [page, setPage] = useState(0); 
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [totalKeys, setTotalKeys] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
+
+  const [isInitialLoading, setIsInitialLoading] = useState(true); 
+  const [isRefetching, setIsRefetching] = useState(false); 
+  
   const [error, setError] = useState(null);
   const [successMsg, setSuccessMsg] = useState(null);
 
-  const [allKeys, setAllKeys] = useState([]);
-  
-  const fetchKeys = async (currentPage, limit, keyword, provider) => {
-    setIsLoading(true);
+  
+  const fetchKeys = async (currentPage, limit, keyword, provider, isInitialLoad) => {
+    
+    if (isInitialLoad) {
+        setIsInitialLoading(true);
+    } else {
+        setIsRefetching(true);
+    }
+    
     setError(null);
     setSuccessMsg(null);
-    
-    const params = {
-        page: currentPage + 1,
-        limit: limit,
-        keyword: keyword || undefined,
-        provider: provider || undefined,
-    };
-    
-    Object.keys(params).forEach(key => params[key] === undefined && delete params[key]);
-    
+    
+    const params = {
+        page: currentPage + 1,
+        limit: limit,
+        keyword: keyword || undefined,
+        provider: provider || undefined,
+    };
+    
+    Object.keys(params).forEach(key => params[key] === undefined && delete params[key]);
+    
     try {
       const data = await getApiKeysList(params); 
-      
-      const mappedKeys = data.api_keys.map(key => ({ ...key, id: key._id }));
-      
-      let filteredKeys = mappedKeys;
+      
+      const mappedKeys = data.api_keys.map(key => ({ ...key, id: key._id }));
+      
+      let filteredKeys = mappedKeys;
 
-      if (filterUsage === 'true') {
-          filteredKeys = mappedKeys.filter(key => key.is_using === true);
-      }
-      
+      if (filterUsage === 'true') {
+          filteredKeys = mappedKeys.filter(key => key.is_using === true);
+      }
+      
       setApiKeys(filteredKeys);
       setTotalKeys(data.total); 
     } catch (err) {
       console.error("Error fetching keys:", err);
-      setError(err.message || 'Không thể tải danh sách API Keys.');
+      setError(extractError(err));
     } finally {
-      setIsLoading(false);
+      if (isInitialLoad) {
+          setIsInitialLoading(false);
+      } else {
+          setIsRefetching(false);
+      }
     }
   };
 
-  const loadKeysWithFilters = (resetPage = true) => {
-      const targetPage = resetPage ? 0 : page;
-      
-      fetchKeys(
-          targetPage, 
-          rowsPerPage, 
-          searchKeyword, 
-          filterProvider
-      );
-      
-      if (resetPage && page !== 0) {
-          setPage(0);
-      }
-  };
+  const loadKeysWithFilters = (resetPage = true, isInitialLoad = false) => {
+      const targetPage = resetPage ? 0 : page;
+      
+      fetchKeys(
+          targetPage, 
+          rowsPerPage, 
+          searchKeyword, 
+          filterProvider,
+          isInitialLoad
+      );
+      
+      if (resetPage && page !== 0) {
+          setPage(0);
+      }
+  };
 
-  const handleSearchClick = () => {
-      loadKeysWithFilters(true); 
-  };
+  const handleSearchClick = () => {
+      loadKeysWithFilters(true);
+  };
 
   useEffect(() => {
-    loadKeysWithFilters(true); 
-  }, [rowsPerPage]); 
+    loadKeysWithFilters(true, true); 
+  }, []); 
 
-  useEffect(() => {
-    loadKeysWithFilters(true); 
-  }, [filterProvider, filterUsage]);
-  
+  useEffect(() => {
+    if (!isInitialLoading) { 
+        loadKeysWithFilters(true);
+    }
+  }, [filterProvider, filterUsage, rowsPerPage]); 
+  
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
+    loadKeysWithFilters(false);
   };
 
   const handleChangeRowsPerPage = (event) => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0); 
+    loadKeysWithFilters(true); 
   };
 
   const handleAddKey = () => {
@@ -128,39 +149,45 @@ const ModelManagementPage = () => {
   const handleSaveKey = () => {
     setIsModalOpen(false);
     setSuccessMsg('Thao tác thành công! Danh sách đang được cập nhật.');
-    loadKeysWithFilters(true); // Tải lại trang hiện tại
+    loadKeysWithFilters(true); 
   };
   
-  // Hành động Bật/Tắt sử dụng Key (Toggle Usage)
   const handleToggleUsage = async (keyId, currentStatus) => {
     setError(null);
     setSuccessMsg(null);
+    setIsRefetching(true); 
     try {
         await toggleApiKeyUsage(keyId);
         setSuccessMsg(currentStatus ? 'Đã tắt sử dụng API Key.' : 'Đã kích hoạt API Key thành công.');
-        loadKeysWithFilters(false); // Tải lại dữ liệu (không reset page)
+        loadKeysWithFilters(false); 
     } catch (err) {
-        setError(err.message || "Thao tác Bật/Tắt thất bại.");
-    }
+        console.error("Error toggling usage:", err);
+        setError(extractError(err));
+    } finally {
+        setIsRefetching(false); 
+    }
   };
 
-  // Hành động Xóa Key
   const handleDeleteKey = async (keyId, keyName) => {
     if (!window.confirm(`Bạn có chắc chắn muốn xóa API Key: ${keyName} không?`)) {
         return;
     }
     setError(null);
     setSuccessMsg(null);
+    setIsRefetching(true);
     try {
         await deleteApiKey(keyId);
         setSuccessMsg(`API Key "${keyName}" đã được xóa thành công.`);
         loadKeysWithFilters(true); 
     } catch (err) {
-        setError(err.message || "Thao tác Xóa thất bại.");
-    }
+        console.error("Error deleting key:", err);
+        setError(extractError(err));
+    } finally {
+        setIsRefetching(false);
+    }
   };
     
-  if (isLoading) {
+  if (isInitialLoading) {
       return (
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
               <CircularProgress />
@@ -181,7 +208,7 @@ const ModelManagementPage = () => {
           sx={{
             borderRadius: 3,
             fontWeight: 600,
-            background: 'linear-gradient(90deg, #2e7d32 60%, #66bb6a 100%)', // Màu xanh lá cây cho Add
+            background: 'linear-gradient(90deg, #2e7d32 60%, #66bb6a 100%)', 
             '&:hover': {
               background: 'linear-gradient(90deg, #1b5e20 60%, #2e7d32 100%)'
             }
@@ -190,84 +217,84 @@ const ModelManagementPage = () => {
           Thêm API Key
         </Button>
       </Box>
-      
+      
       {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
       {successMsg && <Alert severity="success" sx={{ mb: 3 }}>{successMsg}</Alert>}
 
-      {/* --- PHẦN BỘ LỌC --- */}
-      <Paper elevation={1} sx={{ p: 2, mb: 3, borderRadius: 3, borderLeft: '5px solid #1976d2' }}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 700, color: 'primary.main', mb: -2 }}>Tìm kiếm & Lọc</Typography>
-          <Grid container spacing={2} alignItems="flex-end"> 
-              
-              {/* 1. Tìm kiếm theo Tên/Mô tả + Nút */}
-              <Grid item xs={12} sm={6} md={4}>
-                  <Stack direction="row" spacing={1} alignItems="flex-end" sx={{ mt: 1 }}>
-                       <TextField
-                          fullWidth
-                          label="Tên Key hoặc Mô tả"
-                          variant="outlined"
-                          value={searchKeyword} 
-                          onChange={(e) => setSearchKeyword(e.target.value)} 
-                          size="small"
-                          onKeyDown={(e) => e.key === 'Enter' && handleSearchClick()}
-                      />
-                      <Button
-                          variant="contained"
-                          onClick={handleSearchClick}
-                          size="small"
-                          sx={{ minWidth: '40px', height: '40px', borderRadius: '8px' }}
-                      >
-                          <SearchIcon />
-                      </Button>
-                  </Stack>
-              </Grid>
-              
-              {/* 2. Lọc theo Nhà cung cấp */}
-              <Grid item xs={12} sm={6} md={3}> 
-                  <Typography variant="caption" display="block" sx={{ color: 'text.secondary', mb: 0.5 }}>
-                      Nhà cung cấp
-                  </Typography>
-                  <FormControl fullWidth size="small" variant="outlined">
-                      <Select
-                          value={filterProvider}
-                          displayEmpty
-                          onChange={(e) => setFilterProvider(e.target.value)} 
-                          renderValue={(selected) => (selected ? selected : <em>Tất cả</em>)} 
-                      >
-                          <MenuItem value="">
-                              <em>Tất cả</em>
-                          </MenuItem>
-                          {PROVIDER_OPTIONS.map((provider) => (
-                              <MenuItem key={provider} value={provider}>{provider}</MenuItem>
-                          ))}
-                      </Select>
-                  </FormControl>
-              </Grid>
-              
-              {/* 3. Lọc theo Trạng thái sử dụng */}
-              <Grid item xs={12} sm={6} md={3}>
-                  <Typography variant="caption" display="block" sx={{ color: 'text.secondary', mb: 0.5 }}>
-                      Trạng thái sử dụng
-                  </Typography>
-                  <FormControl fullWidth size="small" variant="outlined">
-                      <Select
-                          value={filterUsage}
-                          displayEmpty
-                          onChange={(e) => setFilterUsage(e.target.value)}
-                          renderValue={(selected) => (selected ? USAGE_STATUS_OPTIONS.find(s => s.value === selected)?.label : <em>Tất cả</em>)} 
-                      >
-                          <MenuItem value="">
-                              <em>Tất cả</em>
-                          </MenuItem>
-                          {USAGE_STATUS_OPTIONS.map((status) => (
-                              <MenuItem key={status.value} value={status.value}>{status.label}</MenuItem>
-                          ))}
-                      </Select>
-                  </FormControl>
-              </Grid>
-          </Grid>
-      </Paper>
-      {/* --- KẾT THÚC PHẦN BỘ LỌC --- */}
+      {/* --- PHẦN BỘ LỌC --- */}
+      <Paper elevation={1} sx={{ p: 2, mb: 3, borderRadius: 3, borderLeft: '5px solid #1976d2' }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 700, color: 'primary.main', mb: -2 }}>Tìm kiếm & Lọc</Typography>
+          <Grid container spacing={2} alignItems="flex-end"> 
+              
+              {/* 1. Tìm kiếm theo Tên/Mô tả + Nút */}
+              <Grid item xs={12} sm={6} md={4}>
+                  <Stack direction="row" spacing={1} alignItems="flex-end" sx={{ mt: 1 }}>
+                       <TextField
+                          fullWidth
+                          label="Tên Key hoặc Mô tả"
+                          variant="outlined"
+                          value={searchKeyword} 
+                          onChange={(e) => setSearchKeyword(e.target.value)} 
+                          size="small"
+                          onKeyDown={(e) => e.key === 'Enter' && handleSearchClick()}
+                      />
+                      <Button
+                          variant="contained"
+                          onClick={handleSearchClick}
+                          size="small"
+                          sx={{ minWidth: '40px', height: '40px', borderRadius: '8px' }}
+                      >
+                          <SearchIcon />
+                      </Button>
+                  </Stack>
+              </Grid>
+              
+              {/* 2. Lọc theo Nhà cung cấp */}
+              <Grid item xs={12} sm={6} md={3}> 
+                  <Typography variant="caption" display="block" sx={{ color: 'text.secondary', mb: 0.5 }}>
+                      Nhà cung cấp
+                  </Typography>
+                  <FormControl fullWidth size="small" variant="outlined">
+                      <Select
+                          value={filterProvider}
+                          displayEmpty
+                          onChange={(e) => setFilterProvider(e.target.value)} 
+                          renderValue={(selected) => (selected ? selected : <em>Tất cả</em>)} 
+                      >
+                          <MenuItem value="">
+                              <em>Tất cả</em>
+                          </MenuItem>
+                          {PROVIDER_OPTIONS.map((provider) => (
+                              <MenuItem key={provider} value={provider}>{provider}</MenuItem>
+                          ))}
+                      </Select>
+                  </FormControl>
+              </Grid>
+              
+              {/* 3. Lọc theo Trạng thái sử dụng */}
+              <Grid item xs={12} sm={6} md={3}>
+                  <Typography variant="caption" display="block" sx={{ color: 'text.secondary', mb: 0.5 }}>
+                      Trạng thái sử dụng
+                  </Typography>
+                  <FormControl fullWidth size="small" variant="outlined">
+                      <Select
+                          value={filterUsage}
+                          displayEmpty
+                          onChange={(e) => setFilterUsage(e.target.value)}
+                          renderValue={(selected) => (selected ? USAGE_STATUS_OPTIONS.find(s => s.value === selected)?.label : <em>Tất cả</em>)} 
+                      >
+                          <MenuItem value="">
+                              <em>Tất cả</em>
+                          </MenuItem>
+                          {USAGE_STATUS_OPTIONS.map((status) => (
+                              <MenuItem key={status.value} value={status.value}>{status.label}</MenuItem>
+                          ))}
+                      </Select>
+                  </FormControl>
+              </Grid>
+          </Grid>
+      </Paper>
+      {/* --- KẾT THÚC PHẦN BỘ LỌC --- */}
 
 
       <APIKeyFormModal
@@ -279,8 +306,31 @@ const ModelManagementPage = () => {
 
       <TableContainer 
         component={Paper} 
-        sx={{ borderRadius: 4, boxShadow: '0 4px 16px 0 rgba(0,0,0,0.06)' }}
+        sx={{ 
+            borderRadius: 4, 
+            boxShadow: '0 4px 16px 0 rgba(0,0,0,0.06)',
+            position: 'relative', 
+        }}
       >
+        {isRefetching && (
+            <Box 
+                sx={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    bgcolor: 'rgba(255, 255, 255, 0.7)', 
+                    zIndex: 1000, 
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    borderRadius: 4,
+                }}
+            >
+                <CircularProgress size={40} />
+            </Box>
+        )}
         <Table>
           <TableHead>
             <TableRow>
@@ -349,7 +399,7 @@ const ModelManagementPage = () => {
                 </TableCell>
               </TableRow>
             ))}
-            {apiKeys.length === 0 && !isLoading && (
+            {apiKeys.length === 0 && !isInitialLoading && (
               <TableRow>
                 <TableCell colSpan={5} align="center" sx={{ color: 'text.secondary', py: 4 }}>
                   Không có API Key nào được thiết lập.
