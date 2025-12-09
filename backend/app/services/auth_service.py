@@ -238,7 +238,6 @@ async def get_current_user(access_token: dict = Depends(verify_access_token)) ->
     user = jsonable_encoder(user)
     
     user_role = user["role"]
-    user_faculty = user["faculty"]
     user_banned = user["banned"]
     
     if user_role not in (r.value for r in Role):

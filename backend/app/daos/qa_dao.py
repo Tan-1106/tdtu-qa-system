@@ -1,10 +1,12 @@
 from bson import ObjectId
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from app.databases import mongo
 from app.utils import serializer
 from app.schemas import qa_schema
 from app.utils.api_response import DatabaseException
+from app.schemas.statistical_schema import PeriodType
+
 
 class QADao:
     def __init__(self):
@@ -153,4 +155,61 @@ class QADao:
         if result.matched_count == 0:
             raise DatabaseException(f"QA record with qa_record_id {qa_record_id} not found")
         updated_record = await self.get_qa_record_by_id(qa_record_id)
-        return updated_record   
+        return updated_record
+    
+    
+    # Get all QA records by period type
+    async def get_qa_records_by_period_type(self, period_type: PeriodType) -> list[dict]:
+        now = datetime.now(timezone.utc)
+        
+        if period_type == PeriodType.Weekly:
+            start_date = now - timedelta(weeks=1)
+        elif period_type == PeriodType.Monthly:
+            start_date = now - timedelta(days=30)
+        elif period_type == PeriodType.Yearly:
+            start_date = now - timedelta(days=365)
+        else:
+            raise ValueError("Invalid period type")
+        
+        query = {"created_at": {"$gte": start_date, "$lte": now}}
+        cursor = self.qa_collection.find(query)
+        
+        records = []
+        async for record in cursor:
+            records.append(qa_schema.QARecordSchema(**serializer.qa_session_serialize(record)))
+        return records
+    
+    
+    # Count total questions
+    async def questions_statistics(self, period_type: PeriodType) -> dict:
+        now = datetime.now(timezone.utc)
+        
+        if period_type == PeriodType.Weekly:
+            start_date = now - timedelta(weeks=1)
+        elif period_type == PeriodType.Monthly:
+            start_date = now - timedelta(days=30)
+        elif period_type == PeriodType.Yearly:
+            start_date = now - timedelta(days=365)
+        else:
+            raise ValueError("Invalid period type")
+        
+        query = {"created_at": {"$gte": start_date, "$lte": now}}
+        
+        # Count total questions
+        total = await self.qa_collection.count_documents(query)
+        
+        # Count questions with Like feedback
+        like_query = {**query, "feedback": "Like"}
+        like_count = await self.qa_collection.count_documents(like_query)
+        
+        # Count questions with Dislike feedback
+        dislike_query = {**query, "feedback": "Dislike"}
+        dislike_count = await self.qa_collection.count_documents(dislike_query)
+        
+        return {
+            "total": total,
+            "like": like_count,
+            "dislike": dislike_count
+        }
+        
+        

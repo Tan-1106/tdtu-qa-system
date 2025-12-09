@@ -83,3 +83,14 @@ def qa_session_serialize(qa_session) -> dict:
         "created_at": qa_session.get("created_at").isoformat() if qa_session.get("created_at") else None,
         "updated_at": qa_session.get("updated_at").isoformat() if qa_session.get("updated_at") else None
     }
+    
+    
+# Popular Question Statistics
+def popular_question_statistics_serialize(statistics) -> dict:
+    return {
+        "id": str(statistics["_id"]),
+        "question": statistics.get("question"),
+        "answer": statistics.get("answer"),
+        "count": statistics.get("count", 0),
+        "created_at": statistics.get("created_at").isoformat() if statistics.get("created_at") else None
+    }

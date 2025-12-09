@@ -7,7 +7,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.utils.api_response import api_response, UserError, NotFoundException, DatabaseException, AuthException
 from app.databases.mongo import connect_to_mongo, close_mongo_connection
-from app.routes import auth_route, user_route, document_route, document_chunk_route, embedding_route, qa_route
+from app.routes import auth_route, user_route, document_route, document_chunk_route, embedding_route, qa_route, statistical_route
 from app.routes import llm_route
 
 
@@ -162,17 +162,5 @@ app.include_router(embedding_route.router, prefix="/api")
 app.include_router(qa_route.router, prefix="/api")
 
 
-# # Question Embedding routes
-# app.include_router(question_embedding_route.router, prefix="/api")
-
-
-
-
-
-# # Potential Question routes
-# app.include_router(potential_question_route.route, prefix="/api")
-
-
-# # Question routes
-# app.include_router(question_route.user_router, prefix="/api")
-# app.include_router(question_route.admin_router, prefix="/api")
+# Statistical routes
+app.include_router(statistical_route.router, prefix="/api")

@@ -289,7 +289,7 @@ async def generate_potential_questions_appendix(api_key: dict, context: str, num
 
 
 # Generate answer
-async def generate_answer(api_key: str, chunks: list[str], question: str, question_language: str) -> str:
+async def generate_answer(api_key: dict, chunks: list[str], question: str, question_language: str) -> str:
     context = "\n\n".join([f"Đoạn {i+1}: {chunk}" for i, chunk in enumerate(chunks)])
     if question_language == 'vi':
         prompt = f"""
@@ -340,8 +340,6 @@ async def generate_answer(api_key: str, chunks: list[str], question: str, questi
         """
 
     output_text = []
-    print("- Sử dụng prompt:\n", prompt)
-    
     if api_key["provider"] == APIKeyProvider.OPENAI.value:
         def call_openai():
             openai_client = OpenAI(api_key=api_key["api_key"])
@@ -367,5 +365,53 @@ async def generate_answer(api_key: str, chunks: list[str], question: str, questi
         
         output_text = await asyncio.to_thread(call_gemini)
         output_text = normalize_text(output_text)
+    
+    return output_text
+
+
+# Generate general question for a cluster of questions
+async def get_general_question(api_key: dict, questions: list[str]) -> str:
+    prompt = f"""
+    Bạn là một trợ lý thông minh có nhiệm vụ tổng hợp và tạo ra một câu hỏi chung đại diện cho một nhóm các câu hỏi liên quan đến quy định, quy chế của Trường Đại học Tôn Đức Thắng.
+    
+    Huớng dẫn:
+    1. Đọc kỹ tất cả các câu hỏi được cung cấp.
+    2. Xác định chủ đề chung hoặc ý chính mà các câu hỏi này đề cập đến.
+    3. Tạo ra một câu hỏi chung ngắn gọn, rõ ràng, tự nhiên, không trùng lặp, phản ánh đúng ý chính của nhóm câu hỏi.
+    4. Câu hỏi chung phải có ý nghĩa đầy đủ, người đọc không cần xem các câu hỏi gốc vẫn hiểu được.
+    
+    Danh sách các câu hỏi:
+    {questions}
+    
+    Yêu cầu định dạng đầu ra:
+    - Trả về đúng **một chuỗi (string)** chứa câu hỏi chung.
+    - Không thêm bất kỳ mô tả, giải thích, hoặc ký tự thừa nào khác ngoài câu hỏi.
+    """
+
+    if api_key["provider"] == APIKeyProvider.OPENAI.value:
+        def call_openai():
+            openai_client = OpenAI(api_key=api_key["api_key"])
+            response = openai_client.responses.create(
+                model=api_key["using_model"],
+                input=prompt,
+                store=False
+            )
+            return response.output_text
+        
+        output_text = await asyncio.to_thread(call_openai)
+        output_text = normalize_text(output_text)
+        
+    elif api_key["provider"] == APIKeyProvider.GEMINI.value:
+        def call_gemini():
+            genai.configure(api_key=api_key["api_key"])
+            model = genai.GenerativeModel(api_key["using_model"])
+            response = model.generate_content(
+                prompt,
+                generation_config={"max_output_tokens": 1024}
+            )
+            return response.text
+        
+        output_text = await asyncio.to_thread(call_gemini)
+        output_text = normalize_text(output_text)        
     
     return output_text
