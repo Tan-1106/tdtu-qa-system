@@ -99,6 +99,12 @@ class DocumentDAO:
         return documents
     
     
+    # Get all existing departments
+    async def get_all_existing_departments(self) -> list[str]:
+        departments = await self.documents_collection.distinct("department", {"department": {"$ne": None}})
+        return departments
+    
+    
     # Get a document by ID
     async def get_document_by_id(self, doc_id: str) -> dict:
         document = await self.documents_collection.find_one({"_id": ObjectId(doc_id)})

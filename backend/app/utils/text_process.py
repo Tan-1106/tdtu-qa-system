@@ -41,12 +41,12 @@ def normalize_text(text: str):
         out = []
         for item in data:
             if isinstance(item, str):
-                s = re.sub(r"\s+", " ", item.replace("\n", " ")).strip()
+                s = re.sub(r"[ \t]+", " ", item).strip()
                 out.append(s)
         return out
 
     if isinstance(data, str):
-        return re.sub(r"\s+", " ", data.replace("\n", " ")).strip()
+        return re.sub(r"[ \t]+", " ", data).strip()
 
     return data
 

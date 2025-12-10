@@ -271,6 +271,12 @@ async def get_faculty_documents(
     return documents
 
 
+# Get all existing departments
+async def get_all_departments():
+    departments = await document_service.get_all_existing_departments()
+    return departments
+
+
 # Update document information
 async def update_document(
     doc_id: str,

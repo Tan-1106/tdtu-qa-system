@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, UploadFile, Form, Query
 
 from app.services import auth_service
 from app.schemas import document_schema
+from app.utils.basic_information import Role
 from app.utils.api_response import api_response
 from app.controllers import document_controller
 
@@ -102,6 +103,19 @@ async def get_faculty_documents(
         status_code=200,
         message="Documents retrieved successfully.",
         details=documents
+    )
+    
+    
+# Get all existing departments
+@router.get("/departments")
+async def get_all_departments(
+    require_admin = Depends(auth_service.require_role([Role.ADMIN.value]))
+):
+    departments = await document_controller.get_all_departments()
+    return api_response(
+        status_code=200,
+        message="Departments retrieved successfully.",
+        details=departments
     )
     
     
