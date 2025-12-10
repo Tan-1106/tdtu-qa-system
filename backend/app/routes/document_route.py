@@ -119,6 +119,17 @@ async def get_all_departments(
     )
     
     
+# Get all existing doc types
+@router.get("/doc-types")
+async def get_all_doc_types():
+    doc_types = await document_controller.get_all_doc_types()
+    return api_response(
+        status_code=200,
+        message="Document types retrieved successfully.",
+        details=doc_types
+    )
+    
+    
 # View document
 @router.get("/view/{doc_id}")
 async def view_document(

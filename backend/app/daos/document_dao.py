@@ -30,8 +30,7 @@ class DocumentDAO:
             query["department"] = department
         if keyword:
             query["$or"] = [
-                {"title": {"$regex": keyword, "$options": "i"}},
-                {"description": {"$regex": keyword, "$options": "i"}}
+                {"file_name": {"$regex": keyword, "$options": "i"}}
             ]
             
         total = await self.documents_collection.count_documents(query)
@@ -47,8 +46,7 @@ class DocumentDAO:
             query["department"] = department
         if keyword:
             query["$or"] = [
-                {"title": {"$regex": keyword, "$options": "i"}},
-                {"description": {"$regex": keyword, "$options": "i"}}
+                {"file_name": {"$regex": keyword, "$options": "i"}}
             ]
             
         cursor = self.documents_collection.find(query).skip(skip).limit(limit).sort("uploaded_at", -1)
@@ -69,8 +67,7 @@ class DocumentDAO:
             query["doc_type"] = doc_type
         if keyword:
             query["$or"] = [
-                {"title": {"$regex": keyword, "$options": "i"}},
-                {"description": {"$regex": keyword, "$options": "i"}}
+                {"file_name": {"$regex": keyword, "$options": "i"}}
             ]
             
         total = await self.documents_collection.count_documents(query)
@@ -88,8 +85,7 @@ class DocumentDAO:
             query["doc_type"] = doc_type
         if keyword:
             query["$or"] = [
-                {"title": {"$regex": keyword, "$options": "i"}},
-                {"description": {"$regex": keyword, "$options": "i"}}
+                {"file_name": {"$regex": keyword, "$options": "i"}}
             ]
             
         cursor = self.documents_collection.find(query).skip(skip).limit(limit).sort("uploaded_at", -1)
@@ -103,6 +99,12 @@ class DocumentDAO:
     async def get_all_existing_departments(self) -> list[str]:
         departments = await self.documents_collection.distinct("department", {"department": {"$ne": None}})
         return departments
+    
+    
+    # Get all existing document types
+    async def get_all_existing_doc_types(self) -> list[str]:
+        doc_types = await self.documents_collection.distinct("doc_type", {"doc_type": {"$ne": None}})
+        return doc_types
     
     
     # Get a document by ID

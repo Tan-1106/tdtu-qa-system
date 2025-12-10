@@ -175,6 +175,12 @@ async def get_all_existing_departments():
     return jsonable_encoder(departments)
 
 
+# Get all existing doc types
+async def get_all_existing_doc_types():
+    doc_types = await DocumentDAO().get_all_existing_doc_types()
+    return jsonable_encoder(doc_types)
+
+
 # Update document record
 async def update_document_record(doc_id: str, data: dict):
     updated_document = await DocumentDAO().update_document(doc_id, data)

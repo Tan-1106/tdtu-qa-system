@@ -277,6 +277,12 @@ async def get_all_departments():
     return departments
 
 
+# Get all existing doc types
+async def get_all_doc_types():
+    doc_types = await document_service.get_all_existing_doc_types()
+    return doc_types
+
+
 # Update document information
 async def update_document(
     doc_id: str,
