@@ -13,6 +13,7 @@ async def get_users(
     keyword: str = None,
     current_user: dict = None
 ):
+    print("Current User in Controller:", current_user)
     if role and role not in [r.value for r in Role]:
         raise UserError("Invalid role specified.")
     if faculty and faculty not in await user_service.get_all_existing_faculties():
@@ -25,7 +26,7 @@ async def get_users(
     if current_user["role"] == Role.ADMIN.value:
         users = await user_service.get_users(page, limit, role, is_faculty_manager, faculty, banned, keyword)
         return users
-    elif (current_user["is_faculty_manager"]) and current_user["faculty"] is not None and is_faculty_manager is not None:
+    elif (current_user["is_faculty_manager"]) and current_user["faculty"] is not None and is_faculty_manager is None:
         users = await user_service.get_faculty_users(page, limit, role, current_user["faculty"], banned, keyword)
         return users
     else:

@@ -108,27 +108,26 @@ const DocumentManagementPage = () => {
     }, [isViewModalOpen, viewDocumentUrl]);
 
 
-    // Lấy danh sách Khoa và Phòng Ban
     const fetchFilterOptions = async () => {
         try {
-            const faculties = await getFaculties();
-            setAvailableFaculties(faculties);
-            
-            const responseDepartments = await getAllDepartments();
-            if (responseDepartments && Array.isArray(responseDepartments)) {
-                const sortedDepartments = responseDepartments.map(d => d.trim()).sort(); 
-                const uniqueDepartments = [...new Set(sortedDepartments)];
-                setAvailableDepartments(uniqueDepartments.filter(d => d));
-            } else {
-                setAvailableDepartments([]);
-            }
-
             const docTypes = await getDocTypes();
             if (docTypes && Array.isArray(docTypes)) {
-                const uniqueDocTypes = [...new Set(docTypes.map(t => t.trim()))];
-                setAvailableDocTypes(uniqueDocTypes.filter(t => t));
+                setAvailableDocTypes(docTypes.filter(t => t.trim()));
+            }
+
+            if (isAdmin) {
+                const faculties = await getFaculties();
+                setAvailableFaculties(faculties);
+
+                const responseDepartments = await getAllDepartments();
+                if (responseDepartments && Array.isArray(responseDepartments)) {
+                    setAvailableDepartments(uniqueDepartments.filter(d => d));
+                } else {
+                    setAvailableDepartments([]);
+                }
             } else {
-                setAvailableDocTypes([]);
+                setAvailableFaculties([currentUser.faculty]); 
+                setAvailableDepartments([]); 
             }
 
         } catch (err) {
@@ -286,10 +285,6 @@ const DocumentManagementPage = () => {
     };
 
     const handleEditDocument = (doc) => {
-        if (isFacultyManager && doc.faculty !== currentUser.faculty) {
-            setError('Bạn chỉ có quyền chỉnh sửa tài liệu của Khoa mình.');
-            return;
-        }
         setEditingDocument(doc);
         setIsFormModalOpen(true);
     };
@@ -464,6 +459,7 @@ const DocumentManagementPage = () => {
                     onSave={handleSaveDocument}
                     editingDocument={editingDocument}
                     availableFaculties={availableFaculties}
+                    availableDepartments={availableDepartments} 
                     documentTypes={availableDocTypes} 
                 />
             )}
