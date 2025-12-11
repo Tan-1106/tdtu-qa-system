@@ -3,6 +3,8 @@ import { Box, TextField, Button, CircularProgress, Typography, IconButton, Avata
 import SendIcon from '@mui/icons-material/Send';
 import ThumbUpOutlinedIcon from '@mui/icons-material/ThumbUpOutlined';
 import ThumbDownOutlinedIcon from '@mui/icons-material/ThumbDownOutlined';
+import ThumbUpIcon from '@mui/icons-material/ThumbUp';
+import ThumbDownIcon from '@mui/icons-material/ThumbDown';
 import SchoolIcon from '@mui/icons-material/School';
 import MenuIcon from '@mui/icons-material/Menu';
 import CloseIcon from '@mui/icons-material/Close'; 
@@ -64,6 +66,7 @@ const ChatPage = () => {
                 },
                 { 
                     id: sessionId,
+                    qa_record_id: sessionId,
                     text: botAnswer, 
                     sender: 'bot',
                     feedback: qaRecord.feedback, 
@@ -273,21 +276,23 @@ const ChatPage = () => {
                 {msg.sender === 'bot' && msg.qa_record_id && (
                   <Box sx={{ mt: 1, display: 'flex', gap: 1 }}>
                     <IconButton 
-                        size="small" 
-                        onClick={() => handleFeedback(msg.qa_record_id, 'Like')} 
-                        sx={{ color: msg.feedback === 'Like' ? 'success.main' : 'text.secondary' }}
-                        disabled={msg.feedback !== null}
-                    >
-                      <ThumbUpOutlinedIcon fontSize="inherit" />
-                    </IconButton>
+                        size="small" 
+                        onClick={() => handleFeedback(msg.qa_record_id, 'Like')} 
+                        sx={{ color: msg.feedback === 'Like' ? 'success.main' : 'text.secondary' }}
+                    >
+                        {msg.feedback === 'Like' 
+                            ? <ThumbUpIcon fontSize="inherit" /> 
+                            : <ThumbUpOutlinedIcon fontSize="inherit" />}
+                    </IconButton>
                     <IconButton 
-                        size="small" 
-                        onClick={() => handleFeedback(msg.qa_record_id, 'Dislike')} 
-                        sx={{ color: msg.feedback === 'Dislike' ? 'error.main' : 'text.secondary' }}
-                        disabled={msg.feedback !== null}
-                    >
-                      <ThumbDownOutlinedIcon fontSize="inherit" />
-                    </IconButton>
+                        size="small" 
+                        onClick={() => handleFeedback(msg.qa_record_id, 'Dislike')} 
+                        sx={{ color: msg.feedback === 'Dislike' ? 'error.main' : 'text.secondary' }}
+                    >
+                        {msg.feedback === 'Dislike' 
+                            ? <ThumbDownIcon fontSize="inherit" /> 
+                            : <ThumbDownOutlinedIcon fontSize="inherit" />}
+                    </IconButton>
                   </Box>
                 )}
               </Box>
