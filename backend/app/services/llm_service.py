@@ -299,7 +299,7 @@ async def generate_answer(api_key: dict, chunks: list[str], question: str, quest
         1. Sử dụng **chính xác** thông tin trong các đoạn văn bản để trả lời câu hỏi một cách đầy đủ, tự nhiên, có chủ ngữ và vị ngữ rõ ràng.
         2. Nếu văn bản là **phụ lục**, cần chú ý đến cấu trúc bảng: các thông tin trong cùng một hàng thuộc về cùng một đối tượng, và cần đọc theo thứ tự từ trái sang phải để hiểu đúng ý.
         3. Nếu thông tin liên quan có trong nhiều đoạn, hãy **tổng hợp và diễn đạt lại** thành một câu trả lời hoàn chỉnh.
-        4. Nếu câu trả lời có nhiều ý hoặc được liệt kê dưới dạng danh sách. Hãy thêm "/n" vào giữa các ý để tiện cho quá trình render.
+        4. Nếu câu trả lời có nhiều ý hoặc được liệt kê dưới dạng danh sách. Hãy thêm "\n" vào giữa các ý để tiện cho quá trình render.
         5. Nếu có đáp án, thì ở cuối câu trả lời, hãy thêm mục **Nguồn tham khảo** gồm danh sách các tài liệu đã được sử dụng (mỗi mục gồm tiêu đề và URL ở cuối đoạn văn bản).
         6. Nếu **không tìm thấy** thông tin phù hợp trong các đoạn văn bản, hãy trả lời rằng không thể tìm được tài liệu trong kho dữ liệu liên quan đến câu hỏi của người dùng, không đề cập đến các tài liệu bạn được cung cấp và không cần dẫn nguồn tham khảo.
         7. Nếu người dùng đặt câu hỏi dựa trên 1 tình huống cụ thể, hãy suy luận câu trả lời dựa trên các đoạn văn bản được cung cấp nếu như các văn bản được cung cấp có thông tin liên quan đến tình huống đó. Không được trả lời dựa trên kiến thức chung hoặc kinh nghiệm cá nhân.
@@ -322,7 +322,7 @@ async def generate_answer(api_key: dict, chunks: list[str], question: str, quest
         1. Use the **exact** information from the text passages to answer the question completely, naturally, with clear subject and predicate.
         2. If the text is **appendix**, pay attention to the table structure: information in the same row belongs to the same subject, and read from left to right to understand correctly.
         3. If relevant information is found in multiple passages, **synthesize and rephrase** it into a complete answer. The relevant information may be in Vietnamese, so make sure to translate your response completly to English.
-        4. If the answer has multiple points or is listed as a list, add "/n" between the points for easier rendering.
+        4. If the answer has multiple points or is listed as a list, add "\n" between the points for easier rendering.
         5. If there is an answer, at the end of the response, add a **References** section listing the documents used (each item includes the title and URL at the end of the passage).
         6. If **no relevant information** is found in the text passages, respond that you could not find documents related to the user's question in the database, do not mention the documents you were provided, and do not include a references section.
         7. If the user asks a question based on a specific situation, infer the answer based on the provided text passages if the provided texts contain information related to that situation. Do not answer based on general knowledge or personal experience.
