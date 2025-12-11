@@ -8,7 +8,7 @@ from app.services import qa_service, user_service
 
 
 # Question-Answering
-async def get_answer(question: str, current_user: dict):
+async def get_answer(question: str, current_user: dict):    
     question_language = detect(question)
     
     question_record = jsonable_encoder(await qa_service.create_question_record(
@@ -27,7 +27,11 @@ async def get_answer(question: str, current_user: dict):
         
     question_record = await qa_service.update_question_record_with_answer(question_record["_id"], answer)
         
-    return answer
+    return {
+        "question_id": question_record["_id"],
+        "question": question_record["question"],
+        "answer": question_record["answer"]
+    }
 
 
 # Leave feedback for a question

@@ -112,7 +112,7 @@ async def update_question_record_with_answer(
     answer: str
 ) -> dict:
     updated_record = await QADao().update_qa_answer(question_id, answer)
-    return updated_record
+    return jsonable_encoder(updated_record)
 
 
 # Get all question records
