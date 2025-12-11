@@ -1,19 +1,17 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react'; 
-import { Box, TextField, Button, CircularProgress, Typography, IconButton, Avatar, Stack, useTheme } from '@mui/material';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react'; 
+import { Box, TextField, Button, CircularProgress, Typography, IconButton, Avatar, Stack, useTheme, Alert } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import ThumbUpOutlinedIcon from '@mui/icons-material/ThumbUpOutlined';
 import ThumbDownOutlinedIcon from '@mui/icons-material/ThumbDownOutlined';
 import SchoolIcon from '@mui/icons-material/School';
 import MenuIcon from '@mui/icons-material/Menu';
 import CloseIcon from '@mui/icons-material/Close'; 
-import useUserAuth from '../hooks/useUserAuth';
 import { useOutletContext } from 'react-router-dom'; 
 
-const initialHistory = [
-  { id: 'chat-1', title: 'Hỏi về quy chế học vụ', date: '2025-10-01' },
-  { id: 'chat-2', title: 'Yêu cầu phúc khảo điểm', date: '2025-10-05' },
-  { id: 'chat-3', title: 'Thông tin về học bổng', date: '2025-10-10' },
-];
+import useUserAuth from '../hooks/useUserAuth';
+import { sendQuery, sendFeedback } from '../api/chatApi'; 
+import axiosInstance from '../axiosInstance';
+
 
 const BOT_WELCOME_MESSAGE = { id: 1, text: 'Chào bạn, tôi là trợ lý ảo của TDTU. Tôi có thể giúp gì cho bạn?', sender: 'bot' };
 
@@ -21,99 +19,183 @@ const ChatPage = () => {
     const theme = useTheme();
     const { user, isLoadingUser, isAuthenticated } = useUserAuth();
     
+    // Lấy context từ UserLayout
     const context = useOutletContext();
     const { 
         isSidebarOpen = true, 
         toggleSidebar = () => {}, 
-        activeChatId = 'chat-1', 
-        setActiveChatId = () => {} 
+        activeChatId = null, 
+        setActiveChatId = () => {},
+        setReloadHistoryKey = () => {}
     } = context || {}; 
-
-    const [history] = useState(initialHistory);
 
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [isBotAnswered, setIsBotAnswered] = useState(false); 
+    const [showLoadingIndicator, setShowLoadingIndicator] = useState(false);
+    const [fetchError, setFetchError] = useState(null);
 
     const scrollRef = useRef(null); 
+    const chatContentRef = useRef(null);
+
+    const loadChatSession = useCallback(async (sessionId) => {
+        if (!sessionId) {
+            setMessages([BOT_WELCOME_MESSAGE]); 
+            setFetchError(null);
+            return;
+        }
+        
+        setIsLoading(true);
+        setFetchError(null);
+
+        try {
+            const record = await axiosInstance.get(`/qa/${sessionId}`); 
+            const qaRecord = record.data.details;
+            
+            const botAnswer = qaRecord.answer || qaRecord.manager_answer;
+            const botSource = qaRecord.source || 'N/A'; // Lấy source nếu có
+            
+            const sessionMessages = [
+                BOT_WELCOME_MESSAGE,
+                { 
+                    id: `${sessionId}-q`, 
+                    text: qaRecord.question, 
+                    sender: 'user' 
+                },
+                { 
+                    id: sessionId,
+                    text: botAnswer, 
+                    sender: 'bot',
+                    feedback: qaRecord.feedback, 
+                    source: botSource 
+                }
+            ];
+            setMessages(sessionMessages);
+
+        } catch (error) {
+            setMessages([BOT_WELCOME_MESSAGE]);
+            console.error("Failed to load chat session:", error);
+            setFetchError("Không thể tải lịch sử trò chuyện này.");
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
 
     useEffect(() => { 
-        if (activeChatId === undefined) return; 
-
-        if (activeChatId === null) {
-            setMessages([BOT_WELCOME_MESSAGE]);
-            setIsBotAnswered(false); 
-        } else {
-            setIsLoading(true);
-            const chatTitle = history.find(c => c.id === activeChatId)?.title || 'Cuộc trò chuyện mới';
-            
-            setTimeout(() => {
-                const simulatedMessages = [
-                    BOT_WELCOME_MESSAGE,
-                    { id: 103, text: `Câu hỏi mẫu: ${chatTitle}`, sender: 'user' },
-                    { id: 104, text: `Câu trả lời của bot cho câu hỏi: ${chatTitle}.`, sender: 'bot' }
-                ];
-                setMessages(simulatedMessages);
-                setIsLoading(false);
-                setIsBotAnswered(true); 
-            }, 500);
+        if (activeChatId !== undefined) {
+            setInput('');
+            loadChatSession(activeChatId);
         }
-    }, [activeChatId, history]);
+    }, [activeChatId, loadChatSession]);
 
 
     useEffect(() => { 
       scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages]);
-  
+    }, [messages, isLoading]);
+    
+    // Gửi tin nhắn mới (Tích hợp RAG API)
     const handleSend = async () => {
-      if (input.trim() === '' || isBotAnswered) return; 
-      
-      const userMessage = { id: Date.now(), text: input, sender: 'user' };
+        if (input.trim() === '' || isLoading) return; 
 
-      setMessages(prev => [...prev, userMessage]);
-      setInput('');
-      setIsLoading(true);
+        const question = input.trim();
+        const userMessage = { id: Date.now(), text: question, sender: 'user' };
 
-      setTimeout(() => {
-        const botResponse = {
-          id: Date.now() + 1,
-          text: `Đây là câu trả lời cho câu hỏi "${userMessage.text}". Thông tin được trích xuất từ nguồn A và nguồn B.`,
-          sender: 'bot',
-          source: 'Quy định học vụ năm 2025, trang 5.'
-        };
-        setMessages(prev => [...prev, botResponse]);
-        setIsLoading(false);
-        setIsBotAnswered(true); 
+        setMessages(prev => [...prev, userMessage]);
+        setInput('');
+        setIsLoading(true);
 
-        if (activeChatId === null) {
-            const newChatId = 'chat-new-' + Date.now();
-            setActiveChatId(newChatId); 
+        const timer = setTimeout(() => {
+            setShowLoadingIndicator(true);
+        }, 300);
+
+        try {
+            const result = await sendQuery(question); 
+
+            let botAnswerText;
+            let newQaRecordId = null;
+            if (result && result.answer && result.question_id) {
+                botAnswerText = result.answer;
+                newQaRecordId = result.question_id; 
+            } else {
+                throw new Error("Invalid response format from bot (missing question_id or answer).");
+            }
+            
+            // Format câu trả lời
+            const botResponse = {
+                id: newQaRecordId, 
+                text: botAnswerText, 
+                sender: 'bot',
+                source: 'N/A', 
+                qa_record_id: newQaRecordId, 
+                feedback: null
+            };
+            
+            setMessages(prev => [...prev, botResponse]);
+            
+            if (activeChatId === null && newQaRecordId !== null) {
+                setActiveChatId(newQaRecordId); 
+                setReloadHistoryKey(Date.now());
+            }
+
+        } catch (error) {
+            console.error("Error sending query:", error);
+            
+            let errorMessage = error.message;
+            if (error.response && error.response.data && error.response.data.message) {
+                 errorMessage = error.response.data.message;
+            }
+
+            setMessages(prev => [...prev, { 
+                id: Date.now() + 1, 
+                text: `Lỗi: Không thể kết nối hoặc xử lý câu hỏi. (${errorMessage || 'Lỗi không xác định'})`, 
+                sender: 'bot' 
+            }]);
+        } finally {
+            clearTimeout(timer);
+            setShowLoadingIndicator(false);
+            setIsLoading(false);
         }
-
-      }, 1500);
     };
-  
-    const handleFeedback = (messageId, feedbackType) => {
-        console.log(`Feedback cho tin nhắn ${messageId}: ${feedbackType}`);
+    
+    // Gửi Feedback
+    const handleFeedback = async (qa_record_id, feedbackType) => {
+        if (isLoading) return;
+        try {
+            await sendFeedback(qa_record_id, feedbackType);
+            
+            setMessages(prevMessages => 
+                prevMessages.map(msg => 
+                    msg.id === qa_record_id ? { ...msg, feedback: feedbackType } : msg
+                )
+            );
+
+        } catch (error) {
+            setFetchError("Không thể gửi phản hồi. Vui lòng kiểm tra kết nối.");
+        }
     };
     
     const currentChatTitle = useMemo(() => { 
-        const chat = history.find(c => c.id === activeChatId);
-        if (chat) return chat.title;
-        if (activeChatId === null || (activeChatId && typeof activeChatId === 'string' && activeChatId.startsWith('chat-new-'))) return 'Trò chuyện mới';
-        return 'Đang tải...';
-    }, [activeChatId, history]);
+        if (activeChatId === null) return 'Trò chuyện mới';
+        if (isLoading) return '...';
+        const initialUserMsg = messages.find(msg => msg.id === `${activeChatId}-q`);
+        return initialUserMsg ? initialUserMsg.text : ' ';
+    }, [activeChatId, messages, isLoading]);
+
 
     if (isLoadingUser || !isAuthenticated || !user) {
         return null; 
     }
     
     const currentUser = user;
-    const isInputDisabled = isLoading || isBotAnswered; 
+    const isViewingHistory = activeChatId !== null; // Là true nếu đang xem lịch sử
+    const isInputDisabled = isLoading || isViewingHistory; // Bị khóa nếu đang loading HOẶC đang xem lịch sử
+    const userAvatarLetter = currentUser.name ? currentUser.name[0] : '?';
 
     return (
-      <Box sx={{ 
+      <Box 
+        ref={chatContentRef}
+        sx={{ 
             flexGrow: 1, 
             display: 'flex', 
             flexDirection: 'column', 
@@ -155,6 +237,7 @@ const ChatPage = () => {
           pt: { xs: 1.5, md: 8 },
           pb: 4 
         }}>
+            {fetchError && <Alert severity="error" sx={{ mb: 2 }}>{fetchError}</Alert>}
           {messages.map((msg) => (
             <Stack
               key={msg.id}
@@ -184,18 +267,25 @@ const ChatPage = () => {
                   whiteSpace: 'pre-wrap'
                 }}
               >
-                <Typography variant="body1" sx={{ wordBreak: 'break-word' }}>{msg.text}</Typography>
-                {msg.sender === 'bot' && msg.source && (
-                  <Typography variant="caption" sx={{ mt: 1, display: 'block', color: 'text.secondary', opacity: 0.7 }}>
-                    Nguồn: {msg.source}
-                  </Typography>
-                )}
-                {msg.sender === 'bot' && msg.id > 1 && (
+                <Typography variant="body1">{msg.text}</Typography>
+
+                                
+                {msg.sender === 'bot' && msg.qa_record_id && (
                   <Box sx={{ mt: 1, display: 'flex', gap: 1 }}>
-                    <IconButton size="small" onClick={() => handleFeedback(msg.id, 'like')} sx={{ color: 'text.secondary' }}>
+                    <IconButton 
+                        size="small" 
+                        onClick={() => handleFeedback(msg.qa_record_id, 'Like')} 
+                        sx={{ color: msg.feedback === 'Like' ? 'success.main' : 'text.secondary' }}
+                        disabled={msg.feedback !== null}
+                    >
                       <ThumbUpOutlinedIcon fontSize="inherit" />
                     </IconButton>
-                    <IconButton size="small" onClick={() => handleFeedback(msg.id, 'dislike')} sx={{ color: 'text.secondary' }}>
+                    <IconButton 
+                        size="small" 
+                        onClick={() => handleFeedback(msg.qa_record_id, 'Dislike')} 
+                        sx={{ color: msg.feedback === 'Dislike' ? 'error.main' : 'text.secondary' }}
+                        disabled={msg.feedback !== null}
+                    >
                       <ThumbDownOutlinedIcon fontSize="inherit" />
                     </IconButton>
                   </Box>
@@ -204,12 +294,51 @@ const ChatPage = () => {
 
               {msg.sender === 'user' && (
                 <Avatar sx={{ bgcolor: 'secondary.main', width: 38, height: 38, fontWeight: 700 }}>
-                  {currentUser.avatar}
+                  {userAvatarLetter}
                 </Avatar>
               )}
             </Stack>
           ))}
-          {isLoading && <CircularProgress sx={{ display: 'block', mx: 'auto', my: 2 }} />}
+            {showLoadingIndicator && (
+            <Stack 
+                direction="row" 
+                spacing={2} 
+                alignItems="flex-start" 
+                sx={{ 
+                mb: 3, 
+                mr: 'auto',
+                maxWidth: '75%',
+                px: 1
+                }}
+            >
+                {/* Avatar Bot */}
+                <Avatar sx={{ bgcolor: 'primary.main', width: 38, height: 38 }}>
+                <SchoolIcon fontSize="small" />
+                </Avatar>
+
+                {/* ChatGPT-like typing bubble */}
+                <Box
+                sx={{
+                    p: 2,
+                    pl: 2.5,
+                    pr: 2.5,
+                    borderRadius: 3,
+                    bgcolor: '#ffffff',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    border: '1px solid #e9e9e9',
+                }}
+                >
+                <Box className="typing-dots-container">
+                    <span className="typing-dot"></span>
+                    <span className="typing-dot"></span>
+                    <span className="typing-dot"></span>
+                </Box>
+                </Box>
+            </Stack>
+            )}
+
           <div ref={scrollRef} />
         </Box>
 
@@ -230,8 +359,8 @@ const ChatPage = () => {
           <Box sx={{ width: '100%', maxWidth: '850px', display: 'flex', alignItems: 'center' }}>
             <TextField
               fullWidth
-              placeholder={isInputDisabled ? "Vui lòng tạo cuộc trò chuyện mới để hỏi câu hỏi khác." : "Nhập câu hỏi của bạn..."}
-              value={input}
+                placeholder={isViewingHistory ? "Bạn đang xem lịch sử trò chuyện" : "Nhập câu hỏi của bạn..."} // Cập nhật placeholder              
+                value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && !isInputDisabled && handleSend()}
               sx={{
@@ -250,8 +379,8 @@ const ChatPage = () => {
                 borderRadius: '15px',
                 minWidth: '56px',
                 height: '56px',
-                 background: 'linear-gradient(135deg, #1976d2 30%, #42a5f5 90%)',
-                 boxShadow: '0 2px 6px rgba(25, 118, 210, 0.4)',
+                  background: 'linear-gradient(135deg, #1976d2 30%, #42a5f5 90%)',
+                  boxShadow: '0 2px 6px rgba(25, 118, 210, 0.4)',
               }}
               disabled={isInputDisabled || input.trim() === ''}
             >
@@ -260,7 +389,7 @@ const ChatPage = () => {
           </Box>
         </Box>
       </Box>
-  );
+    );
 };
 
-export default ChatPage;
+export default ChatPage;    

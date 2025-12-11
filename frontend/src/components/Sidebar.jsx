@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Box, Button, Typography, IconButton, Avatar, Stack, Divider, useTheme } from '@mui/material';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { Box, Button, Typography, IconButton, Avatar, Stack, Divider, useTheme, CircularProgress } from '@mui/material';
 import SchoolIcon from '@mui/icons-material/School';
 import CloseIcon from '@mui/icons-material/Close'; 
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
@@ -8,22 +8,66 @@ import HelpOutlineOutlinedIcon from '@mui/icons-material/HelpOutlineOutlined';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { NavLink as RouterNavLink, useNavigate } from 'react-router-dom'; 
 import useUserAuth from '../hooks/useUserAuth';
-
-const initialHistory = [
-  { id: 'chat-1', title: 'Hỏi về quy chế học vụ', date: '2025-10-01' },
-  { id: 'chat-2', title: 'Yêu cầu phúc khảo điểm', date: '2025-10-05' },
-  { id: 'chat-3', title: 'Thông tin về học bổng', date: '2025-10-10' },
-];
+import { getChatHistory } from '../api/chatApi'; 
 
 const sidebarWidth = '280px';
 
-const Sidebar = ({ isSidebarOpen, toggleSidebar, activeChatId, setActiveChatId }) => {
+const Sidebar = ({ isSidebarOpen, toggleSidebar, activeChatId, setActiveChatId, reloadHistoryKey }) => { 
     const theme = useTheme();
     const navigate = useNavigate();
     const { user, handleLogout } = useUserAuth();
 
-    const [history] = useState(initialHistory); 
+    const [history, setHistory] = useState([]); 
+    const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+    const [fetchError, setFetchError] = useState(null); 
+    const [isInitialLoad, setIsInitialLoad] = useState(true); 
 
+    // Hàm tải lịch sử chat
+    const loadHistory = useCallback(async () => {
+        if (!user || !user._id) {
+            console.log("Sidebar: Skipping history load - User ID not available.");
+            setHistory([]);
+            return;
+        }
+        setIsLoadingHistory(true);
+        setFetchError(null);
+        console.log("Sidebar: User ID is valid, attempting to load history...");
+
+        try {
+            const records = await getChatHistory(1, 100); 
+            console.log("Sidebar: API call succeeded. Records received count:", records ? records.length : 0);
+            
+            const formattedHistory = records.map(r => ({
+                id: r._id, 
+                title: r.question, 
+                date: r.created_at, 
+            }));
+            setHistory(formattedHistory);
+
+            if (isInitialLoad) { 
+                if (formattedHistory.length > 0) {
+                    setActiveChatId(formattedHistory[0].id);
+                } else {
+                    setActiveChatId(null); 
+                }
+                setIsInitialLoad(false); 
+            } else if (activeChatId === null && formattedHistory.length > 0) {
+                console.log("Sidebar: New chat mode retained.");
+            }
+
+        } catch (err) {
+            console.error("Failed to load chat history:", err);
+            setFetchError("Không thể tải lịch sử trò chuyện.");
+        } finally {
+            setIsLoadingHistory(false);
+        }
+    }, [user, setActiveChatId, isInitialLoad]); 
+
+    useEffect(() => {
+        if (user && user._id) loadHistory(); 
+    }, [user, loadHistory, reloadHistoryKey]); 
+
+    
     const handleNewChat = () => {
         if (window.location.pathname !== '/') {
             navigate('/'); 
@@ -42,6 +86,7 @@ const Sidebar = ({ isSidebarOpen, toggleSidebar, activeChatId, setActiveChatId }
         }
 
         if (activeChatId !== chatId) {
+            const selectedChat = history.find(chat => chat.id === chatId);
             setActiveChatId(chatId); 
         }
         
@@ -107,9 +152,9 @@ const Sidebar = ({ isSidebarOpen, toggleSidebar, activeChatId, setActiveChatId }
                         borderRadius: '10px',
                         height: '50px',
                         '&:hover': { 
-                            borderColor: 'white', 
-                            bgcolor: activeChatId === null ? 'white' : 'rgba(255,255,255,0.1)' 
-                        } 
+                            borderColor: 'white', 
+                            bgcolor: activeChatId === null ? 'white' : 'rgba(255,255,255,0.1)' 
+                        } 
                     }}
                 >
                     Cuộc trò chuyện mới
@@ -151,7 +196,22 @@ const Sidebar = ({ isSidebarOpen, toggleSidebar, activeChatId, setActiveChatId }
                     Lịch sử
                 </Typography>
                 <Box>
-                    {history.map((chat) => (
+                    {fetchError ? ( 
+                        <Typography variant="body2" sx={{ color: theme.palette.error.light, p: 1 }}>
+                            {fetchError}
+                        </Typography>
+                    ) : isLoadingHistory ? ( 
+                        <Stack direction="row" alignItems="center" spacing={1} sx={{ p: 1 }}>
+                            <CircularProgress size={16} sx={{ color: 'rgba(255,255,255,0.7)' }} />
+                            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)' }}>
+                                Đang tải lịch sử...
+                            </Typography>
+                        </Stack>
+                    ) : history.length === 0 ? (
+                         <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)', p: 1 }}>
+                            Không có cuộc trò chuyện nào.
+                        </Typography>
+                    ) : history.map((chat) => (
                         <Button 
                             key={chat.id}
                             fullWidth
@@ -160,10 +220,10 @@ const Sidebar = ({ isSidebarOpen, toggleSidebar, activeChatId, setActiveChatId }
                             sx={{ 
                                 justifyContent: 'flex-start', 
                                 mb: 0.5,
-                                color: 'rgba(255,255,255,0.8)',
-                                bgcolor: chat.id === activeChatId ? theme.palette.primary.main : 'transparent', // Nền active màu primary.main
+                                color: chat.id === activeChatId ? theme.palette.primary.dark : 'rgba(255,255,255,0.8)',
+                                bgcolor: chat.id === activeChatId ? 'white' : 'transparent', 
                                 borderRadius: '10px',
-                                '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' },
+                                '&:hover': { bgcolor: chat.id === activeChatId ? 'white' : 'rgba(255,255,255,0.1)' },
                                 whiteSpace: 'nowrap',
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',

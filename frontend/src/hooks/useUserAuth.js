@@ -21,6 +21,7 @@ const useUserAuth = () => {
                 const userData = await getCurrentUser();
 
                 setUser({
+                    _id: userData._id,
                     name: userData.name,
                     studentId: userData.sub, 
                     department: userData.faculty, 

@@ -6,11 +6,11 @@ import MenuIcon from '@mui/icons-material/Menu';
 import IconButton from '@mui/material/IconButton';
 
 const sidebarWidth = '280px';
-const initialChatId = 'chat-1';
 
 const UserLayout = () => {
+    const [activeChatId, setActiveChatId] = useState(null); 
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-    const [activeChatId, setActiveChatId] = useState(initialChatId); 
+    const [reloadHistoryKey, setReloadHistoryKey] = useState(Date.now()); 
 
     const toggleSidebar = () => {
         setIsSidebarOpen(prev => !prev);
@@ -20,7 +20,9 @@ const UserLayout = () => {
         isSidebarOpen, 
         toggleSidebar,
         activeChatId,
-        setActiveChatId
+        setActiveChatId,
+        reloadHistoryKey, 
+        setReloadHistoryKey 
     };
 
     return (
@@ -36,6 +38,7 @@ const UserLayout = () => {
                 toggleSidebar={toggleSidebar}
                 activeChatId={activeChatId}
                 setActiveChatId={setActiveChatId} 
+                reloadHistoryKey={reloadHistoryKey} 
             />
 
             {isSidebarOpen && (
