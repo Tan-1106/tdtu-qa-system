@@ -57,11 +57,13 @@ const DocumentManagementPage = () => {
     const [searchKeyword, setSearchKeyword] = useState(''); 
     const [filterDocType, setFilterDocType] = useState('');
     const [filterFaculty, setFilterFaculty] = useState('');
+    const [sortOrder, setSortOrder] = useState('newest');
     
     // REF LƯU TRỮ GIÁ TRỊ LỌC HIỆN TẠI 
     const searchKeywordRef = useRef(''); 
     const filterDocTypeRef = useRef(''); 
     const filterFacultyRef = useRef(''); 
+    const sortOrderRef = useRef('newest');
     
     // State tùy chọn filter
     const [availableFaculties, setAvailableFaculties] = useState([]);
@@ -98,7 +100,10 @@ const DocumentManagementPage = () => {
         filterFacultyRef.current = filterFaculty;
     }, [filterFaculty]);
 
-    // Cleanup Object URL khi đóng Modal
+    useEffect(() => {
+        sortOrderRef.current = sortOrder;
+    }, [sortOrder]);
+
     useEffect(() => {
         if (!isViewModalOpen && viewDocumentUrl) {
             URL.revokeObjectURL(viewDocumentUrl);
@@ -121,7 +126,7 @@ const DocumentManagementPage = () => {
 
                 const responseDepartments = await getAllDepartments();
                 if (responseDepartments && Array.isArray(responseDepartments)) {
-                    setAvailableDepartments(uniqueDepartments.filter(d => d));
+                    setAvailableDepartments(responseDepartments.filter(d => d));
                 } else {
                     setAvailableDepartments([]);
                 }
@@ -135,8 +140,7 @@ const DocumentManagementPage = () => {
         }
     };
     
-    // Hàm gọi API chính để tải tài liệu
-    const fetchDocuments = useCallback(async (currentPage, limit, docType, faculty, department, keyword, isInitialLoad) => {
+    const fetchDocuments = useCallback(async (currentPage, limit, docType, faculty, department, keyword, currentSortOrder, isInitialLoad) => {
         if (!currentUser) return;
 
         if (isInitialLoad) {
@@ -178,7 +182,22 @@ const DocumentManagementPage = () => {
                 return;
             }
 
-            setDocuments(data.documents.map(d => ({
+            let allDocuments = data.documents || [];
+            if (currentSortOrder) {
+                allDocuments.sort((a, b) => {
+                    const dateA = new Date(a.uploaded_at).getTime();
+                    const dateB = new Date(b.uploaded_at).getTime();
+                    
+                    if (currentSortOrder === 'newest') {
+                        return dateB - dateA; 
+                    } else if (currentSortOrder === 'oldest') {
+                        return dateA - dateB; 
+                    }
+                    return 0;
+                });
+            }
+
+            setDocuments(allDocuments.map(d => ({
                 ...d,
                 id: d._id || d.id, 
             })));
@@ -200,6 +219,7 @@ const DocumentManagementPage = () => {
         const currentSearchKeyword = searchKeywordRef.current;
         const currentDocType = filterDocTypeRef.current;
         const currentScope = filterFacultyRef.current;
+        const currentSortOrder = sortOrderRef.current;
         
         const targetPage = (resetPage || forcePageReset) ? 0 : page;
         
@@ -222,6 +242,7 @@ const DocumentManagementPage = () => {
             currentFacultyFilter,      
             currentDepartmentFilter,   
             currentSearchKeyword,
+            currentSortOrder,
             isInitialLoad
         );
         
@@ -246,7 +267,7 @@ const DocumentManagementPage = () => {
         if (!isInitialLoading && currentUser) {
             loadDocumentsWithFilters(true, false, true); 
         }
-    }, [filterDocType, filterFaculty, rowsPerPage, currentUser]); 
+    }, [filterDocType, filterFaculty, sortOrder, rowsPerPage, currentUser]); 
 
     
     // Handle Pagination Changes: Chỉ thay đổi trang
@@ -431,10 +452,9 @@ const DocumentManagementPage = () => {
                                     value={filterFaculty}
                                     displayEmpty
                                     onChange={(e) => handleFilterChange(setFilterFaculty, e.target.value)}
-                                    renderValue={(selected) => (selected ? selected : <em>Tất cả</em>)} 
+                                    renderValue={(selected) => (selected ? selected : <em>Tài liệu chung</em>)} 
                                 >
-                                    <MenuItem value=""><em>Tất cả</em></MenuItem>
-                                     <MenuItem value="Tài liệu chung">Tài liệu chung</MenuItem>
+                                    <MenuItem value={<em>Tài liệu chung</em>}>Tài liệu chung</MenuItem>
                                     {availableDepartments.length > 0 && <MenuItem disabled>--- Phòng Ban ---</MenuItem>}
                                     {availableDepartments.map((dept) => (
                                         <MenuItem key={dept} value={dept}>{dept}</MenuItem>
@@ -447,6 +467,25 @@ const DocumentManagementPage = () => {
                             </FormControl>
                         </Grid>
                     )}
+                    {/* 4. Sắp xếp theo Ngày tải */}
+                    <Grid item xs={12} sm={6} md={2.5}>
+                        <Typography variant="caption" display="block" sx={{ color: 'text.secondary', mb: 0.5 }}>
+                            Ngày tải
+                        </Typography>
+                        <FormControl fullWidth size="small" variant="outlined">
+                            <Select
+                                value={sortOrder}
+                                displayEmpty
+                                onChange={(e) => handleFilterChange(setSortOrder, e.target.value)}
+                                renderValue={(selected) => (selected ? 
+                                    (selected === 'newest' ? 'Mới nhất' : 'Cũ nhất') 
+                                    : <em>Mới nhất</em>)}
+                            >
+                                <MenuItem value="newest">Mới nhất đến cũ nhất</MenuItem>
+                                <MenuItem value="oldest">Cũ nhất đến mới nhất</MenuItem>
+                            </Select>
+                        </FormControl>
+                    </Grid>
                     
                 </Grid>
             </Paper>

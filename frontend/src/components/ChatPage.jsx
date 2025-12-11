@@ -53,7 +53,7 @@ const ChatPage = () => {
             const qaRecord = record.data.details;
             
             const botAnswer = qaRecord.answer || qaRecord.manager_answer;
-            const botSource = qaRecord.source || 'N/A'; // Lấy source nếu có
+            const botSource = qaRecord.source || 'N/A'; 
             
             const sessionMessages = [
                 BOT_WELCOME_MESSAGE,
@@ -188,8 +188,8 @@ const ChatPage = () => {
     }
     
     const currentUser = user;
-    const isViewingHistory = activeChatId !== null; // Là true nếu đang xem lịch sử
-    const isInputDisabled = isLoading || isViewingHistory; // Bị khóa nếu đang loading HOẶC đang xem lịch sử
+    const isViewingHistory = activeChatId !== null; 
+    const isInputDisabled = isLoading || isViewingHistory; 
     const userAvatarLetter = currentUser.name ? currentUser.name[0] : '?';
 
     return (
@@ -311,12 +311,10 @@ const ChatPage = () => {
                 px: 1
                 }}
             >
-                {/* Avatar Bot */}
                 <Avatar sx={{ bgcolor: 'primary.main', width: 38, height: 38 }}>
-                <SchoolIcon fontSize="small" />
+                    <SchoolIcon fontSize="small" />
                 </Avatar>
 
-                {/* ChatGPT-like typing bubble */}
                 <Box
                 sx={{
                     p: 2,

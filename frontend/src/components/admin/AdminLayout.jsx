@@ -47,7 +47,7 @@ const AdminLayout = () => {
     const isFacultyManager = currentUser?.is_faculty_manager;
 
     const sidebarTitle = isAdmin ? "TDTU Admin" : isFacultyManager ? "TDTU Manager" : "Quản trị";
-    const departmentName = isFacultyManager ? currentUser?.department : null;
+    const departmentName = !isAdmin ? (currentUser?.faculty || currentUser?.department) : null;
 
     const menuItems = [
         { text: "Thống kê & Phản hồi", to: "/admin/dashboard", icon: <FeedbackIcon /> },

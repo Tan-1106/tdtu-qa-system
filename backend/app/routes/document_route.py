@@ -108,9 +108,7 @@ async def get_faculty_documents(
     
 # Get all existing departments
 @router.get("/departments")
-async def get_all_departments(
-    require_admin = Depends(auth_service.require_role([Role.ADMIN.value]))
-):
+async def get_all_departments():
     departments = await document_controller.get_all_departments()
     return api_response(
         status_code=200,
