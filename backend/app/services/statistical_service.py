@@ -11,7 +11,7 @@ from app.services import embedding_service, llm_service, qa_service
 # Common question statistics
 async def popular_questions_statistics(period_type: str, n: int):
     # Get QA records by period type
-    qa_records = jsonable_encoder(await QADao().get_qa_records_by_period_type(period_type))
+    start_date, end_date, qa_records = jsonable_encoder(await QADao().get_qa_records_by_period_type(period_type))
     questions = [record["question"] for record in qa_records]
     
     # Get embeddings for questions
@@ -46,7 +46,13 @@ async def popular_questions_statistics(period_type: str, n: int):
         general_question = await llm_service.get_general_question(api_key, data["questions"])
         popular_questions.append({
             "question": general_question,
-            "count": data["count"],
+            "summary": {
+                "faculty_scope": None,
+                "start_date": start_date,
+                "end_date": end_date,
+                "count": data["count"],
+            },
+            "is_display": False
         })
         
     # Get answer for each popular question
@@ -59,10 +65,36 @@ async def popular_questions_statistics(period_type: str, n: int):
     return jsonable_encoder(result)
 
 
-# # Get popular questions statistics records
-async def get_popular_questions():
-    result = await StatisticalDao().get_popular_questions()
-    return jsonable_encoder(result)
+# Toggle popular question display status
+async def toggle_popular_question_display(question_id: str):
+    updated_question = await StatisticalDao().toggle_popular_question_display(question_id)
+    return jsonable_encoder(updated_question)
+
+
+# Get popular questions statistics records
+async def get_popular_questions(page: int, limit: int, is_display: bool, faculty: str = None):
+    skip = (page - 1) * limit
+    total = await StatisticalDao().count_popular_questions(is_display, faculty)
+    total_pages = (total + limit - 1) // limit
+    result = await StatisticalDao().get_popular_questions(skip, limit, is_display, faculty)
+    return {
+        "popular_questions": jsonable_encoder(result),
+        "total": total,
+        "total_pages": total_pages,
+        "current_page": page
+    }
+    
+    
+# Assign faculty scope to popular question
+async def assign_faculty_scope_to_popular_question(question_id: str, faculty: str):
+    updated_question = await StatisticalDao().assign_faculty_scope_to_popular_question(question_id, faculty)
+    return jsonable_encoder(updated_question)
+
+
+# Update popular question
+async def update_popular_question(question_id: str, update_data: dict):
+    updated_question = await StatisticalDao().update_popular_question(question_id, update_data)
+    return jsonable_encoder(updated_question)
     
 
 # --- SUPPORTING FUNCTIONS ---
@@ -83,3 +115,9 @@ def cluster_embeddings(embeddings):
 async def questions_statistics(period_type: str):
     count = await QADao().questions_statistics(period_type)
     return count
+
+
+# Get popular question by ID
+async def get_popular_question_by_id(question_id: str):
+    result = await StatisticalDao().get_popular_question_by_id(question_id)
+    return jsonable_encoder(result)

@@ -1,6 +1,7 @@
 from app.utils.basic_information import Role
 from app.utils.api_response import UserError
-from app.services import statistical_service
+from app.services import statistical_service, user_service
+
 
 # Common question statistics
 async def popular_questions_statistics(
@@ -16,8 +17,57 @@ async def popular_questions_statistics(
 
 
 # Get popular questions statistics records
-async def get_popular_questions():
-    result = await statistical_service.get_popular_questions()
+async def get_popular_questions(page: int, limit: int, is_display: bool, current_user: dict):
+    faculty = None
+    if current_user["role"] != Role.ADMIN.value:
+        faculty = current_user["faculty"]
+    
+    if current_user["role"] != Role.ADMIN.value and not current_user["is_faculty_manager"]:
+        is_display = True
+        
+    result = await statistical_service.get_popular_questions(page, limit, is_display, faculty)
+    return result
+
+
+# Toggle popular question display status
+async def toggle_popular_question_display(
+    question_id: str,
+    current_user: dict
+):
+    if current_user["role"] != Role.ADMIN.value and not current_user["is_faculty_manager"]:
+        raise UserError("You do not have permission to access this resource.")
+    
+    question = await statistical_service.get_popular_question_by_id(question_id)
+    if current_user["is_faculty_manager"] and question["summary"]["faculty_scope"] != current_user["faculty"]:
+        raise UserError("You do not have permission to update this question.")
+        
+    result = await statistical_service.toggle_popular_question_display(question_id)
+    return result
+
+
+# Assign faculty scope to popular question
+async def assign_faculty_scope_to_popular_question(question_id: str, faculty: str):
+    faculties = await user_service.get_all_existing_faculties()
+    if faculty not in faculties and faculty is not None:
+        raise UserError("Invalid faculty specified.")
+    
+    result = await statistical_service.assign_faculty_scope_to_popular_question(question_id, faculty)
+    return result
+
+
+# Update popular question
+async def update_popular_question(question_id: str, update_data: dict, current_user: dict):
+    question = await statistical_service.get_popular_question_by_id(question_id)
+    
+    if current_user["role"] != Role.ADMIN.value and not current_user["is_faculty_manager"]:
+        raise UserError("You do not have permission to access this resource.")
+    
+    if current_user["is_faculty_manager"] and question["summary"]["faculty_scope"] != current_user["faculty"]:
+        raise UserError("You do not have permission to update this question.")
+    
+    update_data = { k: v for k, v in update_data.items() if v is not None and v != "" }
+    
+    result = await statistical_service.update_popular_question(question_id, update_data)
     return result
 
 

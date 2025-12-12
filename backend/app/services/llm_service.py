@@ -376,9 +376,11 @@ async def get_general_question(api_key: dict, questions: list[str]) -> str:
     
     Huớng dẫn:
     1. Đọc kỹ tất cả các câu hỏi được cung cấp.
-    2. Xác định chủ đề chung hoặc ý chính mà các câu hỏi này đề cập đến.
-    3. Tạo ra một câu hỏi chung ngắn gọn, rõ ràng, tự nhiên, không trùng lặp, phản ánh đúng ý chính của nhóm câu hỏi.
-    4. Câu hỏi chung phải có ý nghĩa đầy đủ, người đọc không cần xem các câu hỏi gốc vẫn hiểu được.
+    2. Xác định xem các câu hỏi được cung cấp có liên quan đến cùng một chủ đề hay không.
+    3. Nếu các câu hỏi liên quan đến cùng một chủ đề, hãy tổng hợp thông tin từ tất cả các câu hỏi để tạo ra một câu hỏi chung bao quát ý nghĩa và phạm vi của tất cả các câu hỏi con.
+    4. Nếu các câu hỏi không cùng liên quan đến một chủ đề mà có sự khác biệt rõ ràng về nội dung, trải dài trên nhiều khía cạnh khác nhau, hãy lựa chọn 1 chủ đề phổ biến nhất và tạo câu hỏi chung dựa trên chủ đề đó.
+    5. Câu hỏi chung phải ngắn gọn, rõ ràng, tự nhiên và bao quát ý nghĩa của các câu hỏi con.
+    6. Không được tạo ra 1 câu hỏi về quá nhiều chủ đề khác nhau.
     
     Danh sách các câu hỏi:
     {questions}

@@ -177,7 +177,7 @@ class QADao:
         records = []
         async for record in cursor:
             records.append(qa_schema.QARecordSchema(**serializer.qa_session_serialize(record)))
-        return records
+        return start_date, now, records
     
     
     # Count total questions

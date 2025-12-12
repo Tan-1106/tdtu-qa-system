@@ -80,6 +80,8 @@ def qa_session_serialize(qa_session) -> dict:
         "answer": qa_session.get("answer"),
         "feedback": qa_session.get("feedback"),
         "manager_answer": qa_session.get("manager_answer"),
+        "start_date": qa_session.get("start_date").isoformat() if qa_session.get("start_date") else None,
+        "end_date": qa_session.get("end_date").isoformat() if qa_session.get("end_date") else None,
         "created_at": qa_session.get("created_at").isoformat() if qa_session.get("created_at") else None,
         "updated_at": qa_session.get("updated_at").isoformat() if qa_session.get("updated_at") else None
     }
@@ -91,6 +93,8 @@ def popular_question_statistics_serialize(statistics) -> dict:
         "id": str(statistics["_id"]),
         "question": statistics.get("question"),
         "answer": statistics.get("answer"),
-        "count": statistics.get("count", 0),
-        "created_at": statistics.get("created_at").isoformat() if statistics.get("created_at") else None
+        "summary": statistics.get("summary", {}),
+        "is_display": statistics.get("is_display", False),
+        "created_at": statistics.get("created_at").isoformat() if statistics.get("created_at") else None,
+        "updated_at": statistics.get("updated_at").isoformat() if statistics.get("updated_at") else None
     }
