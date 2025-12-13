@@ -13,9 +13,11 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance'; 
 import SchoolIcon from '@mui/icons-material/School'; 
 import ArticleIcon from '@mui/icons-material/Article'; 
+import TextSnippetIcon from '@mui/icons-material/TextSnippet';
 
 import DocumentFormModal from './DocumentFormModal'; 
 import ViewDocumentModal from './ViewDocumentModal'; 
+import DocumentChunksModal from './DocumentChunksModal';
 
 import { 
     getGeneralDocuments, getFacultyDocuments, deleteDocument, 
@@ -79,8 +81,10 @@ const DocumentManagementPage = () => {
     // State Modal
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+    const [isChunksModalOpen, setIsChunksModalOpen] = useState(false);
     const [editingDocument, setEditingDocument] = useState(null);
     const [viewingDocument, setViewingDocument] = useState(null);
+    const [viewingChunksDocument, setViewingChunksDocument] = useState(null); 
     const [viewDocumentUrl, setViewDocumentUrl] = useState(null);
     const [isViewLoading, setIsViewLoading] = useState(false); 
 
@@ -357,6 +361,11 @@ const DocumentManagementPage = () => {
         loadDocumentsWithFilters(true); 
     };
 
+    const handleCloseChunksModal = () => { 
+        setIsChunksModalOpen(false);
+        setViewingChunksDocument(null);
+    };
+
     if (isInitialLoading) { 
         return (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
@@ -365,6 +374,11 @@ const DocumentManagementPage = () => {
             </Box>
         );
     }
+
+    const handleViewChunks = (doc) => {
+        setViewingChunksDocument(doc);
+        setIsChunksModalOpen(true);
+    };
     
     const getScopeLabel = (doc) => {
         if (doc.department) return { label: doc.department, icon: <AccountBalanceIcon fontSize="small" color="primary" />, type: 'Phòng Ban' };
@@ -510,6 +524,12 @@ const DocumentManagementPage = () => {
                 viewDocumentUrl={viewDocumentUrl}
             />
 
+            <DocumentChunksModal
+                open={isChunksModalOpen}
+                onClose={handleCloseChunksModal}
+                document={viewingChunksDocument}
+            />
+
 
             <TableContainer 
                 component={Paper} 
@@ -568,6 +588,11 @@ const DocumentManagementPage = () => {
                                         {new Date(doc.uploaded_at).toLocaleDateString('vi-VN')}
                                     </TableCell>
                                     <TableCell align="right">
+                                        {isAdmin && (
+                                            <IconButton onClick={() => handleViewChunks(doc)} sx={{ color: 'warning.main' }} title="Xem Chunks & Câu hỏi">
+                                                <TextSnippetIcon />
+                                            </IconButton>
+                                        )}
                                         <IconButton onClick={() => handleViewDocument(doc)} sx={{ color: 'success.main' }} title="Xem File PDF">
                                             <VisibilityIcon />
                                         </IconButton>

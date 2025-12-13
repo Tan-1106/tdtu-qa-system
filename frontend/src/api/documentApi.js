@@ -132,3 +132,59 @@ export const getDocumentFileBlob = async (docId) => {
 
 import { getFaculties } from './adminApi';
 export { getFaculties };
+
+// --- APIs CHO DOCUMENT CHUNKS ---
+
+/**
+ * Lấy danh sách document chunks của một tài liệu
+ * @param {string} docId - ID của tài liệu
+ * @param {number} page - Trang hiện tại (bắt đầu từ 1)
+ * @param {number} limit - Số lượng chunk mỗi trang
+ */
+export const getChunksByDocumentId = async (docId, page = 1, limit = 10) => {
+    try {
+        const response = await axiosInstance.get(`/document-chunks/${docId}`, {
+            params: { page, limit }
+        });
+        if (response.data.status_code === 200) {
+            // Cấu trúc response: { document_id, document_chunks: { '0': { ... }, '1': { ... } }, total, total_pages, current_page }
+            return response.data.details;
+        }
+        throw new Error(response.data.message || 'Failed to fetch document chunks.');
+    } catch (error) {
+        throw error;
+    }
+};
+
+/**
+ * Thêm một câu hỏi tiềm năng vào một chunk cụ thể
+ * @param {string} docId - ID tài liệu
+ * @param {number} chunkIndex - Index của chunk
+ * @param {string} question - Nội dung câu hỏi mới
+ */
+export const addPotentialQuestionToChunk = async (docId, chunkIndex, question) => {
+    const response = await axiosInstance.post(
+        `/document-chunks/${docId}/chunks/${chunkIndex}/potential-questions`, 
+        { question }
+    );
+    if (response.data.status_code === 200) {
+        return response.data.details; 
+    }
+    throw new Error(response.data.message || 'Failed to add potential question.');
+};
+
+/**
+ * Xóa một câu hỏi tiềm năng khỏi một chunk cụ thể
+ * @param {string} docId - ID tài liệu
+ * @param {number} chunkIndex - Index của chunk
+ * @param {number} questionIndex - Index của câu hỏi trong mảng potential_questions
+ */
+export const deletePotentialQuestionFromChunk = async (docId, chunkIndex, questionIndex) => {
+    const response = await axiosInstance.delete(
+        `/document-chunks/${docId}/chunks/${chunkIndex}/potential-questions/${questionIndex}`
+    );
+    if (response.data.status_code === 200) {
+        return response.data.message;
+    }
+    throw new Error(response.data.message || 'Failed to delete potential question.');
+};
