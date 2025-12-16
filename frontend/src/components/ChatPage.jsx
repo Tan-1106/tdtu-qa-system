@@ -54,7 +54,8 @@ const ChatPage = () => {
             const record = await axiosInstance.get(`/qa/${sessionId}`); 
             const qaRecord = record.data.details;
             
-            const botAnswer = qaRecord.answer || qaRecord.manager_answer;
+            const originalBotAnswer = qaRecord.answer; 
+            const managerAnswer = qaRecord.manager_answer;
             const botSource = qaRecord.source || 'N/A'; 
             
             const sessionMessages = [
@@ -67,12 +68,27 @@ const ChatPage = () => {
                 { 
                     id: sessionId,
                     qa_record_id: sessionId,
-                    text: botAnswer, 
+                    text: originalBotAnswer, 
                     sender: 'bot',
                     feedback: qaRecord.feedback, 
                     source: botSource 
                 }
             ];
+
+            if (managerAnswer && managerAnswer.trim() !== '') {
+                const isDifferent = managerAnswer.trim() !== originalBotAnswer.trim();
+                const isDislikeAnswered = qaRecord.feedback === 'Dislike';
+
+                if (isDifferent || isDislikeAnswered) {
+                    sessionMessages.push({
+                        id: `${sessionId}-manager-reply`,
+                        text: managerAnswer, 
+                        sender: 'manager',
+                        qa_record_id: sessionId,
+                        createdAt: Date.now() 
+                    });
+                }
+            }
             setMessages(sessionMessages);
 
         } catch (error) {
@@ -97,7 +113,6 @@ const ChatPage = () => {
       scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages, isLoading]);
     
-    // Gửi tin nhắn mới (Tích hợp RAG API)
     const handleSend = async () => {
         if (input.trim() === '' || isLoading) return; 
 
@@ -240,71 +255,97 @@ const ChatPage = () => {
           pt: { xs: 1.5, md: 8 },
           pb: 4 
         }}>
-            {fetchError && <Alert severity="error" sx={{ mb: 2 }}>{fetchError}</Alert>}
-          {messages.map((msg) => (
-            <Stack
-              key={msg.id}
-              direction="row"
-              spacing={2}
-              sx={{
-                mb: 3, 
-                justifyContent: msg.sender === 'user' ? 'flex-end' : 'flex-start',
-                alignItems: 'flex-start',
-                mx: 'auto' 
-              }}
-            >
-              {msg.sender === 'bot' && (
-                <Avatar sx={{ bgcolor: 'primary.main', width: 38, height: 38 }}>
-                  <SchoolIcon fontSize="small" />
-                </Avatar>
-              )}
+          {fetchError && <Alert severity="error" sx={{ mb: 2 }}>{fetchError}</Alert>}
+          {messages.map((msg) => {
+                const isUser = msg.sender === 'user';
+                const isBot = msg.sender === 'bot';
+                const isManager = msg.sender === 'manager'; 
+                
+                const justifyContent = isUser ? 'flex-end' : 'flex-start';
 
-              <Box
-                sx={{
-                  p: 2,
-                  borderRadius: 2,
-                  maxWidth: { xs: '90%', md: '75%' },
-                  bgcolor: msg.sender === 'user' ? 'primary.main' : 'white', 
-                  color: msg.sender === 'user' ? 'white' : 'text.primary',
-                  boxShadow: msg.sender === 'bot' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none',
-                  whiteSpace: 'pre-wrap'
-                }}
-              >
-                <Typography variant="body1">{msg.text}</Typography>
+                const boxBgColor = isUser ? 'primary.main' : (isManager ? '#fff3e0' : 'white');
+                const boxColor = isUser ? 'white' : 'text.primary';
+                const boxShadow = (isBot || isManager) ? '0 2px 4px rgba(0,0,0,0.05)' : 'none';
+                const borderLeft = isManager ? `3px solid ${theme.palette.error.main}` : 'none'; 
 
-                                
-                {msg.sender === 'bot' && msg.qa_record_id && (
-                  <Box sx={{ mt: 1, display: 'flex', gap: 1 }}>
-                    <IconButton 
-                        size="small" 
-                        onClick={() => handleFeedback(msg.qa_record_id, 'Like')} 
-                        sx={{ color: msg.feedback === 'Like' ? 'success.main' : 'text.secondary' }}
+                return (
+                    <Stack
+                        key={msg.id}
+                        direction="row"
+                        spacing={2}
+                        sx={{
+                            mb: 3, 
+                            justifyContent: justifyContent,
+                            alignItems: 'flex-start',
+                            mx: 'auto' 
+                        }}
                     >
-                        {msg.feedback === 'Like' 
-                            ? <ThumbUpIcon fontSize="inherit" /> 
-                            : <ThumbUpOutlinedIcon fontSize="inherit" />}
-                    </IconButton>
-                    <IconButton 
-                        size="small" 
-                        onClick={() => handleFeedback(msg.qa_record_id, 'Dislike')} 
-                        sx={{ color: msg.feedback === 'Dislike' ? 'error.main' : 'text.secondary' }}
-                    >
-                        {msg.feedback === 'Dislike' 
-                            ? <ThumbDownIcon fontSize="inherit" /> 
-                            : <ThumbDownOutlinedIcon fontSize="inherit" />}
-                    </IconButton>
-                  </Box>
-                )}
-              </Box>
+                        {(isBot || isManager) && (
+                            <Avatar sx={{ 
+                                bgcolor: isManager ? 'error.main' : 'primary.main', 
+                                width: 38, 
+                                height: 38 
+                            }}>
+                                {isManager ? 'M' : <SchoolIcon fontSize="small" />} 
+                            </Avatar>
+                        )}
 
-              {msg.sender === 'user' && (
-                <Avatar sx={{ bgcolor: 'secondary.main', width: 38, height: 38, fontWeight: 700 }}>
-                  {userAvatarLetter}
-                </Avatar>
-              )}
-            </Stack>
-          ))}
-            {showLoadingIndicator && (
+                        <Box
+                            sx={{
+                                p: 2,
+                                borderRadius: 2,
+                                maxWidth: { xs: '90%', md: '75%' },
+                                bgcolor: boxBgColor, 
+                                color: boxColor,
+                                boxShadow: boxShadow,
+                                borderLeft: borderLeft, 
+                                whiteSpace: 'pre-wrap'
+                            }}
+                        >
+                            {isManager && (
+                                <Typography 
+                                    variant="caption" 
+                                    sx={{ fontWeight: 700, color: theme.palette.error.main, display: 'block', mb: 0.5 }}
+                                >
+                                    [Phản hồi từ Quản lý/Admin]
+                                </Typography>
+                            )}
+                            
+                            <Typography variant="body1">{msg.text}</Typography>
+
+                            {isBot && msg.qa_record_id && (
+                                <Box sx={{ mt: 1, display: 'flex', gap: 1 }}>
+                                    <IconButton 
+                                        size="small" 
+                                        onClick={() => handleFeedback(msg.qa_record_id, 'Like')} 
+                                        sx={{ color: msg.feedback === 'Like' ? 'success.main' : 'text.secondary' }}
+                                    >
+                                        {msg.feedback === 'Like' 
+                                            ? <ThumbUpIcon fontSize="inherit" /> 
+                                            : <ThumbUpOutlinedIcon fontSize="inherit" />}
+                                    </IconButton>
+                                    <IconButton 
+                                        size="small" 
+                                        onClick={() => handleFeedback(msg.qa_record_id, 'Dislike')} 
+                                        sx={{ color: msg.feedback === 'Dislike' ? 'error.main' : 'text.secondary' }}
+                                    >
+                                        {msg.feedback === 'Dislike' 
+                                            ? <ThumbDownIcon fontSize="inherit" /> 
+                                            : <ThumbDownOutlinedIcon fontSize="inherit" />}
+                                    </IconButton>
+                                </Box>
+                            )}
+                        </Box>
+
+                        {isUser && (
+                            <Avatar sx={{ bgcolor: 'secondary.main', width: 38, height: 38, fontWeight: 700 }}>
+                                {userAvatarLetter}
+                            </Avatar>
+                        )}
+                    </Stack>
+                );
+            })} 
+            {showLoadingIndicator && (
             <Stack 
                 direction="row" 
                 spacing={2} 

@@ -1,6 +1,5 @@
 import axiosInstance from '../axiosInstance';
 
-
 export const getUsersList = async (params = { page: 1, limit: 10 }) => {
     try {
         const response = await axiosInstance.get(`/users`, {
@@ -95,4 +94,129 @@ export const getStudentsList = async (params = { page: 1, limit: 10 }) => {
     } catch (error) {
         throw error;
     }
+};
+
+
+const QA_BASE_URL = '/qa';
+const cleanParams = (rawParams) => {
+    return Object.keys(rawParams).reduce((acc, key) => {
+        const value = rawParams[key];
+        if (value !== undefined && value !== null) {
+            
+            if (typeof value === 'string' && value.trim() === '') {
+                return acc; 
+            }
+            acc[key] = value;
+        }
+        return acc;
+    }, {});
+};
+
+export const getFeedbackList = async (rawParams = {}) => {
+    
+    const cleanQueryParams = cleanParams(rawParams);
+
+    cleanQueryParams.page = cleanQueryParams.page || 1;
+    cleanQueryParams.limit = cleanQueryParams.limit || 100; 
+
+    try {
+        const response = await axiosInstance.get(`${QA_BASE_URL}/all`, { 
+            params: cleanQueryParams 
+        });
+        if (response.data.status_code === 200) {
+            return response.data.details; 
+        }
+        throw new Error(response.data.message || 'Failed to fetch question records.');
+    } catch (error) {
+        throw error;
+    }
+};
+
+
+export const updateManagerAnswer = async (qaId, managerAnswer) => {
+    try {
+        const response = await axiosInstance.post(`${QA_BASE_URL}/${qaId}/reply`, { 
+            manager_answer: managerAnswer 
+        });
+        if (response.data.status_code === 200) {
+            return response.data.details;
+        }
+        throw new Error(response.data.message || 'Failed to update manager answer.');
+    } catch (error) {
+        throw error;
+    }
+};
+
+
+export const calculateDashboardMetrics = async (userFaculty) => {
+    const filter = {};
+    if (userFaculty) {
+        filter.faculty = userFaculty; 
+    }
+    
+    let allRecords = [];
+    let totalUsers = 0;
+
+    try {
+        const [allRecordsResponse, usersResponse] = await Promise.all([
+            getFeedbackList({ 
+                ...filter,
+                limit: 100, 
+                page: 1 
+            }), 
+            
+            getUsersList({ page: 1, limit: 1 })
+        ]);
+        
+        allRecords = allRecordsResponse.questions || [];
+        totalUsers = usersResponse.total || 0; 
+
+    } catch (error) {
+        console.error("Lỗi khi tải dữ liệu Dashboard metrics:", error);
+    }
+    
+    const totalQuestions = allRecords.length;
+    let totalLikes = 0;
+    let totalDislikes = 0;
+    let unansweredDislikes = 0;
+    let dislikeRecords = []; 
+
+    allRecords.forEach(record => {
+        if (record.feedback === 'Like') {
+            totalLikes++;
+        } else if (record.feedback === 'Dislike') {
+            totalDislikes++;
+
+            const isAnswered = record.manager_answer && record.manager_answer.trim() !== '';
+            
+            if (!isAnswered) {
+                unansweredDislikes++;
+            }
+            
+            dislikeRecords.push({
+                id: record._id,
+                question: record.question,
+                botAnswer: record.answer,
+                managerAnswer: record.manager_answer,
+                feedback: record.feedback,
+                createdAt: record.created_at,
+                studentFaculty: record.user_faculty || 'N/A', 
+                studentId: record.user_sub || 'N/A', 
+            });
+        }
+    });
+
+    const satisfactionRate = (totalLikes + totalDislikes) > 0 
+        ? ((totalLikes / (totalLikes + totalDislikes)) * 100).toFixed(2) 
+        : 0;
+        
+    return {
+        totalQuestions,
+        totalLikes,
+        totalDislikes,
+        unansweredDislikes,
+        satisfactionRate: parseFloat(satisfactionRate),
+        dislikeRecords,
+        totalUsers
+    };
 };

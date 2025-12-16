@@ -6,6 +6,7 @@ import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import FolderOpenOutlinedIcon from '@mui/icons-material/FolderOpenOutlined';
 import HelpOutlineOutlinedIcon from '@mui/icons-material/HelpOutlineOutlined';
 import LogoutIcon from '@mui/icons-material/Logout';
+import ForumIcon from '@mui/icons-material/Forum'; 
 import { NavLink as RouterNavLink, useNavigate } from 'react-router-dom'; 
 import useUserAuth from '../hooks/useUserAuth';
 import { getChatHistory } from '../api/chatApi'; 
@@ -34,13 +35,12 @@ const Sidebar = ({ isSidebarOpen, toggleSidebar, activeChatId, setActiveChatId, 
         console.log("Sidebar: User ID is valid, attempting to load history...");
 
         try {
-            const records = await getChatHistory(1, 100); 
-            console.log("Sidebar: API call succeeded. Records received count:", records ? records.length : 0);
-            
+            const records = await getChatHistory(1, 100);             
             const formattedHistory = records.map(r => ({
                 id: r._id, 
                 title: r.question, 
                 date: r.created_at, 
+                hasManagerAnswer: !!r.manager_answer && r.manager_answer.trim() !== '',
             }));
             setHistory(formattedHistory);
 
@@ -227,9 +227,35 @@ const Sidebar = ({ isSidebarOpen, toggleSidebar, activeChatId, setActiveChatId, 
                                 whiteSpace: 'nowrap',
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',
+                                position: 'relative', 
+                                pr: chat.hasManagerAnswer ? 4 : 2, 
                             }}
                         >
-                            {chat.title}
+                            <Box component="span" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flexGrow: 1, textAlign: 'left' }}>
+                                {chat.title}
+                            </Box>
+                            {/* THÔNG BÁO MANAGER TRẢ LỜI */}
+                            {chat.hasManagerAnswer && (
+                                <Box 
+                                    component="span" 
+                                    sx={{ 
+                                        position: 'absolute', 
+                                        right: 8, 
+                                        top: '50%', 
+                                        transform: 'translateY(-50%)',
+                                        display: 'flex',
+                                        alignItems: 'center'
+                                    }}
+                                    title="Đã có phản hồi từ Quản lý"
+                                >
+                                    <ForumIcon 
+                                        fontSize="small" 
+                                        sx={{ 
+                                            color: theme.palette.warning.light 
+                                        }} 
+                                    />
+                                </Box>
+                            )}
                         </Button>
                     ))}
                 </Box>

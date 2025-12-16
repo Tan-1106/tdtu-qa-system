@@ -12,7 +12,6 @@ import SearchIcon from '@mui/icons-material/Search';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance'; 
 import SchoolIcon from '@mui/icons-material/School'; 
-import ArticleIcon from '@mui/icons-material/Article'; 
 import TextSnippetIcon from '@mui/icons-material/TextSnippet';
 
 import DocumentFormModal from './DocumentFormModal'; 
@@ -43,42 +42,35 @@ const extractError = (error, defaultMessage = 'Lỗi không xác định.') => {
     return error.response?.data?.details || error.message || defaultMessage;
 };
 
-// --- MAIN COMPONENT ---
 const DocumentManagementPage = () => {
     const { user: currentUser } = useUserAuth(); 
     const isAdmin = currentUser?.role === 'Admin';
     const isFacultyManager = currentUser?.is_faculty_manager;
     
-    // State dữ liệu và phân trang
     const [documents, setDocuments] = useState([]);
     const [totalDocuments, setTotalDocuments] = useState(0);
     const [page, setPage] = useState(0); 
     const [rowsPerPage, setRowsPerPage] = useState(10);
 
-    // State BỘ LỌC (Chỉ dùng để RENDER UI)
     const [searchKeyword, setSearchKeyword] = useState(''); 
     const [filterDocType, setFilterDocType] = useState('');
     const [filterFaculty, setFilterFaculty] = useState('');
     const [sortOrder, setSortOrder] = useState('newest');
     
-    // REF LƯU TRỮ GIÁ TRỊ LỌC HIỆN TẠI 
     const searchKeywordRef = useRef(''); 
     const filterDocTypeRef = useRef(''); 
     const filterFacultyRef = useRef(''); 
     const sortOrderRef = useRef('newest');
     
-    // State tùy chọn filter
     const [availableFaculties, setAvailableFaculties] = useState([]);
     const [availableDepartments, setAvailableDepartments] = useState([]); 
     const [availableDocTypes, setAvailableDocTypes] = useState([]); 
     
-    // State loading & error
     const [isInitialLoading, setIsInitialLoading] = useState(true); 
     const [isRefetching, setIsRefetching] = useState(false); 
     const [error, setError] = useState(null);
     const [successMsg, setSuccessMsg] = useState(null);
 
-    // State Modal
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
     const [isChunksModalOpen, setIsChunksModalOpen] = useState(false);
@@ -88,10 +80,6 @@ const DocumentManagementPage = () => {
     const [viewDocumentUrl, setViewDocumentUrl] = useState(null);
     const [isViewLoading, setIsViewLoading] = useState(false); 
 
-
-    // --- FETCH DATA LOGIC ---
-
-    // Cập nhật Ref mỗi khi State tương ứng thay đổi
     useEffect(() => {
         searchKeywordRef.current = searchKeyword;
     }, [searchKeyword]);
@@ -217,8 +205,6 @@ const DocumentManagementPage = () => {
         }
     }, [currentUser, isAdmin, isFacultyManager]); 
 
-
-    // Hàm điều phối việc tải dữ liệu với bộ lọc (Dùng Ref để lấy giá trị lọc)
     const loadDocumentsWithFilters = useCallback((resetPage = true, isInitialLoad = false, forcePageReset = false) => {
         const currentSearchKeyword = searchKeywordRef.current;
         const currentDocType = filterDocTypeRef.current;
@@ -256,7 +242,6 @@ const DocumentManagementPage = () => {
     }, [fetchDocuments, page, rowsPerPage, isAdmin, availableFaculties, availableDepartments]); 
 
     
-    // Initial Load: Gọi fetchFilterOptions LẦN ĐẦU, sau đó gọi loadDocuments
     useEffect(() => {
         if (currentUser) {
             fetchFilterOptions().then(() => {
@@ -266,7 +251,6 @@ const DocumentManagementPage = () => {
     }, [currentUser]); 
 
     
-    // Handle Filter Changes: Kích hoạt tải lại khi filter DocType hoặc Faculty thay đổi
     useEffect(() => {
         if (!isInitialLoading && currentUser) {
             loadDocumentsWithFilters(true, false, true); 
@@ -274,14 +258,12 @@ const DocumentManagementPage = () => {
     }, [filterDocType, filterFaculty, sortOrder, rowsPerPage, currentUser]); 
 
     
-    // Handle Pagination Changes: Chỉ thay đổi trang
     useEffect(() => {
         if (!isInitialLoading && currentUser && page !== 0) {
             loadDocumentsWithFilters(false, false, false);
         }
     }, [page]); 
 
-    
     const handleChangePage = (event, newPage) => {
         setPage(newPage);
     };
@@ -291,19 +273,16 @@ const DocumentManagementPage = () => {
         setPage(0); 
     };
     
-    // Handle Filter Changes: Cập nhật state UI
     const handleFilterChange = (filterSetter, value) => {
         filterSetter(value);
         setPage(0); 
     };
     
-    // Handle Search Click
     const handleSearchClick = () => {
         setPage(0); 
         loadDocumentsWithFilters(true, false, true); 
     };
     
-    // --- ACTIONS ---
     const handleAddDocument = () => {
         setEditingDocument(null);
         setIsFormModalOpen(true);
@@ -407,12 +386,10 @@ const DocumentManagementPage = () => {
                 )}
             </Box>
             
-            {/* --- PHẦN BỘ LỌC --- */}
             <Paper elevation={1} sx={{ p: 2, mb: 3, borderRadius: 3, borderLeft: '5px solid #1976d2' }}>
                 <Typography variant="subtitle1" sx={{ fontWeight: 700, color: 'primary.main', mb: -2 }}>Tìm kiếm & Lọc</Typography>
                 <Grid container spacing={2} alignItems="flex-end">
                     
-                    {/* 1. Tìm kiếm theo Keyword */}
                     <Grid item xs={12} sm={6} md={3.5}>
                         <Stack direction="row" spacing={1} alignItems="flex-end" sx={{ mt: 1 }}>
                             <TextField
@@ -435,7 +412,6 @@ const DocumentManagementPage = () => {
                         </Stack>
                     </Grid>
 
-                    {/* 2. Lọc theo Loại tài liệu */}
                     <Grid item xs={12} sm={6} md={3}> 
                         <Typography variant="caption" display="block" sx={{ color: 'text.secondary', mb: 0.5 }}>
                             Loại tài liệu
@@ -455,7 +431,6 @@ const DocumentManagementPage = () => {
                         </FormControl>
                     </Grid>
                     
-                    {/* 3. Lọc theo Khoa/Phòng Ban (Chỉ Admin) */}
                     {isAdmin && (
                         <Grid item xs={12} sm={6} md={3}>
                             <Typography variant="caption" display="block" sx={{ color: 'text.secondary', mb: 0.5 }}>
@@ -481,7 +456,7 @@ const DocumentManagementPage = () => {
                             </FormControl>
                         </Grid>
                     )}
-                    {/* 4. Sắp xếp theo Ngày tải */}
+                    
                     <Grid item xs={12} sm={6} md={2.5}>
                         <Typography variant="caption" display="block" sx={{ color: 'text.secondary', mb: 0.5 }}>
                             Ngày tải
@@ -504,7 +479,6 @@ const DocumentManagementPage = () => {
                 </Grid>
             </Paper>
             
-            {/* --- MODALS --- */}
             {(isAdmin || isFacultyManager) && (
                 <DocumentFormModal
                     open={isFormModalOpen}
@@ -603,7 +577,6 @@ const DocumentManagementPage = () => {
                                             onClick={() => handleDeleteDocument(doc)} 
                                             sx={{ color: 'error.main' }} 
                                             title="Xóa Tài liệu"
-                                            disabled={isFacultyManager && doc.faculty !== currentUser.faculty}
                                         >
                                             <DeleteIcon />
                                         </IconButton>

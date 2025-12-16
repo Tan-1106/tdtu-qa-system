@@ -1,131 +1,253 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Box, Typography, Grid, Paper, Select, MenuItem, FormControl, InputLabel, Chip, Table, TableBody, TableCell, TableContainer, TableHead, TableRow
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { 
+    Box, Grid, Paper, Typography, CircularProgress, Alert, 
+    TableContainer, Table, TableHead, TableRow, TableCell, 
+    TableBody, Chip, TablePagination, Button 
 } from '@mui/material';
-import ThumbUpAltIcon from '@mui/icons-material/ThumbUpAlt';
-import ThumbDownAltIcon from '@mui/icons-material/ThumbDownAlt';
+import CheckIcon from '@mui/icons-material/Check';
+import CloseIcon from '@mui/icons-material/Close';
+import ArticleIcon from '@mui/icons-material/Article'; 
+import GroupIcon from '@mui/icons-material/Group';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 
-const allFeedbacks = [
-  { id: 1, question: 'Học phí một tín chỉ là bao nhiêu?', answer: '...', feedback: 'like', date: '2025-10-01', status: 'new' },
-  { id: 2, question: 'Lịch nghỉ Tết khi nào có?', answer: '...', feedback: 'dislike', date: '2025-10-02', status: 'new' },
-  { id: 3, question: 'Thủ tục xin bảng điểm?', answer: '...', feedback: 'like', date: '2025-10-02', status: 'reviewed' },
-];
+import useUserAuth from '../../hooks/useUserAuth';
+import { calculateDashboardMetrics, updateManagerAnswer } from '../../api/adminApi'; 
+import ManagerAnswerModal from './ManagerAnswerModal'; 
+import DashboardMetricCard from './DashboardMetricCard'; 
 
 const FeedbackDashboardPage = () => {
-  const [stats, setStats] = useState({ totalQuestions: 1250, positiveFeedback: 850, negativeFeedback: 150 });
-  const [feedbacks, setFeedbacks] = useState(allFeedbacks);
-  const [filter, setFilter] = useState('all');
+    const { user: currentUser } = useUserAuth();
+    const isManager = currentUser?.role === 'Admin' || currentUser?.is_faculty_manager;
+    
+    const [metrics, setMetrics] = useState({ 
+        totalQuestions: 0, 
+        totalLikes: 0, 
+        totalDislikes: 0,
+        unansweredDislikes: 0, 
+        satisfactionRate: 0, 
+        totalUsers: 0, 
+    });
+    
+    const [feedbackList, setFeedbackList] = useState([]);
+    const [totalFeedback, setTotalFeedback] = useState(0);
+    
+    const [page, setPage] = useState(0);
+    const [rowsPerPage, setRowsPerPage] = useState(10);
 
-  useEffect(() => {
-    if (filter === 'all') {
-      setFeedbacks(allFeedbacks);
-    } else {
-      setFeedbacks(allFeedbacks.filter(fb => fb.feedback === filter));
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [successMsg, setSuccessMsg] = useState(null);
+    
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [currentFeedback, setCurrentFeedback] = useState(null);
+
+    const loadData = useCallback(async () => {
+        if (!isManager || !currentUser) return;
+
+        setIsLoading(true);
+        setError(null);
+        setSuccessMsg(null);
+        let facultyScope = undefined;
+        if (currentUser.role === 'Admin') {
+            facultyScope = ''; 
+        } else if (currentUser.is_faculty_manager) {
+            facultyScope = currentUser.faculty; 
+        }
+                
+        try {
+            const data = await calculateDashboardMetrics(facultyScope);
+            setMetrics(data); 
+            setFeedbackList(data.dislikeRecords);
+            setTotalFeedback(data.dislikeRecords.length);
+            setPage(0); 
+
+        } catch (err) {
+            console.error("Error loading dashboard data:", err);
+            
+            let errorMessage = "Không thể tải dữ liệu Dashboard. Đảm bảo bạn có quyền truy cập API /qa/all.";
+            if (err.response) {
+                if (err.response.status === 422) {
+                    errorMessage = "Lỗi 422: Tham số truy vấn không hợp lệ. Vui lòng kiểm tra lại cleanParams trong adminApi.js.";
+                } else if (err.response.data?.details) {
+                    errorMessage = err.response.data.details;
+                }
+            } else {
+                 errorMessage = err.message;
+            }
+            setError(errorMessage);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [currentUser, isManager]);
+
+    useEffect(() => {
+        if (currentUser) {
+            loadData(); 
+        }
+    }, [currentUser, loadData]); 
+    
+    const displayedFeedback = useMemo(() => {
+        const start = page * rowsPerPage;
+        const end = start + rowsPerPage;
+        return feedbackList.slice(start, end);
+    }, [feedbackList, page, rowsPerPage]);
+
+
+    const handleChangePage = (event, newPage) => {
+        setPage(newPage);
+    };
+
+    const handleChangeRowsPerPage = (event) => {
+        setRowsPerPage(parseInt(event.target.value, 10));
+        setPage(0); 
+    };
+
+    const handleOpenProcess = (item) => {
+        setCurrentFeedback(item);
+        setIsModalOpen(true);
+    };
+    
+    const handleSaveAnswer = async (qaId, answer) => {
+        try {
+            await updateManagerAnswer(qaId, answer);
+            setIsModalOpen(false);
+            setSuccessMsg("Đã cập nhật câu trả lời thành công! Dữ liệu đang được tải lại.");
+            
+            await loadData(); 
+            
+        } catch (err) {
+            console.error("Error updating manager answer:", err);
+            setError("Lỗi khi cập nhật câu trả lời: " + (err.response?.data?.details || err.message));
+        }
+    };
+    
+    if (!isManager) {
+        return <Alert severity="error">Bạn không có quyền truy cập trang này.</Alert>;
     }
-  }, [filter]);
+    
+    if (isLoading) {
+        return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}><CircularProgress /></Box>;
+    }
 
-  return (
-    <Box sx={{ p: { xs: 1, md: 3 } }}>
-      <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, color: 'primary.main', mb: 3 }}>
-        Thống kê và Phản hồi
-      </Typography>
+    return (
+        <Box sx={{ p: { xs: 1, md: 3 } }}>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: 'primary.main', mb: 3 }}>
+                Dashboard Thống kê & Phản hồi
+            </Typography>
 
-      {/* Phần thống kê */}
-      <Grid container spacing={3} mb={4}>
-        <Grid item xs={12} sm={4}>
-          <Paper sx={{
-            p: 2, textAlign: 'center', borderRadius: 4, boxShadow: '0 4px 16px 0 rgba(25,118,210,0.08)'
-          }}>
-            <Typography variant="h6" sx={{ color: 'text.secondary' }}>Tổng số câu hỏi</Typography>
-            <Typography variant="h3" sx={{ fontWeight: 700, color: 'primary.main' }}>{stats.totalQuestions}</Typography>
-          </Paper>
-        </Grid>
-        <Grid item xs={12} sm={4}>
-          <Paper sx={{
-            p: 2, textAlign: 'center', borderRadius: 4, boxShadow: '0 4px 16px 0 rgba(76,175,80,0.08)'
-          }}>
-            <Typography variant="h6" sx={{ color: 'success.main' }}>Phản hồi tích cực</Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-              <ThumbUpAltIcon color="success" />
-              <Typography variant="h3" sx={{ fontWeight: 700, color: 'success.main' }}>{stats.positiveFeedback}</Typography>
-            </Box>
-          </Paper>
-        </Grid>
-        <Grid item xs={12} sm={4}>
-          <Paper sx={{
-            p: 2, textAlign: 'center', borderRadius: 4, boxShadow: '0 4px 16px 0 rgba(244,67,54,0.08)'
-          }}>
-            <Typography variant="h6" sx={{ color: 'error.main' }}>Phản hồi cần cải thiện</Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-              <ThumbDownAltIcon color="error" />
-              <Typography variant="h3" sx={{ fontWeight: 700, color: 'error.main' }}>{stats.negativeFeedback}</Typography>
-            </Box>
-          </Paper>
-        </Grid>
-      </Grid>
+            {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
+            {successMsg && <Alert severity="success" sx={{ mb: 3 }}>{successMsg}</Alert>}
+            
+            <Grid container spacing={3} sx={{ mb: 4 }}>
+                <DashboardMetricCard 
+                    title="Tổng Số Câu Hỏi" 
+                    value={metrics.totalQuestions.toLocaleString('vi-VN')} 
+                    icon={<ArticleIcon />} 
+                    color="#1976d2" 
+                />
+                <DashboardMetricCard 
+                    title="Tỷ Lệ Hài Lòng" 
+                    value={`${metrics.satisfactionRate}%`} 
+                    icon={<CheckIcon />} 
+                    color="#2e7d32" 
+                    subtitle={`${metrics.totalLikes} Like / ${metrics.totalDislikes} Dislike`}
+                />
+                <DashboardMetricCard 
+                    title="Cần Xử Lý (Dislike)" 
+                    value={metrics.unansweredDislikes.toLocaleString('vi-VN')} 
+                    icon={<CloseIcon />} 
+                    color="#d32f2f"
+                    tooltip="Số câu hỏi Dislike chưa có câu trả lời của Quản lý."
+                />
+                {currentUser.role === 'Admin' && (
+                    <DashboardMetricCard 
+                        title="Tổng Số Người Dùng" 
+                        value={metrics.totalUsers.toLocaleString('vi-VN')} 
+                        icon={<GroupIcon />} 
+                        color="#f57c00" 
+                    />
+                )}
+            </Grid>
+            
 
-      <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>Lọc phản hồi</Typography>
+            <Typography variant="h5" sx={{ fontWeight: 600, color: 'text.primary', mb: 2 }}>
+                Phản hồi Tiêu cực Cần Xử lý ({totalFeedback.toLocaleString('vi-VN')} bản ghi)
+            </Typography>
 
-      {/* Phần bộ lọc */}
-      <Box sx={{ mb: 3 }}>
-        <FormControl sx={{ minWidth: 140, mr: 2 }}>
-          <InputLabel>Loại</InputLabel>
-          <Select value={filter} label="Loại" onChange={(e) => setFilter(e.target.value)} sx={{ borderRadius: 3 }}>
-            <MenuItem value={'all'}>Tất cả</MenuItem>
-            <MenuItem value={'like'}>Tích cực</MenuItem>
-            <MenuItem value={'dislike'}>Cần cải thiện</MenuItem>
-          </Select>
-        </FormControl>
-      </Box>
+            <TableContainer component={Paper} elevation={1} sx={{ borderRadius: 4, boxShadow: '0 4px 16px 0 rgba(0,0,0,0.06)' }}>
+                <Table>
+                    <TableHead>
+                        <TableRow>
+                            <TableCell><b>Câu hỏi</b></TableCell>
+                            <TableCell><b>Khoa/User</b></TableCell>
+                            <TableCell><b>Trạng thái</b></TableCell>
+                            <TableCell align="right"><b>Hành động</b></TableCell>
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
+                        {displayedFeedback.map((item) => {
+                            const isAnswered = item.managerAnswer && item.managerAnswer.trim() !== '';
+                            return (
+                                <TableRow key={item.id} hover>
+                                    <TableCell>
+                                        <Typography variant="body2" fontWeight={600} sx={{ maxWidth: 400 }} noWrap>{item.question}</Typography>
+                                        <Typography variant="caption" color="text.secondary">{new Date(item.createdAt).toLocaleString('vi-VN')}</Typography>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Typography variant="body2">{item.studentFaculty}</Typography>
+                                        <Typography variant="caption" color="text.secondary">{item.studentId}</Typography>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Chip 
+                                            label={isAnswered ? 'Đã xử lý' : 'Cần xử lý'}
+                                            color={isAnswered ? 'success' : 'error'}
+                                            size="small"
+                                        />
+                                    </TableCell>
+                                    <TableCell align="right">
+                                        <Button 
+                                            variant="contained" 
+                                            size="small" 
+                                            startIcon={<VisibilityIcon />}
+                                            onClick={() => handleOpenProcess(item)}
+                                            color={isAnswered ? 'info' : 'error'}
+                                        >
+                                            {isAnswered ? 'Xem / Sửa' : 'Xử lý'}
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            );
+                        })}
+                        {displayedFeedback.length === 0 && !isLoading && (
+                            <TableRow><TableCell colSpan={4} align="center" sx={{ py: 4 }}>
+                                {totalFeedback > 0 ? 'Đang tải trang...' : 'Không có phản hồi tiêu cực cần xử lý.'}
+                            </TableCell></TableRow>
+                        )}
+                    </TableBody>
+                </Table>
+            </TableContainer>
+            
+            <TablePagination
+                component="div"
+                count={totalFeedback}
+                page={page}
+                onPageChange={handleChangePage}
+                rowsPerPage={rowsPerPage}
+                onRowsPerPageChange={handleChangeRowsPerPage}
+                rowsPerPageOptions={[10, 25, 50, 100]}
+                labelRowsPerPage="Số hàng mỗi trang:"
+                labelDisplayedRows={({ from, to, count }) => `${from}-${to} trên ${count}`}
+            />
+            
+            <ManagerAnswerModal
+                open={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                qaRecord={currentFeedback}
+                onSave={handleSaveAnswer}
+            />
 
-      {/* Bảng hiển thị feedback */}
-      <TableContainer component={Paper} sx={{ borderRadius: 4, boxShadow: '0 4px 16px 0 rgba(25,118,210,0.06)' }}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell><b>ID</b></TableCell>
-              <TableCell><b>Câu hỏi</b></TableCell>
-              <TableCell><b>Loại phản hồi</b></TableCell>
-              <TableCell><b>Ngày</b></TableCell>
-              <TableCell><b>Trạng thái</b></TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {feedbacks.map((fb) => (
-              <TableRow key={fb.id} hover>
-                <TableCell>{fb.id}</TableCell>
-                <TableCell>{fb.question}</TableCell>
-                <TableCell>
-                  <Chip
-                    label={fb.feedback === 'like' ? 'Tích cực' : 'Cần cải thiện'}
-                    color={fb.feedback === 'like' ? 'success' : 'error'}
-                    icon={fb.feedback === 'like' ? <ThumbUpAltIcon /> : <ThumbDownAltIcon />}
-                    sx={{ fontWeight: 600, borderRadius: 2 }}
-                  />
-                </TableCell>
-                <TableCell>{fb.date}</TableCell>
-                <TableCell>
-                  <Chip
-                    label={fb.status === 'new' ? 'Mới' : 'Đã xem'}
-                    color={fb.status === 'new' ? 'info' : 'default'}
-                    size="small"
-                    sx={{ fontWeight: 500, borderRadius: 2 }}
-                  />
-                </TableCell>
-              </TableRow>
-            ))}
-            {feedbacks.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={5} align="center" sx={{ color: 'text.secondary', py: 4 }}>
-                  Không có phản hồi nào phù hợp.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
-    </Box>
-  );
+        </Box>
+    );
 };
 
 export default FeedbackDashboardPage;
