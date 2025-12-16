@@ -30,7 +30,6 @@ class StatisticalDao:
         if faculty:
             query["$or"] = [
                 {"summary.faculty_scope": faculty},
-                {"summary.faculty_scope": None}
             ]
         if is_display is not None:
             query["is_display"] = is_display 
@@ -46,7 +45,6 @@ class StatisticalDao:
         if faculty:
             query["$or"] = [
                 {"summary.faculty_scope": faculty},
-                {"summary.faculty_scope": None}
             ]
         if is_display is not None:
             query["is_display"] = is_display 

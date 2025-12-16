@@ -42,10 +42,11 @@ async def get_popular_questions(
     page: int = Query(1, ge=1),
     limit: int = Query(10, ge=1, le=100),
     is_display: bool = Query(True),
+    faculty: Optional[str] = None, #Admin
     current_user=Depends(auth_service.get_current_user)
 ):
     current_user = jsonable_encoder(current_user)
-    result = await statistical_controller.get_popular_questions(page, limit, is_display, current_user)
+    result = await statistical_controller.get_popular_questions(page, limit, is_display, faculty, current_user)
     return api_response(
         status_code=200,
         message="Get popular questions statistics records successfully.",

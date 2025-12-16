@@ -51,7 +51,7 @@ const FeedbackDashboardPage = () => {
         if (currentUser.role === 'Admin') {
             facultyScope = ''; 
         } else if (currentUser.is_faculty_manager) {
-            facultyScope = currentUser.faculty; 
+            facultyScope = currentUser.department; 
         }
                 
         try {
@@ -132,7 +132,7 @@ const FeedbackDashboardPage = () => {
     return (
         <Box sx={{ p: { xs: 1, md: 3 } }}>
             <Typography variant="h4" sx={{ fontWeight: 700, color: 'primary.main', mb: 3 }}>
-                Dashboard Thống kê & Phản hồi
+                Thống kê và Phản hồi
             </Typography>
 
             {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
@@ -140,20 +140,20 @@ const FeedbackDashboardPage = () => {
             
             <Grid container spacing={3} sx={{ mb: 4 }}>
                 <DashboardMetricCard 
-                    title="Tổng Số Câu Hỏi" 
+                    title="Tổng số câu hỏi" 
                     value={metrics.totalQuestions.toLocaleString('vi-VN')} 
                     icon={<ArticleIcon />} 
                     color="#1976d2" 
                 />
                 <DashboardMetricCard 
-                    title="Tỷ Lệ Hài Lòng" 
+                    title="Tỷ lệ hài lòng" 
                     value={`${metrics.satisfactionRate}%`} 
                     icon={<CheckIcon />} 
                     color="#2e7d32" 
                     subtitle={`${metrics.totalLikes} Like / ${metrics.totalDislikes} Dislike`}
                 />
                 <DashboardMetricCard 
-                    title="Cần Xử Lý (Dislike)" 
+                    title="Cần xử lý (Dislike)" 
                     value={metrics.unansweredDislikes.toLocaleString('vi-VN')} 
                     icon={<CloseIcon />} 
                     color="#d32f2f"
@@ -161,7 +161,7 @@ const FeedbackDashboardPage = () => {
                 />
                 {currentUser.role === 'Admin' && (
                     <DashboardMetricCard 
-                        title="Tổng Số Người Dùng" 
+                        title="Tổng số người dùng" 
                         value={metrics.totalUsers.toLocaleString('vi-VN')} 
                         icon={<GroupIcon />} 
                         color="#f57c00" 
@@ -171,7 +171,7 @@ const FeedbackDashboardPage = () => {
             
 
             <Typography variant="h5" sx={{ fontWeight: 600, color: 'text.primary', mb: 2 }}>
-                Phản hồi Tiêu cực Cần Xử lý ({totalFeedback.toLocaleString('vi-VN')} bản ghi)
+                Phản hồi tiêu cực
             </Typography>
 
             <TableContainer component={Paper} elevation={1} sx={{ borderRadius: 4, boxShadow: '0 4px 16px 0 rgba(0,0,0,0.06)' }}>
@@ -179,7 +179,7 @@ const FeedbackDashboardPage = () => {
                     <TableHead>
                         <TableRow>
                             <TableCell><b>Câu hỏi</b></TableCell>
-                            <TableCell><b>Khoa/User</b></TableCell>
+                            <TableCell><b>Khoa/MSSV</b></TableCell>
                             <TableCell><b>Trạng thái</b></TableCell>
                             <TableCell align="right"><b>Hành động</b></TableCell>
                         </TableRow>

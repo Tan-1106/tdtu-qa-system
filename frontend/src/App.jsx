@@ -17,9 +17,10 @@ import PopularQuestionsPage from './components/faq/PopularQuestionsPage.jsx';
 
 // Admin Pages
 import DocumentManagementPage from './components/admin/DocumentManagementPage.jsx';
+import PopularQuestionManagementPage from './components/admin/PopularQuestionManagementPage.jsx';
 import FeedbackDashboardPage from './components/admin/FeedbackDashboardPage.jsx';
 import UserManagementPage from './components/admin/UserManagementPage.jsx';
-import ModelManagementPage from './components/admin/ModelManagementPage.jsx'; // 💡 IMPORT PAGE MỚI
+import ModelManagementPage from './components/admin/ModelManagementPage.jsx'; 
 
 
 // PROTECTED ROUTE IMPORTS
@@ -77,6 +78,7 @@ function App() {
         <Route element={<AdminRoute />}>
             <Route path="/admin" element={<AdminLayout />}>
                 <Route path="dashboard" element={<FeedbackDashboardPage />} /> 
+                <Route path="popular-questions" element={<PopularQuestionManagementPage />} /> 
                 <Route path="documents" element={<DocumentManagementPage />} />
                 <Route path="users" element={<UserManagementPage />} />
                 <Route path="models" element={<ModelManagementPage />} />

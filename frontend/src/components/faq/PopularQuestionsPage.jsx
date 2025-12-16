@@ -1,43 +1,84 @@
-import React from 'react';
-import { Typography, Accordion, AccordionSummary, AccordionDetails, Paper, Box, IconButton } from '@mui/material';
+// pages/user/PopularQuestionsPage.js
+import React, { useState, useEffect, useCallback } from 'react';
+import { 
+    Box, Typography, CircularProgress, Alert, Accordion, 
+    AccordionSummary, AccordionDetails, useTheme, Stack, 
+    TablePagination, IconButton 
+} from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import HelpOutlineOutlinedIcon from '@mui/icons-material/HelpOutlineOutlined';
 import { useOutletContext } from 'react-router-dom';
 import MenuIcon from '@mui/icons-material/Menu';
 import CloseIcon from '@mui/icons-material/Close';
 
-// --- Dữ liệu mẫu ---
-const mockFaqs = [
-  {
-    id: 1,
-    question: 'Làm thế nào để xin bảng điểm?',
-    answer: 'Để xin bảng điểm, sinh viên cần đăng nhập vào Cổng thông tin sinh viên, chọn mục "Dịch vụ một cửa" và làm theo hướng dẫn. Lệ phí là 10,000 VNĐ/bản.',
-  },
-  {
-    id: 2,
-    question: 'Học phí một tín chỉ là bao nhiêu?',
-    answer: 'Học phí cho mỗi tín chỉ thay đổi tùy theo ngành và chương trình đào tạo. Bạn vui lòng tham khảo biểu học phí được công bố trên website của Phòng Tài chính.',
-  },
-  {
-    id: 3,
-    question: 'Thủ tục đăng ký học phần lại như thế nào?',
-    answer: 'Việc đăng ký học phần lại được thực hiện trong đợt đăng ký học phần chung của mỗi học kỳ. Các môn học nợ sẽ được ưu tiên hiển thị để sinh viên lựa chọn.',
-  },
-];
+import { getPopularQuestionsForUser } from '../../api/statisticalApi'; 
+import useUserAuth from '../../hooks/useUserAuth';
+
 
 const PopularQuestionsPage = () => {
-    // Lấy Context để toggle Sidebar
+    const theme = useTheme();
+    const { user: currentUser } = useUserAuth(); 
+    
+    // Lấy context từ UserLayout (dùng để mở/đóng Sidebar)
     const context = useOutletContext();
     const { isSidebarOpen = true, toggleSidebar = () => {} } = context || {};
+    
+    const [questions, setQuestions] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState(null);
+    
+    const [page, setPage] = useState(0); 
+    const [rowsPerPage, setRowsPerPage] = useState(10);
+    const [totalQuestions, setTotalQuestions] = useState(0);
 
-    return (
-      <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', height: '100%' }}>
+    const fetchQuestions = useCallback(async (currentPage, limit) => {
+        if (!currentUser) return;
+        
+        setIsLoading(true);
+        setError(null);
 
-            {/* 💡 HEADER DESKTOP CHO TRANG CÂU HỎI */}
+        try {
+            // Sử dụng hàm getPopularQuestionsForUser, backend tự động lọc is_display=true và faculty
+            const data = await getPopularQuestionsForUser(currentPage + 1, limit);
+            
+            // Backend trả về: { popular_questions: [...], total: N, ... }
+            setQuestions(data.popular_questions || []);
+            setTotalQuestions(data.total || 0);
+
+        } catch (err) {
+            console.error("Error fetching popular questions:", err);
+            setError("Không thể tải danh sách câu hỏi phổ biến. Vui lòng thử lại.");
+            setQuestions([]);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [currentUser]);
+
+    useEffect(() => {
+        if (currentUser) {
+            fetchQuestions(page, rowsPerPage);
+        }
+    }, [fetchQuestions, page, rowsPerPage]);
+
+
+    const handlePageChange = (event, newPage) => {
+        setPage(newPage);
+    };
+
+    const handleChangeRowsPerPage = (event) => {
+        setRowsPerPage(parseInt(event.target.value, 10));
+        setPage(0); 
+    };
+    
+    // --- Render Component ---
+    
+    return (
+        <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', height: '100%' }}>
+            {/* Thanh tiêu đề (cho màn hình lớn) */}
             <Box sx={{ 
                 p: 2, 
                 bgcolor: 'white', 
-                display: { xs: 'none', md: 'flex' }, // Chỉ hiện trên Desktop
+                display: { xs: 'none', md: 'flex' }, 
                 alignItems: 'center', 
                 gap: 1.5, 
                 borderBottom: '1px solid #e3e3e3',
@@ -46,79 +87,96 @@ const PopularQuestionsPage = () => {
                 zIndex: 10,
                 flexShrink: 0 
             }}>
-                {/* Nút Đóng/Mở Sidebar */}
                 <IconButton 
                     size="large" 
                     onClick={toggleSidebar} 
-                    // Luôn hiện nút khi Sidebar đóng (Menu Icon)
                     sx={{ color: 'text.primary' }}
                 >
                     {isSidebarOpen ? <CloseIcon /> : <MenuIcon />}
                 </IconButton>
-                
                 <Typography variant="h6" sx={{ fontWeight: 600, flexGrow: 1, color: 'primary.main' }}>
-                    Các câu hỏi thường gặp
+                    Câu hỏi Phổ biến
                 </Typography>
             </Box>
-
-            {/* Nội dung chính của trang (đã sửa để cuộn nếu cần) */}
-            <Box sx={{ p: { xs: 2, md: 4 }, overflowY: 'auto', flexGrow: 1 }}>
-                <Paper
-                    elevation={6}
-                    sx={{
-                        p: { xs: 2, md: 4 },
-                        borderRadius: 5,
-                        maxWidth: 900, 
-                        mx: 'auto', 
-                        boxShadow: '0 8px 32px 0 rgba(25,118,210,0.10)'
-                    }}
-                >
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                        <HelpOutlineIcon color="primary" sx={{ fontSize: 38, mr: 1 }} />
-                        <Typography variant="h4" sx={{ fontWeight: 700, color: 'primary.main', letterSpacing: 1 }}>
-                            Các câu hỏi thường gặp
-                        </Typography>
+            
+            {/* Nội dung chính */}
+            <Box sx={{ p: { xs: 1, md: 3 }, overflowY: 'auto', flexGrow: 1 }}>
+                
+                <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 3 }}>
+                    <HelpOutlineOutlinedIcon sx={{ color: theme.palette.primary.main }} />
+                    <Typography variant="h5" sx={{ fontWeight: 700, color: 'text.primary' }}>
+                        Các Câu Hỏi Thường Gặp
+                    </Typography>
+                </Stack>
+                
+                {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
+                
+                {isLoading ? (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+                        <CircularProgress />
+                        <Typography sx={{ ml: 2 }}>Đang tải câu hỏi...</Typography>
                     </Box>
-                    <div>
-                        {mockFaqs.map(faq => (
-                            <Accordion
-                                key={faq.id}
-                                sx={{
-                                    mt: 2,
-                                    borderRadius: 3,
-                                    boxShadow: '0 2px 8px 0 rgba(25,118,210,0.04)',
-                                    '&:before': { display: 'none' },
-                                    '&:hover': {
-                                        background: 'linear-gradient(90deg, #e3f2fd 60%, #f7fafd 100%)',
-                                        boxShadow: '0 4px 16px 0 rgba(25,118,210,0.10)'
-                                    }
-                                }}
-                                disableGutters
+                ) : questions.length === 0 ? (
+                    <Alert severity="info">
+                        Hiện tại không có câu hỏi phổ biến nào được hiển thị cho phạm vi của bạn.
+                    </Alert>
+                ) : (
+                    <>
+                        {/* Danh sách Accordion */}
+                        {questions.map((item, index) => (
+                            <Accordion 
+                                key={item.id || index} // Dùng item.id (tên mới) hoặc item._id (tên cũ)
+                                sx={{ mb: 1, boxShadow: '0 2px 8px rgba(0,0,0,0.05)', borderRadius: '8px !important' }}
                             >
                                 <AccordionSummary
-                                    expandIcon={<ExpandMoreIcon sx={{ color: 'primary.main' }} />}
-                                    aria-controls={`panel${faq.id}-content`}
-                                    id={`panel${faq.id}-header`}
-                                    sx={{
-                                        borderRadius: 3,
-                                        minHeight: 56,
-                                        '& .MuiAccordionSummary-content': { alignItems: 'center', my: 1 }
+                                    expandIcon={<ExpandMoreIcon />}
+                                    sx={{ 
+                                        bgcolor: 'white', 
+                                        borderBottom: 1, 
+                                        borderColor: 'divider',
+                                        '&.Mui-expanded': { minHeight: 48 },
+                                        '.MuiAccordionSummary-content': { margin: '12px 0' },
                                     }}
                                 >
-                                    <Typography fontWeight="bold" sx={{ fontSize: '1.1rem' }}>
-                                        {faq.question}
+                                    <Typography fontWeight={600} color="primary.main">
+                                        {index + 1 + page * rowsPerPage}. {item.question}
                                     </Typography>
                                 </AccordionSummary>
-                                <AccordionDetails sx={{ bgcolor: '#f7fafd', borderRadius: 2 }}>
-                                    <Typography sx={{ color: 'text.secondary' }}>{faq.answer}</Typography>
+                                <AccordionDetails sx={{ bgcolor: '#f5f5f5', borderTop: '1px solid #eee' }}>
+                                    {/* Câu trả lời */}
+                                    <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
+                                        {item.answer || 'Chưa có câu trả lời.'}
+                                    </Typography>
+                                    
+                                    {/* Thông tin phạm vi (tùy chọn) */}
+                                    <Box sx={{ mt: 2, pt: 1, borderTop: '1px dashed #ddd' }}>
+                                        <Typography variant="caption" color="text.secondary">
+                                            Phạm vi: {item.summary?.faculty_scope || 'Toàn trường'}
+                                        </Typography>
+                                    </Box>
                                 </AccordionDetails>
                             </Accordion>
                         ))}
-                    </div>
-                </Paper>
+
+                        {/* Phân trang */}
+                        <TablePagination
+                            component="div"
+                            count={totalQuestions}
+                            page={page}
+                            onPageChange={handlePageChange}
+                            rowsPerPage={rowsPerPage}
+                            onRowsPerPageChange={handleChangeRowsPerPage}
+                            rowsPerPageOptions={[10, 25, 50]}
+                            labelRowsPerPage="Số hàng mỗi trang:"
+                            labelDisplayedRows={({ from, to, count }) =>
+                                `${from}-${to} trên ${count}`
+                            }
+                        />
+                    </>
+                )}
             </Box>
-      </Box>
-    );
+        </Box>
+    );
 };
 
 export default PopularQuestionsPage;

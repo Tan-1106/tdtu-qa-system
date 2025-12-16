@@ -123,7 +123,7 @@ const DocumentManagementPage = () => {
                     setAvailableDepartments([]);
                 }
             } else {
-                setAvailableFaculties([currentUser.faculty]); 
+                setAvailableFaculties([currentUser.department]); 
                 setAvailableDepartments([]); 
             }
 
@@ -163,7 +163,16 @@ const DocumentManagementPage = () => {
                 }
 
             } else if (isFacultyManager) {
-                data = await getFacultyDocuments({ ...params }); 
+                const managerFaculty = currentUser.department; 
+                
+                if (managerFaculty) {
+                    // GỌI API VỚI TÊN KHOA CỦA MANAGER
+                    data = await getFacultyDocuments({ ...params, faculty: managerFaculty }); 
+                } else {
+                    // Xử lý trường hợp Manager không có trường department (rất hiếm nếu data đúng)
+                    setError('Lỗi: Không tìm thấy thông tin khoa của Manager.');
+                    return; 
+                }
             } else {
                 return; 
             }
@@ -456,7 +465,7 @@ const DocumentManagementPage = () => {
                             </FormControl>
                         </Grid>
                     )}
-                    
+
                     <Grid item xs={12} sm={6} md={2.5}>
                         <Typography variant="caption" display="block" sx={{ color: 'text.secondary', mb: 0.5 }}>
                             Ngày tải

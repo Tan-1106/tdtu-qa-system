@@ -17,8 +17,10 @@ async def popular_questions_statistics(
 
 
 # Get popular questions statistics records
-async def get_popular_questions(page: int, limit: int, is_display: bool, current_user: dict):
-    faculty = None
+async def get_popular_questions(page: int, limit: int, is_display: bool, faculty: str, current_user: dict):
+    if faculty and current_user["role"] != Role.ADMIN.value:
+        raise UserError("You do not have permission to access this resource.")
+    
     if current_user["role"] != Role.ADMIN.value:
         faculty = current_user["faculty"]
     

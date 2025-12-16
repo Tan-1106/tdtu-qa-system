@@ -107,7 +107,7 @@ const DocumentFormModal = ({ open, onClose, onSave, editingDocument, availableFa
                     doc_type: '',
                     file_url: '',
                     department: '',
-                    faculty: isFacultyManager ? currentUser.faculty : '', 
+                    faculty: isFacultyManager ? currentUser.department : '', 
                     is_appendix: docUploadType.NORMAL,
                 });
                 setFileDisplayName('');
@@ -203,7 +203,7 @@ const DocumentFormModal = ({ open, onClose, onSave, editingDocument, availableFa
                     payload.append('faculty', formData.faculty);
                 }
                 if (isFacultyManager && !isAdmin) {
-                    payload.append('faculty', currentUser.faculty);
+                    payload.append('faculty', currentUser.department);
                 }
                 
                 await uploadDocument(payload, formData.is_appendix === docUploadType.APPENDIX);
@@ -371,7 +371,7 @@ const DocumentFormModal = ({ open, onClose, onSave, editingDocument, availableFa
                                 </Stack>
                             ) : (
                                 <Alert severity="info">
-                                    Tài liệu này sẽ được gắn với Khoa {currentUser.faculty}. Bạn không có quyền thay đổi phạm vi.
+                                    Tài liệu này sẽ được gắn với Khoa {currentUser.department}. Bạn không có quyền thay đổi phạm vi.
                                 </Alert>
                             )}
                         </Box>

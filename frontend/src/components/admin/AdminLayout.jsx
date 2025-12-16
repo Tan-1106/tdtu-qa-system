@@ -13,6 +13,7 @@ import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 import DnsIcon from '@mui/icons-material/Dns';
 import MenuIcon from '@mui/icons-material/Menu';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 
 import tdtuLogo from '../../assets/logo_tdtu.png';
 import useUserAuth from '../../hooks/useUserAuth';
@@ -50,10 +51,11 @@ const AdminLayout = () => {
     const departmentName = !isAdmin ? (currentUser?.faculty || currentUser?.department) : null;
 
     const menuItems = [
-        { text: "Thống kê & Phản hồi", to: "/admin/dashboard", icon: <FeedbackIcon /> },
+        { text: "Thống kê và Phản hồi", to: "/admin/dashboard", icon: <FeedbackIcon /> },
+        { text: "Quản lý các câu hỏi phổ biến", to: "/admin/popular-questions", icon: <AutoAwesomeIcon /> },
         { text: "Quản lý Tài liệu", to: "/admin/documents", icon: <ArticleIcon /> },
         { text: "Quản lý Người dùng", to: "/admin/users", icon: <GroupIcon /> },
-        ...(isAdmin ? [{ text: "Quản lý Model & API", to: "/admin/models", icon: <DnsIcon /> }] : [])
+        ...(isAdmin ? [{ text: "Quản lý Model và API", to: "/admin/models", icon: <DnsIcon /> }] : [])
     ];
 
     const drawerContent = (
