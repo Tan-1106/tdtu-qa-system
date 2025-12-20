@@ -333,8 +333,8 @@ const DocumentListPage = () => {
                     {isSidebarOpen ? <CloseIcon /> : <MenuIcon />}
                 </IconButton>
                 
-                <Typography variant="h6" sx={{ fontWeight: 600, flexGrow: 1, color: 'primary.main' }}>
-                    Tài liệu Hệ thống
+                <Typography variant="h6" sx={{ fontWeight: 700, flexGrow: 1, color: 'primary.main' }}>
+                    Tài liệu hệ thống
                 </Typography>
             </Box>
             

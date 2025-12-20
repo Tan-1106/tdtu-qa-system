@@ -43,15 +43,9 @@ const Sidebar = ({ isSidebarOpen, toggleSidebar, activeChatId, setActiveChatId, 
             }));
             setHistory(formattedHistory);
 
-            if (isInitialLoad) { 
-                if (formattedHistory.length > 0) {
-                    setActiveChatId(formattedHistory[0].id);
-                } else {
-                    setActiveChatId(null); 
-                }
-                setIsInitialLoad(false); 
-            } else if (activeChatId === null && formattedHistory.length > 0) {
-                console.log("Sidebar: New chat mode retained.");
+            if (isInitialLoad) {
+                setActiveChatId(null); 
+                setIsInitialLoad(false);
             }
 
         } catch (err) {
