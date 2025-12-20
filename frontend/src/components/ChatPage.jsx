@@ -12,16 +12,37 @@ import { useOutletContext } from 'react-router-dom';
 
 import useUserAuth from '../hooks/useUserAuth';
 import { sendQuery, sendFeedback } from '../api/chatApi'; 
-import axiosInstance from '../axiosInstance';
+import axiosInstance from '../api/axiosInstance';
 
 
 const BOT_WELCOME_MESSAGE = { id: 1, text: 'Chào bạn, tôi là trợ lý ảo của TDTU. Tôi có thể giúp gì cho bạn?', sender: 'bot' };
+
+const TypingText = ({ text, speed = 20, onType, onDone }) => {
+        const [displayed, setDisplayed] = useState('');
+
+        useEffect(() => {
+            let i = 0;
+            const interval = setInterval(() => {
+            i++;
+            setDisplayed(text.slice(0, i));
+            onType?.();
+            if (i >= text.length) {
+                clearInterval(interval);
+                onDone?.();
+            }
+            }, speed);
+
+            return () => clearInterval(interval);
+        }, [text]);
+
+        return <>{displayed}</>;
+        };
+
 
 const ChatPage = () => {
     const theme = useTheme();
     const { user, isLoadingUser, isAuthenticated } = useUserAuth();
     
-    // Lấy context từ UserLayout
     const context = useOutletContext();
     const { 
         isSidebarOpen = true, 
@@ -39,6 +60,16 @@ const ChatPage = () => {
 
     const scrollRef = useRef(null); 
     const chatContentRef = useRef(null);
+    
+    const scrollToBottom = useCallback(() => {
+        scrollRef.current?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'end'
+        });
+        }, []);
+
+    const [pendingChatId, setPendingChatId] = useState(null);
+    
 
     const loadChatSession = useCallback(async (sessionId) => {
         if (!sessionId) {
@@ -71,7 +102,8 @@ const ChatPage = () => {
                     text: originalBotAnswer, 
                     sender: 'bot',
                     feedback: qaRecord.feedback, 
-                    source: botSource 
+                    source: botSource,
+                    isTyping: false
                 }
             ];
 
@@ -139,21 +171,20 @@ const ChatPage = () => {
                 throw new Error("Invalid response format from bot (missing question_id or answer).");
             }
             
-            // Format câu trả lời
             const botResponse = {
                 id: newQaRecordId, 
                 text: botAnswerText, 
                 sender: 'bot',
                 source: 'N/A', 
                 qa_record_id: newQaRecordId, 
-                feedback: null
+                feedback: null,
+                isTyping :true
             };
             
             setMessages(prev => [...prev, botResponse]);
             
             if (activeChatId === null && newQaRecordId !== null) {
-                setActiveChatId(newQaRecordId); 
-                setReloadHistoryKey(Date.now());
+                setPendingChatId(newQaRecordId);
             }
 
         } catch (error) {
@@ -176,7 +207,6 @@ const ChatPage = () => {
         }
     };
     
-    // Gửi Feedback
     const handleFeedback = async (qa_record_id, feedbackType) => {
         if (isLoading) return;
         try {
@@ -200,12 +230,7 @@ const ChatPage = () => {
         return initialUserMsg ? initialUserMsg.text : ' ';
     }, [activeChatId, messages, isLoading]);
 
-
-    if (isLoadingUser || !isAuthenticated || !user) {
-        return null; 
-    }
-    
-    const currentUser = user;
+    const currentUser = user || {};
     const isViewingHistory = activeChatId !== null; 
     const isInputDisabled = isLoading || isViewingHistory; 
     const userAvatarLetter = currentUser.name ? currentUser.name[0] : '?';
@@ -299,7 +324,8 @@ const ChatPage = () => {
                                 color: boxColor,
                                 boxShadow: boxShadow,
                                 borderLeft: borderLeft, 
-                                whiteSpace: 'pre-wrap'
+                                whiteSpace: 'pre-wrap',
+                                animation: (isBot || isManager) ? 'fadeInUp 0.4s ease-out' : 'none'
                             }}
                         >
                             {isManager && (
@@ -311,7 +337,31 @@ const ChatPage = () => {
                                 </Typography>
                             )}
                             
-                            <Typography variant="body1">{msg.text}</Typography>
+                            <Typography variant="body1">
+                                {msg.sender === 'bot' && msg.isTyping ? (
+                                    <TypingText
+                                        text={msg.text}
+                                        onType={() => { scrollToBottom(); }}
+                                        onDone={() => {
+                                            setMessages(prev =>
+                                            prev.map(m =>
+                                                m.id === msg.id ? { ...m, isTyping: false } : m
+                                            )
+                                            );
+
+                                            if (pendingChatId === msg.id) {
+                                                setActiveChatId(msg.id);
+                                                setReloadHistoryKey(Date.now());
+                                                setPendingChatId(null);
+                                            }
+                                        }}
+                                        />
+
+                                ) : (
+                                    msg.text
+                                )}
+                                </Typography>
+
 
                             {isBot && msg.qa_record_id && (
                                 <Box sx={{ mt: 1, display: 'flex', gap: 1 }}>

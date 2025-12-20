@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getCurrentUser, logoutUser } from '../api/userApi';
-import { getAccessToken } from '../axiosInstance'; 
+import { getAccessToken } from '../api/axiosInstance'; 
 
 const useUserAuth = () => {
     const [user, setUser] = useState(null); 
@@ -43,10 +43,14 @@ const useUserAuth = () => {
     }, []);
 
     const handleLogout = async () => {
-        await logoutUser(); 
-        setUser(null);
-        setIsAuthenticated(false);
-        window.location.reload(); 
+        try {
+            await logoutUser(); 
+            setUser(null);
+            setIsAuthenticated(false);
+            window.location.href = '/login';
+        } catch (error) {
+            console.error("Logout failed:", error);
+        }
     };
 
     return { user, isLoadingUser, isAuthenticated, handleLogout };

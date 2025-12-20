@@ -54,6 +54,46 @@ class StatisticalDao:
             records.append(serializer.popular_question_statistics_serialize(document))
         return [record for record in records]
     
+
+    # Count popular questions records for student
+    async def count_popular_questions_student(self, faculty: str, faculty_only: bool) -> int:
+        query = {}
+        if faculty_only:
+            query["$or"] = [
+                {"summary.faculty_scope": faculty},
+            ]
+        else:
+            query["$or"] = [
+                {"summary.faculty_scope": faculty},
+                {"summary.faculty_scope": None}
+            ]
+
+        query["is_display"] = True
+        count = await self.qa_collection.count_documents(query)
+        return count
+    
+
+    # Get popular questions statistics records for student
+    async def get_popular_questions_student(self, skip: int, limit: int, faculty: str = None, faculty_only: bool = False) -> list:
+        records = []
+        query = {}
+        if faculty_only:
+            query["$or"] = [
+                {"summary.faculty_scope": faculty},
+            ]
+        else:
+            query["$or"] = [
+                {"summary.faculty_scope": faculty},
+                {"summary.faculty_scope": None}
+            ]
+
+
+        query["is_display"] = True
+        cursor = self.qa_collection.find(query).skip(skip).limit(limit).sort("created_at", -1)
+        async for document in cursor:
+            records.append(serializer.popular_question_statistics_serialize(document))
+        return [record for record in records]
+    
     
     # Update popular question status
     async def toggle_popular_question_display(self, question_id: str) -> dict:

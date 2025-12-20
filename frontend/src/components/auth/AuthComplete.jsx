@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Box, CircularProgress, Paper, Alert, Typography, Button } from '@mui/material'; 
 import SchoolIcon from '@mui/icons-material/School';
-import axiosInstance, { setTokens } from '../../axiosInstance'; 
+import axiosInstance, { setTokens } from '../../api/axiosInstance'; 
 
 const extractError = (error, defaultMessage) => {
     if (error.response?.data?.details) {

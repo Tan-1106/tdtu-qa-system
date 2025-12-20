@@ -31,6 +31,13 @@ async def get_popular_questions(page: int, limit: int, is_display: bool, faculty
     return result
 
 
+# Get popular question statistics for student
+async def get_popular_questions_student(page: int, limit: int, faculty_only: bool, current_user: dict):
+    faculty = current_user["faculty"]
+    result = await statistical_service.get_popular_questions_student(page, limit, faculty, faculty_only)
+    return result
+
+
 # Toggle popular question display status
 async def toggle_popular_question_display(
     question_id: str,

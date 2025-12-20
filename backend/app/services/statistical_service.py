@@ -83,6 +83,20 @@ async def get_popular_questions(page: int, limit: int, is_display: bool, faculty
         "total_pages": total_pages,
         "current_page": page
     }
+
+
+# Get popular question statistics records for student
+async def get_popular_questions_student(page: int, limit: int, faculty: str, faculty_only: bool):
+    skip = (page - 1) * limit
+    total = await StatisticalDao().count_popular_questions_student(faculty, faculty_only)
+    total_pages = (total + limit - 1) // limit
+    result = await StatisticalDao().get_popular_questions_student(skip, limit, faculty, faculty_only)
+    return {
+        "popular_questions": jsonable_encoder(result),
+        "total": total,
+        "total_pages": total_pages,
+        "current_page": page
+    }
     
     
 # Assign faculty scope to popular question

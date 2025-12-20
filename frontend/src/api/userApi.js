@@ -1,5 +1,5 @@
-import axiosInstance from '../axiosInstance'; 
-import { clearTokens } from '../axiosInstance'; 
+import axiosInstance from './axiosInstance'; 
+import { clearTokens } from './axiosInstance'; 
 
 export const getCurrentUser = async () => {
     try {

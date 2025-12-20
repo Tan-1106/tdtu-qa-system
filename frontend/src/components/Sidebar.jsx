@@ -23,7 +23,6 @@ const Sidebar = ({ isSidebarOpen, toggleSidebar, activeChatId, setActiveChatId, 
     const [fetchError, setFetchError] = useState(null); 
     const [isInitialLoad, setIsInitialLoad] = useState(true); 
 
-    // Hàm tải lịch sử chat
     const loadHistory = useCallback(async () => {
         if (!user || !user._id) {
             console.log("Sidebar: Skipping history load - User ID not available.");
@@ -234,7 +233,6 @@ const Sidebar = ({ isSidebarOpen, toggleSidebar, activeChatId, setActiveChatId, 
                             <Box component="span" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flexGrow: 1, textAlign: 'left' }}>
                                 {chat.title}
                             </Box>
-                            {/* THÔNG BÁO MANAGER TRẢ LỜI */}
                             {chat.hasManagerAnswer && (
                                 <Box 
                                     component="span" 

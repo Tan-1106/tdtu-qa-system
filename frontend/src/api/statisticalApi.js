@@ -1,4 +1,4 @@
-import axiosInstance from '../axiosInstance';
+import axiosInstance from './axiosInstance';
 
 const STATISTICAL_BASE_URL = '/statistics';
 
@@ -33,7 +33,7 @@ export const getPopularQuestions = async (rawParams = {}) => {
 
 export const getPopularQuestionsForUser = async (page = 1, limit = 10) => {
     try {
-        const response = await axiosInstance.get(`${STATISTICAL_BASE_URL}/popular-questions`, {
+        const response = await axiosInstance.get(`${STATISTICAL_BASE_URL}/popular-questions-student`, {
             params: {
                 page: page,
                 limit: limit,

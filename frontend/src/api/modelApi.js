@@ -1,4 +1,4 @@
-import axiosInstance from '../axiosInstance';
+import axiosInstance from './axiosInstance';
 
 const BASE_URL = '/model/api-keys';
 const AVAILABLE_MODELS_URL = '/model/available-models';
