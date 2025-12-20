@@ -24,7 +24,7 @@ const PopularQuestionsPage = () => {
     const [questions, setQuestions] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [searchTerm, setSearchTerm] = useState(''); // Lọc nhanh tại chỗ
+    const [searchTerm, setSearchTerm] = useState(''); 
     
     const [page, setPage] = useState(0); 
     const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -153,14 +153,13 @@ const PopularQuestionsPage = () => {
                                 </AccordionSummary>
                                 <AccordionDetails sx={{ px: 3, pb: 3, pt: 2, bgcolor: '#fafafa' }}>
                                     <Box sx={{ pl: 6 }}>
-                                        {/* Thay thế TypewriterMessage bằng Typography thuần có style chuẩn */}
                                         <Typography 
                                             variant="body1" 
                                             sx={{ 
                                                 whiteSpace: 'pre-wrap', 
                                                 wordBreak: 'break-word',
                                                 color: 'text.primary',
-                                                lineHeight: 1.6 // Tăng khoảng cách dòng cho dễ đọc
+                                                lineHeight: 1.6 
                                             }}
                                         >
                                             {item.answer || 'Chưa có câu trả lời.'}
