@@ -3,21 +3,23 @@ import {
     Dialog, DialogTitle, DialogContent, DialogActions, Button, 
     Box, Typography, CircularProgress, Alert, 
     Table, TableBody, TableCell, TableContainer, TableHead, 
-    TableRow, Paper, TablePagination, Accordion, AccordionSummary, 
-    AccordionDetails, Chip, IconButton, TextField, Stack 
+    TableRow, Paper, TablePagination, Chip, IconButton, TextField, Stack, Divider
 } from '@mui/material';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
+import CloseIcon from '@mui/icons-material/Close';
+import DescriptionIcon from '@mui/icons-material/Description';
+import KeyIcon from '@mui/icons-material/Key';
 import { 
     getChunksByDocumentId, 
     addPotentialQuestionToChunk, 
     deletePotentialQuestionFromChunk 
 } from '../../api/documentApi'; 
-import { extractError } from '../../utils/apiUtils';
 
+export const extractError = (error, defaultMessage = 'Lỗi không xác định.') => {
+    return error.response?.data?.details || error.message || defaultMessage;
+};
 
-// Hàm chuyển đổi object chunks thành mảng có key là index
 const formatChunksData = (documentChunksObj) => {
     if (!documentChunksObj || typeof documentChunksObj !== 'object') return [];
     
@@ -28,7 +30,6 @@ const formatChunksData = (documentChunksObj) => {
         embedding_ids: value.embedding_ids || []
     })).sort((a, b) => a.index - b.index); 
 };
-
 
 const DocumentChunksModal = ({ open, onClose, document }) => {
     const [chunksData, setChunksData] = useState([]);
@@ -44,7 +45,6 @@ const DocumentChunksModal = ({ open, onClose, document }) => {
     const documentId = document?._id || document?.id;
     const documentName = document?.file_name || 'Tài liệu không tên';
 
-    // Reset state khi modal đóng
     useEffect(() => {
         if (!open) {
             setChunksData([]);
@@ -58,261 +58,183 @@ const DocumentChunksModal = ({ open, onClose, document }) => {
         }
     }, [open, documentId]);
 
-    // Fetch chunks
     const fetchChunks = useCallback(async (targetPage = page, targetLimit = rowsPerPage) => {
         if (!documentId) return;
-
         setIsLoading(true);
-        setError(null);
-        setSuccessMsg(null);
-        
         try {
             const result = await getChunksByDocumentId(documentId, targetPage + 1, targetLimit);
-            
             const formattedChunks = formatChunksData(result.document_chunks);
-            
             setChunksData(formattedChunks);
             setTotalChunks(result.total);
             setPage(result.current_page - 1); 
-            
         } catch (err) {
-            console.error("Error fetching document chunks:", err);
             setError(extractError(err, 'Lỗi khi tải danh sách chunks.'));
-            setChunksData([]);
-            setTotalChunks(0);
         } finally {
             setIsLoading(false);
         }
     }, [documentId, page, rowsPerPage]);
 
-    // Re-fetch khi thay đổi trang/số dòng
     useEffect(() => {
         if (open && documentId && !isLoading) {
             fetchChunks();
         }
     }, [page, rowsPerPage, fetchChunks]);
     
-    // Pagination Handlers
-    const handleChangePage = (event, newPage) => {
-        setPage(newPage);
-    };
-
+    const handleChangePage = (event, newPage) => setPage(newPage);
     const handleChangeRowsPerPage = (event) => {
         setRowsPerPage(parseInt(event.target.value, 10));
         setPage(0); 
     };
     
-    // --- Quản lý Câu hỏi Tiềm năng ---
-
-    const handleNewQuestionChange = (chunkIndex, value) => {
-        setNewQuestionInput(prev => ({ ...prev, [chunkIndex]: value }));
-    };
-
     const handleAddQuestion = async (chunkIndex) => {
         const question = newQuestionInput[chunkIndex]?.trim();
-        if (!question) {
-            setError('Câu hỏi không được để trống.');
-            return;
-        }
-
+        if (!question) return;
         setIsActionLoading(true);
-        setError(null);
-        setSuccessMsg(null);
-        
         try {
             await addPotentialQuestionToChunk(documentId, chunkIndex, question); 
-            
             setNewQuestionInput(prev => ({ ...prev, [chunkIndex]: '' }));
-            setSuccessMsg(`Đã thêm câu hỏi cho Chunk #${chunkIndex}. Đang tải lại danh sách...`);
-            
             await fetchChunks(); 
-            
         } catch (err) {
-            console.error("Error adding potential question:", err);
-            setError(extractError(err, `Thêm câu hỏi cho Chunk #${chunkIndex} thất bại.`));
+            setError(extractError(err, `Lỗi khi thêm câu hỏi.`));
         } finally {
             setIsActionLoading(false);
         }
     };
+
     const handleDeleteQuestion = async (chunkIndex, questionIndex, questionText) => {
-        if (!window.confirm(`Bạn có chắc chắn muốn xóa câu hỏi "${questionText}" khỏi Chunk #${chunkIndex}? Thao tác này cũng xóa embedding liên quan.`)) {
-            return;
-        }
-
+        if (!window.confirm(`Xóa câu hỏi này?`)) return;
         setIsActionLoading(true);
-        setError(null);
-        setSuccessMsg(null);
-
         try {
             await deletePotentialQuestionFromChunk(documentId, chunkIndex, questionIndex); 
-            
-            setSuccessMsg(`Đã xóa câu hỏi #${questionIndex} khỏi Chunk #${chunkIndex}. Đang tải lại danh sách...`);
-            
             await fetchChunks();
-
         } catch (err) {
-            console.error("Error deleting potential question:", err);
-            setError(extractError(err, `Xóa câu hỏi #${questionIndex} khỏi Chunk #${chunkIndex} thất bại.`));
+            setError(extractError(err, `Lỗi khi xóa câu hỏi.`));
         } finally {
             setIsActionLoading(false);
         }
     };
 
-    // Render logic
-    const chunksList = useMemo(() => formatChunksData(chunksData), [chunksData]);
-
     return (
-        <Dialog
-            open={open}
-            onClose={onClose}
-            maxWidth="lg"
-            fullWidth
-        >
-            <DialogTitle sx={{ bgcolor: 'primary.main', color: 'white' }}>
-                Chi tiết Chunks và Câu hỏi Tiềm năng
+        <Dialog open={open} onClose={onClose} maxWidth="xl" fullWidth scroll="paper">
+            <DialogTitle sx={{ 
+                m: 0, p: 2, bgcolor: 'primary.main', color: 'white',
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+            }}>
+                <Typography variant="h6" fontWeight={700}>CHI TIẾT DỮ LIỆU TRÍCH XUẤT (CHUNKS)</Typography>
+                <IconButton onClick={onClose} sx={{ color: 'white' }}><CloseIcon /></IconButton>
             </DialogTitle>
-            <DialogContent dividers sx={{ minHeight: 400, position: 'relative' }}>
-                <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
-                    Tài liệu: {documentName} (ID: {documentId})
-                </Typography>
 
-                {error && <Alert severity="error" sx={{ my: 2 }}>{error}</Alert>}
-                {successMsg && <Alert severity="success" sx={{ my: 2 }}>{successMsg}</Alert>}
-                
-                {isActionLoading && (
-                    <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, bgcolor: 'rgba(255, 255, 255, 0.7)', zIndex: 1000, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                        <CircularProgress size={60} />
-                    </Box>
-                )}
-                
-                {isLoading && chunksList.length === 0 ? (
-                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px' }}>
-                        <CircularProgress />
-                        <Typography sx={{ ml: 2 }}>Đang tải chunks...</Typography>
-                    </Box>
-                ) : (
-                    <>
-                        <TableContainer component={Paper} elevation={2} sx={{ mb: 2 }}>
-                            <Table size="small">
-                                <TableHead sx={{ bgcolor: 'grey.100' }}>
-                                    <TableRow>
-                                        <TableCell sx={{ width: '5%', fontWeight: 'bold' }}>#</TableCell>
-                                        <TableCell sx={{ width: '40%', fontWeight: 'bold' }}>Đoạn văn bản (Text)</TableCell>
-                                        <TableCell sx={{ width: '55%', fontWeight: 'bold' }}>Câu hỏi Tiềm năng ({totalChunks} Chunks)</TableCell>
-                                    </TableRow>
-                                </TableHead>
-                                <TableBody>
-                                    {chunksList.map((chunk) => (
-                                        <TableRow key={chunk.index} hover>
-                                            <TableCell sx={{ fontWeight: 600 }}>{chunk.index}</TableCell>
-                                            <TableCell>
-                                                <Typography 
-                                                    variant="body2" 
-                                                    sx={{ 
-                                                        maxHeight: '150px', 
-                                                        overflowY: 'auto', 
-                                                        whiteSpace: 'pre-wrap' 
-                                                    }}
-                                                >
-                                                    {chunk.text}
-                                                </Typography>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Stack spacing={1}>
-                                                    {/* Danh sách các câu hỏi hiện có */}
-                                                    {chunk.potential_questions.map((question, qIndex) => (
-                                                        <Box 
-                                                            key={qIndex} 
-                                                            sx={{ 
-                                                                display: 'flex', 
-                                                                justifyContent: 'space-between', 
-                                                                alignItems: 'center', 
-                                                                p: 0.5, 
-                                                                border: '1px solid #ccc', 
-                                                                borderRadius: '8px' 
-                                                            }}
-                                                        >
-                                                            <Typography variant="body2" sx={{ 
-                                                                flexGrow: 1, 
-                                                                wordBreak: 'break-word', 
-                                                                mr: 1 
-                                                            }}>
-                                                                <span style={{ fontWeight: 600, color: '#1976d2' }}>[{qIndex}]</span> {question}
-                                                            </Typography>
-                                                            
-                                                            <IconButton
-                                                                size="small"
-                                                                onClick={() => handleDeleteQuestion(chunk.index, qIndex, question)}
-                                                                sx={{ 
-                                                                    color: 'error.main', 
-                                                                    minWidth: '24px', 
-                                                                    height: '24px', 
-                                                                    p: 0 
-                                                                }}
-                                                                disabled={isActionLoading}
-                                                            >
-                                                                <DeleteIcon fontSize="inherit" />
-                                                            </IconButton>
-                                                        </Box>
-                                                    ))}
-                                                    
-                                                    {/* Form thêm câu hỏi mới */}
-                                                    <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
-                                                        <TextField
-                                                            fullWidth
-                                                            variant="outlined"
-                                                            size="small"
-                                                            placeholder="Nhập câu hỏi mới..."
-                                                            value={newQuestionInput[chunk.index] || ''}
-                                                            onChange={(e) => handleNewQuestionChange(chunk.index, e.target.value)}
-                                                            onKeyDown={(e) => e.key === 'Enter' && handleAddQuestion(chunk.index)}
-                                                            disabled={isActionLoading}
-                                                        />
-                                                        <Button
-                                                            variant="contained"
-                                                            onClick={() => handleAddQuestion(chunk.index)}
-                                                            startIcon={<AddIcon />}
-                                                            size="small"
-                                                            disabled={isActionLoading || !newQuestionInput[chunk.index]?.trim()}
-                                                        >
-                                                            Thêm
-                                                        </Button>
-                                                    </Stack>
-                                                </Stack>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                    {chunksList.length === 0 && !isLoading && (
-                                        <TableRow>
-                                            <TableCell colSpan={3} align="center" sx={{ color: 'text.secondary', py: 4 }}>
-                                                Tài liệu này chưa có chunks nào.
-                                            </TableCell>
-                                        </TableRow>
-                                    )}
-                                </TableBody>
-                            </Table>
-                        </TableContainer>
+            <DialogContent dividers sx={{ bgcolor: '#f8f9fa', p: 3 }}>
+                <Paper elevation={0} sx={{ p: 2, mb: 3, borderRadius: 2, border: '1px dashed #1976d2', bgcolor: '#e3f2fd' }}>
+                    <Stack spacing={1}>
+                        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                            <DescriptionIcon color="primary" sx={{ mt: 0.3 }} />
+                            <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#1565c0', lineHeight: 1.3 }}>
+                                {documentName}
+                            </Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <KeyIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+                            <Typography variant="caption" sx={{ fontFamily: 'monospace', color: 'text.secondary', bgcolor: 'white', px: 1, borderRadius: 1 }}>
+                                ID: {documentId}
+                            </Typography>
+                        </Box>
+                    </Stack>
+                </Paper>
 
-                        <TablePagination
-                            component="div"
-                            count={totalChunks}
-                            page={page}
-                            onPageChange={handleChangePage}
-                            rowsPerPage={rowsPerPage}
-                            onRowsPerPageChange={handleChangeRowsPerPage}
-                            rowsPerPageOptions={[5, 10, 20, 50]}
-                            labelRowsPerPage="Chunks mỗi trang:"
-                            labelDisplayedRows={({ from, to, count }) =>
-                                `${from}-${to} trên ${count} Chunks`
-                            }
-                        />
-                    </>
-                )}
+                {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+                
+                <TableContainer component={Paper} elevation={3} sx={{ borderRadius: 2, position: 'relative' }}>
+                    {isLoading && (
+                        <Box sx={{ position: 'absolute', zIndex: 10, width: '100%', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', bgcolor: 'rgba(255,255,255,0.7)' }}>
+                            <CircularProgress />
+                        </Box>
+                    )}
+                    <Table>
+                        <TableHead sx={{ bgcolor: '#2c3e50' }}>
+                            <TableRow>
+                                <TableCell sx={{ width: '60px', color: 'white', fontWeight: 700 }}></TableCell>
+                                <TableCell sx={{ width: '60%', color: 'white', fontWeight: 700 }}>Nội dung đoạn văn (Text Chunk)</TableCell>
+                                <TableCell sx={{ color: 'white', fontWeight: 700 }}>Câu hỏi huấn luyện AI</TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {chunksData.map((chunk) => (
+                                <TableRow key={chunk.index} sx={{ '&:nth-of-type(odd)': { bgcolor: '#ffffff' }, '&:nth-of-type(even)': { bgcolor: '#fcfcfc' } }}>
+                                    <TableCell sx={{ verticalAlign: 'top', fontWeight: 700 }}>
+                                        <Chip label={chunk.index} size="small" color="primary" variant="outlined" />
+                                    </TableCell>
+                                    <TableCell sx={{ verticalAlign: 'top' }}>
+                                        <Box sx={{ 
+                                            height: 'auto', 
+                                            minHeight: '100px', 
+                                            pr: 1,
+                                            fontSize: '0.95rem',
+                                            lineHeight: 1.6,
+                                            color: '#34495e',
+                                            whiteSpace: 'pre-wrap', 
+                                        }}>
+                                            {chunk.text}
+                                        </Box>
+                                    </TableCell>
+                                    <TableCell sx={{ verticalAlign: 'top', bgcolor: '#fdfefe' }}>
+                                        <Stack spacing={1.5}>
+                                            {chunk.potential_questions.map((question, qIndex) => (
+                                                <Box key={qIndex} sx={{ 
+                                                    display: 'flex', gap: 1, p: 1.5, borderRadius: 1.5, 
+                                                    bgcolor: 'white', border: '1px solid #e0e0e0',
+                                                    boxShadow: '0 2px 4px rgba(0,0,0,0.03)',
+                                                    '&:hover': { borderColor: 'primary.light' }
+                                                }}>
+                                                    <Typography variant="body2" sx={{ flexGrow: 1, color: '#2c3e50' }}>
+                                                        <b style={{ color: '#1976d2' }}>Q{qIndex + 1}:</b> {question}
+                                                    </Typography>
+                                                    <IconButton size="small" onClick={() => handleDeleteQuestion(chunk.index, qIndex, question)} color="error" sx={{ p: 0.5 }}>
+                                                        <DeleteIcon fontSize="small" />
+                                                    </IconButton>
+                                                </Box>
+                                            ))}
+                                            
+                                            <Box sx={{ mt: 1, p: 1.5, borderRadius: 1.5, border: '1px dashed #95a5a6' }}>
+                                                <TextField
+                                                    fullWidth multiline rows={2} variant="standard"
+                                                    placeholder="Thêm câu hỏi tiềm năng cho đoạn văn này..."
+                                                    value={newQuestionInput[chunk.index] || ''}
+                                                    onChange={(e) => setNewQuestionInput({...newQuestionInput, [chunk.index]: e.target.value})}
+                                                    InputProps={{ disableUnderline: true, sx: { fontSize: '0.875rem' } }}
+                                                />
+                                                <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}>
+                                                    <Button 
+                                                        size="small" variant="contained" startIcon={<AddIcon />}
+                                                        disabled={!newQuestionInput[chunk.index]?.trim() || isActionLoading}
+                                                        onClick={() => handleAddQuestion(chunk.index)}
+                                                    >
+                                                        Thêm câu hỏi
+                                                    </Button>
+                                                </Box>
+                                            </Box>
+                                        </Stack>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+
+                <TablePagination
+                    component="div"
+                    count={totalChunks}
+                    page={page}
+                    onPageChange={handleChangePage}
+                    rowsPerPage={rowsPerPage}
+                    onRowsPerPageChange={handleChangeRowsPerPage}
+                    rowsPerPageOptions={[5, 10, 20]}
+                    labelRowsPerPage="Số dòng:"
+                    sx={{ mt: 1 }}
+                />
             </DialogContent>
-            <DialogActions>
-                <Button onClick={onClose} variant="contained" color="secondary">
-                    Đóng
-                </Button>
+            <DialogActions sx={{ p: 2, bgcolor: '#f1f2f6' }}>
+                <Button onClick={onClose} variant="outlined" color="inherit">Đóng cửa sổ</Button>
             </DialogActions>
         </Dialog>
     );

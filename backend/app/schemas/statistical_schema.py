@@ -10,7 +10,7 @@ class PeriodType(str, Enum):
     
     
 class AssignFacultyScopeRequestSchema(BaseModel):
-    faculty: str
+    faculty: Optional[str] = None
     class Config:
         from_attributes = True
         extra = "forbid"

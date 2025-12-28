@@ -34,13 +34,15 @@ const AssignFacultyDialog = ({ open, onClose, question, onSave, faculties }) => 
         setLoading(true);
         setError(null);
         try {
-            const facultyToAssign = selectedFaculty === '' ? null : selectedFaculty;
-            await assignFacultyScope(question.id, facultyToAssign);
+            await assignFacultyScope(question.id, selectedFaculty);
             onSave();
         } catch (err) {
-            const errorMessage = err.response?.data?.details || err.message || 'Lỗi khi chỉ định khoa.';
-            setError(errorMessage);
             console.error(err);
+            const errorMessage = err.response?.data?.details || 
+                                err.response?.data?.message || 
+                                'Lỗi khi chỉ định khoa.';
+            
+            setError(typeof errorMessage === 'object' ? JSON.stringify(errorMessage) : errorMessage);
         } finally {
             setLoading(false);
         }
@@ -52,7 +54,7 @@ const AssignFacultyDialog = ({ open, onClose, question, onSave, faculties }) => 
             <DialogContent dividers>
                 {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
                 <Typography variant="body1" sx={{ mb: 2 }}>
-                    **Câu hỏi:** {question?.question}
+                    Câu hỏi: {question?.question}
                 </Typography>
                 <FormControl fullWidth margin="dense">
                     <Select
@@ -62,7 +64,7 @@ const AssignFacultyDialog = ({ open, onClose, question, onSave, faculties }) => 
                         disabled={loading}
                     >
                         <MenuItem value="">
-                            <em>Không giới hạn (Toàn trường)</em>
+                            <em>Toàn trường</em>
                         </MenuItem>
                         {faculties.map((faculty) => (
                             <MenuItem key={faculty} value={faculty}>{faculty}</MenuItem>
@@ -70,10 +72,29 @@ const AssignFacultyDialog = ({ open, onClose, question, onSave, faculties }) => 
                     </Select>
                 </FormControl>
             </DialogContent>
-            <DialogActions>
-                <Button onClick={onClose} disabled={loading}>Hủy</Button>
-                <Button onClick={handleSave} color="primary" disabled={loading} startIcon={loading && <CircularProgress size={20} />}>
-                    Lưu
+            <DialogActions sx={{ px: 3, pb: 2 }}>
+                <Button 
+                    onClick={onClose} 
+                    disabled={loading}
+                    variant="outlined" 
+                    color="inherit"
+                    sx={{ borderRadius: 2 }}
+                >
+                    Hủy
+                </Button>
+                <Button 
+                    onClick={handleSave} 
+                    color="info" 
+                    variant="contained" 
+                    disabled={loading} 
+                    startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <SchoolIcon />}
+                    sx={{ 
+                        borderRadius: 2,
+                        boxShadow: '0 4px 12px 0 rgba(2, 136, 209, 0.3)',
+                        px: 4
+                    }}
+                >
+                    Xác nhận
                 </Button>
             </DialogActions>
         </Dialog>
@@ -129,7 +150,11 @@ const EditQuestionDialog = ({ open, onClose, question, onSave }) => {
 
     return (
         <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
-            <DialogTitle>Chỉnh sửa Câu hỏi Phổ biến</DialogTitle>
+            <DialogTitle sx={{ bgcolor: 'primary.main', color: 'white', mb: 2 }}>
+                <Stack direction="row" alignItems="center" spacing={1}>
+                    <Typography variant="h6">Chỉnh sửa câu hỏi và câu trả lời</Typography>
+                </Stack>
+            </DialogTitle>
             <DialogContent dividers>
                 {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
                 
@@ -153,14 +178,32 @@ const EditQuestionDialog = ({ open, onClose, question, onSave }) => {
                     value={editedAnswer}
                     onChange={(e) => setEditedAnswer(e.target.value)}
                     multiline
-                    rows={6}
+                    minRows={15}
+                    maxRows={25}
                     disabled={loading}
+                    sx={{ 
+                        mb: 2,
+                        '& .MuiInputBase-root': {
+                            lineHeight: 1.5, 
+                            fontSize: '0.95rem' 
+                        }
+                    }}
                 />
             </DialogContent>
-            <DialogActions>
-                <Button onClick={onClose} disabled={loading}>Hủy</Button>
-                <Button onClick={handleSave} color="primary" disabled={isSaveDisabled} startIcon={loading && <CircularProgress size={20} />}>
-                    Lưu
+            <DialogActions sx={{ px: 3, pb: 2 }}>
+                <Button onClick={onClose} color="inherit">Hủy bỏ</Button>
+                <Button 
+                    onClick={handleSave} 
+                    color="primary" 
+                    variant="contained" 
+                    disabled={isSaveDisabled}
+                    sx={{ 
+                        borderRadius: 2,
+                        px: 4,
+                        '&.Mui-disabled': { bgcolor: 'action.disabledBackground' }
+                    }}
+                >
+                    Lưu thay đổi
                 </Button>
             </DialogActions>
         </Dialog>

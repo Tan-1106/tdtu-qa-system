@@ -76,20 +76,20 @@ export const togglePopularQuestionDisplay = async (questionId) => {
 
 export const assignFacultyScope = async (questionId, faculty) => {
     try {
-        const facultyData = faculty === null ? {} : { faculty: faculty };
+        const facultyData = { 
+            faculty: (faculty === '' || faculty === undefined) ? null : faculty 
+        };
         
-        const response = await axiosInstance.patch(`${STATISTICAL_BASE_URL}/popular-questions/${questionId}/assign-faculty`, 
+        const response = await axiosInstance.patch(
+            `${STATISTICAL_BASE_URL}/popular-questions/${questionId}/assign-faculty`, 
             facultyData
         );
-        if (response.data.status_code === 200) {
-            return response.data.details;
-        }
-        throw new Error(response.data.message || 'Failed to assign faculty scope.');
+        
+        return response.data;
     } catch (error) {
         throw error;
     }
 };
-
 export const updatePopularQuestion = async (questionId, updateData) => {
     try {
         const response = await axiosInstance.patch(`${STATISTICAL_BASE_URL}/popular-questions/${questionId}/update`, updateData);

@@ -57,12 +57,12 @@ const ManagerAnswerModal = ({ open, onClose, qaRecord, onSave }) => {
                     <Typography>{qaRecord.botAnswer || 'Không có câu trả lời từ BOT.'}</Typography>
                 </Box>
 
-                <Typography variant="body1" sx={{ fontWeight: 600, mb: 1 }}>Câu trả lời của Quản lý/Chuyên viên (Sẽ hiển thị cho User):</Typography>
+                <Typography variant="body1" sx={{ fontWeight: 600, mb: 1 }}>Câu trả lời của quản lý</Typography>
                 <TextField
                     fullWidth
                     multiline
                     rows={8}
-                    label="Nhập câu trả lời đã chỉnh sửa/xác nhận"
+                    label="Nhập câu trả lời"
                     value={answer}
                     onChange={(e) => setAnswer(e.target.value)}
                     variant="outlined"

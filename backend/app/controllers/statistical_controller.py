@@ -57,7 +57,7 @@ async def toggle_popular_question_display(
 # Assign faculty scope to popular question
 async def assign_faculty_scope_to_popular_question(question_id: str, faculty: str):
     faculties = await user_service.get_all_existing_faculties()
-    if faculty not in faculties and faculty is not None:
+    if faculty is not None and faculty not in faculties:
         raise UserError("Invalid faculty specified.")
     
     result = await statistical_service.assign_faculty_scope_to_popular_question(question_id, faculty)

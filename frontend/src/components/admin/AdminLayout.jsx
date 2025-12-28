@@ -53,7 +53,7 @@ const AdminLayout = () => {
                     <Box component="img" src={tdtuLogo} sx={{ height: 40, borderRadius: 1 }} />
                     {(open || isMobile) && <Typography variant="h6" fontWeight={700}>{sidebarTitle}</Typography>}
                 </Stack>
-                {open && user.department && (
+                {open && !isAdmin && user.department && (
                     <Typography variant="caption" sx={{ mt: 1, opacity: 0.8 }}>{user.department}</Typography>
                 )}
             </Toolbar>
