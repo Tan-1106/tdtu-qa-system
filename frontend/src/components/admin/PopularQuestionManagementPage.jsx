@@ -50,7 +50,7 @@ const AssignFacultyDialog = ({ open, onClose, question, onSave, faculties }) => 
 
     return (
         <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-            <DialogTitle>Chỉ định Phạm vi Khoa</DialogTitle>
+            <DialogTitle>Chỉ định phạm vi</DialogTitle>
             <DialogContent dividers>
                 {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
                 <Typography variant="body1" sx={{ mb: 2 }}>
@@ -87,7 +87,6 @@ const AssignFacultyDialog = ({ open, onClose, question, onSave, faculties }) => 
                     color="info" 
                     variant="contained" 
                     disabled={loading} 
-                    startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <SchoolIcon />}
                     sx={{ 
                         borderRadius: 2,
                         boxShadow: '0 4px 12px 0 rgba(2, 136, 209, 0.3)',

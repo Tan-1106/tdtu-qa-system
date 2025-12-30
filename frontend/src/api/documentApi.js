@@ -2,10 +2,6 @@ import axiosInstance from './axiosInstance';
 
 const BASE_URL = '/documents';
 
-/**
- * Lấy danh sách tài liệu chung (Phòng ban)
- * Dùng cho Admin (có thể lọc theo department) và Faculty Manager (chỉ thấy faculty của mình)
- */
 export const getGeneralDocuments = async (params = {}) => {
     try {
         const response = await axiosInstance.get(`${BASE_URL}/general`, {
@@ -24,10 +20,6 @@ export const getGeneralDocuments = async (params = {}) => {
     }
 };
 
-/**
- * Lấy danh sách tài liệu Khoa (Faculty)
- * Dùng cho Admin (có thể lọc theo faculty) và Faculty Manager (chỉ thấy faculty của mình)
- */
 export const getFacultyDocuments = async (params = {}) => {
     try {
         const response = await axiosInstance.get(`${BASE_URL}/faculty`, {
@@ -70,11 +62,7 @@ export const getDocTypes = async () => {
     }
 };
 
-/**
- * Upload tài liệu mới (PDF)
- * @param {FormData} formData - Chứa file, doc_type, file_url, department/faculty
- * @param {boolean} isAppendix - Xác định dùng endpoint upload hay upload-appendix
- */
+
 export const uploadDocument = async (formData, isAppendix = false) => {
     const endpoint = isAppendix ? `${BASE_URL}/upload-appendix` : `${BASE_URL}/upload`;
     try {
@@ -92,11 +80,7 @@ export const uploadDocument = async (formData, isAppendix = false) => {
     }
 };
 
-/**
- * Cập nhật thông tin tài liệu
- * @param {string} docId 
- * @param {object} updateData - { file_name, doc_type, department, faculty, file_url }
- */
+
 export const updateDocument = async (docId, updateData) => {
     const response = await axiosInstance.patch(`${BASE_URL}/${docId}`, updateData);
     if (response.data.status_code === 200) {
@@ -105,10 +89,7 @@ export const updateDocument = async (docId, updateData) => {
     throw new Error(response.data.message || 'Failed to update document.');
 };
 
-/**
- * Xóa tài liệu
- * @param {string} docId 
- */
+
 export const deleteDocument = async (docId) => {
     const response = await axiosInstance.delete(`${BASE_URL}/${docId}`);
     if (response.data.status_code === 200) {
@@ -133,14 +114,6 @@ export const getDocumentFileBlob = async (docId) => {
 import { getFaculties } from './adminApi';
 export { getFaculties };
 
-// --- APIs CHO DOCUMENT CHUNKS ---
-
-/**
- * Lấy danh sách document chunks của một tài liệu
- * @param {string} docId - ID của tài liệu
- * @param {number} page - Trang hiện tại (bắt đầu từ 1)
- * @param {number} limit - Số lượng chunk mỗi trang
- */
 export const getChunksByDocumentId = async (docId, page = 1, limit = 10) => {
     try {
         const response = await axiosInstance.get(`/document-chunks/${docId}`, {
@@ -156,12 +129,7 @@ export const getChunksByDocumentId = async (docId, page = 1, limit = 10) => {
     }
 };
 
-/**
- * Thêm một câu hỏi tiềm năng vào một chunk cụ thể
- * @param {string} docId - ID tài liệu
- * @param {number} chunkIndex - Index của chunk
- * @param {string} question - Nội dung câu hỏi mới
- */
+
 export const addPotentialQuestionToChunk = async (docId, chunkIndex, question) => {
     const response = await axiosInstance.post(
         `/document-chunks/${docId}/chunks/${chunkIndex}/potential-questions`, 
@@ -173,12 +141,6 @@ export const addPotentialQuestionToChunk = async (docId, chunkIndex, question) =
     throw new Error(response.data.message || 'Failed to add potential question.');
 };
 
-/**
- * Xóa một câu hỏi tiềm năng khỏi một chunk cụ thể
- * @param {string} docId - ID tài liệu
- * @param {number} chunkIndex - Index của chunk
- * @param {number} questionIndex - Index của câu hỏi trong mảng potential_questions
- */
 export const deletePotentialQuestionFromChunk = async (docId, chunkIndex, questionIndex) => {
     const response = await axiosInstance.delete(
         `/document-chunks/${docId}/chunks/${chunkIndex}/potential-questions/${questionIndex}`

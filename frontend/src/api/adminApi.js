@@ -220,3 +220,18 @@ export const calculateDashboardMetrics = async (userFaculty) => {
         totalUsers
     };
 };
+
+export const getUserChatHistory = async (userId, page = 1, limit = 10) => {
+    try {
+        const response = await axiosInstance.get(`${QA_BASE_URL}/${userId}/history`, {
+            params: { page, limit }
+        });
+        if (response.data.status_code === 200) {
+            return response.data.details; 
+        }
+        throw new Error(response.data.message || 'Không thể tải lịch sử chat.');
+    } catch (error) {
+        console.error("Lỗi khi gọi API getUserChatHistory:", error);
+        throw error;
+    }
+};

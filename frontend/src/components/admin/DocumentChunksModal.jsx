@@ -233,9 +233,6 @@ const DocumentChunksModal = ({ open, onClose, document }) => {
                     sx={{ mt: 1 }}
                 />
             </DialogContent>
-            <DialogActions sx={{ p: 2, bgcolor: '#f1f2f6' }}>
-                <Button onClick={onClose} variant="outlined" color="inherit">Đóng cửa sổ</Button>
-            </DialogActions>
         </Dialog>
     );
 };

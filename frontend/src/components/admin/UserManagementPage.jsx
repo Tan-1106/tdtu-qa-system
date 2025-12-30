@@ -8,12 +8,14 @@ import EditIcon from '@mui/icons-material/Edit';
 import BlockIcon from '@mui/icons-material/Block'; 
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'; 
 import SearchIcon from '@mui/icons-material/Search'; 
+import HistoryIcon from '@mui/icons-material/History';
 import SupervisorAccountIcon from '@mui/icons-material/SupervisorAccount';
 import { 
     getUsersList, banUser, unbanUser, 
     getRoles, getFaculties 
 } from '../../api/adminApi'; 
 import UserFormModal from './UserFormModal';    
+import UserChatHistoryModal from './UserChatHistoryModal';
 import useUserAuth from '../../hooks/useUserAuth';
 
 const roleColor = {
@@ -32,27 +34,30 @@ const UserManagementPage = () => {
     const isOnlyManager = currentUser?.is_faculty_manager === true && currentUser?.role !== 'Admin';
     const isAdmin = currentUser?.role === 'Admin';
     
-  const [users, setUsers] = useState([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState(null);
+    const [users, setUsers] = useState([]);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingUser, setEditingUser] = useState(null);
   
-  const [searchKeyword, setSearchKeyword] = useState(''); 
-  const [filterRole, setFilterRole] = useState('');
-  const [filterFaculty, setFilterFaculty] = useState('');
-  const [filterStatus, setFilterStatus] = useState(''); 
+    const [searchKeyword, setSearchKeyword] = useState(''); 
+    const [filterRole, setFilterRole] = useState('');
+    const [filterFaculty, setFilterFaculty] = useState('');
+    const [filterStatus, setFilterStatus] = useState(''); 
 
-  const [availableRoles, setAvailableRoles] = useState([]);
-  const [availableFaculties, setAvailableFaculties] = useState([]);
+    const [historyOpen, setHistoryOpen] = useState(false);
+    const [selectedUser, setSelectedUser] = useState(null);
+
+    const [availableRoles, setAvailableRoles] = useState([]);
+    const [availableFaculties, setAvailableFaculties] = useState([]);
   
-  const [page, setPage] = useState(0); 
-  const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [totalUsers, setTotalUsers] = useState(0);
+    const [page, setPage] = useState(0); 
+    const [rowsPerPage, setRowsPerPage] = useState(10);
+    const [totalUsers, setTotalUsers] = useState(0);
   
-  const [isInitialLoading, setIsInitialLoading] = useState(true); 
-  const [isRefetching, setIsRefetching] = useState(false); 
-  const [error, setError] = useState(null);
+    const [isInitialLoading, setIsInitialLoading] = useState(true); 
+    const [isRefetching, setIsRefetching] = useState(false); 
+    const [error, setError] = useState(null);
   
-  const fetchFilterOptions = async () => {
+    const fetchFilterOptions = async () => {
       try {
           if (isAdmin) {
               const roles = await getRoles();
@@ -68,7 +73,7 @@ const UserManagementPage = () => {
       } catch (err) {
            console.error("Error fetching filter options:", err);
       }
-  };
+    };
 
   const fetchUsers = async (currentPage, limit, role, faculty, banned, keyword, isInitialLoad) => {
     if (isInitialLoad) {
@@ -156,6 +161,11 @@ const UserManagementPage = () => {
   const handleSearchClick = () => {
       loadUsersWithFilters(true); 
   };
+
+    const handleOpenHistory = (user) => {
+        setSelectedUser(user);
+        setHistoryOpen(true);
+    };
 
   useEffect(() => {
       if (currentUser) {
@@ -360,17 +370,20 @@ const UserManagementPage = () => {
               user={editingUser}
             />
         )}
+        <UserChatHistoryModal 
+            open={historyOpen} 
+            onClose={() => setHistoryOpen(false)} 
+            user={selectedUser} 
+        />
 
-      {/* THAY ĐỔI: Thêm inline loading overlay */}
       <TableContainer 
         component={Paper} 
         sx={{ 
             borderRadius: 4, 
             boxShadow: '0 4px 16px 0 rgba(25,118,210,0.06)',
-            position: 'relative', // Quan trọng cho overlay
+            position: 'relative', 
         }}
       >
-        {/* Lớp phủ loading khi đang lọc hoặc chuyển trang */}
         {isRefetching && (
             <Box 
                 sx={{
@@ -379,7 +392,7 @@ const UserManagementPage = () => {
                     left: 0,
                     right: 0,
                     bottom: 0,
-                    bgcolor: 'rgba(255, 255, 255, 0.7)', // Màu trắng mờ
+                    bgcolor: 'rgba(255, 255, 255, 0.7)', 
                     zIndex: 1000, 
                     display: 'flex',
                     justifyContent: 'center',
@@ -397,10 +410,8 @@ const UserManagementPage = () => {
               <TableCell><b>Họ và Tên</b></TableCell>
               <TableCell><b>Khoa</b></TableCell>
               <TableCell><b>Vai trò</b></TableCell>
-              <TableCell><b>Trạng thái</b></TableCell>
-                {isAdmin && (              
-                <TableCell align="right"><b>Hành động</b></TableCell>
-                )}
+              <TableCell><b>Trạng thái</b></TableCell>           
+              <TableCell align="right"><b>Hành động</b></TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -433,23 +444,35 @@ const UserManagementPage = () => {
                         sx={{ fontWeight: 500, borderRadius: 2 }} 
                     />
                 </TableCell>
-                {isAdmin && (
-                    <TableCell align="right">
-                            <IconButton onClick={() => handleEdit(user)} sx={{ color: 'primary.main' }} title="Phân quyền & Chi tiết">
-                              <EditIcon />
-                          </IconButton>
-                    <IconButton 
-                        onClick={() => handleToggleBan(user)} 
-                        sx={{ color: user.banned ? 'error.main' : 'success.main' }} 
-                        title={user.banned ? 'Bỏ chặn' : 'Chặn người dùng'}
-                    >
-                        {user.banned ? <CheckCircleOutlineIcon /> : <BlockIcon />}
-                    </IconButton>
-                </TableCell>)}
+                
+                    <TableCell align="right">
+                        <IconButton 
+                            onClick={() => handleOpenHistory(user)} 
+                            sx={{ color: 'info.main' }} 
+                            title="Xem lịch sử chat sinh viên"
+                        >
+                            <HistoryIcon />
+                        </IconButton>
+                        {isAdmin && (
+                            <>
+                             <IconButton onClick={() => handleEdit(user)} sx={{ color: 'primary.main' }} title="Phân quyền & Chi tiết">
+                                  <EditIcon />
+                             </IconButton>
+                            
+                            <IconButton 
+                                onClick={() => handleToggleBan(user)} 
+                                sx={{ color: user.banned ? 'error.main' : 'success.main' }} 
+                                title={user.banned ? 'Bỏ chặn' : 'Chặn người dùng'}
+                            >
+                                {user.banned ? <CheckCircleOutlineIcon /> : <BlockIcon />}
+                            </IconButton>
+                            </>
+                        )}
+                    </TableCell>
                 
               </TableRow>
             ))}
-            {users.length === 0 && !isInitialLoading && ( // Dùng isInitialLoading để tránh lỗi nhấp nháy khi tải ban đầu
+            {users.length === 0 && !isInitialLoading && ( 
               <TableRow>
                 <TableCell colSpan={6} align="center" sx={{ color: 'text.secondary', py: 4 }}>
                   Không có người dùng nào.
