@@ -327,7 +327,3 @@ pip freeze > requirements.txt
 3. Cần thêm ít nhất 1 API key (OpenAI/Gemini) qua Admin dashboard để sử dụng tính năng Q&A
 
 ---
-
-## 📄 License
-
-MIT License © 2025 TDTU Q&A System Team  
