@@ -150,3 +150,15 @@ export const deletePotentialQuestionFromChunk = async (docId, chunkIndex, questi
     }
     throw new Error(response.data.message || 'Failed to delete potential question.');
 };
+
+export const recreateEmbeddings = async () => {
+    try {
+        const response = await axiosInstance.post(`/embeddings/recreate`);
+        if (response.data.status_code === 200) {
+            return response.data;
+        }
+        throw new Error(response.data.message || 'Synchronization failed.');
+    } catch (error) {
+        throw error;
+    }
+};

@@ -13,6 +13,7 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance'; 
 import SchoolIcon from '@mui/icons-material/School'; 
 import TextSnippetIcon from '@mui/icons-material/TextSnippet';
+import SyncIcon from '@mui/icons-material/Sync';
 
 import DocumentFormModal from './DocumentFormModal'; 
 import ViewDocumentModal from './ViewDocumentModal'; 
@@ -20,7 +21,7 @@ import DocumentChunksModal from './DocumentChunksModal';
 
 import { 
     getGeneralDocuments, getFacultyDocuments, deleteDocument, 
-    getFaculties, getAllDepartments, getDocTypes, getDocumentFileBlob
+    getFaculties, getAllDepartments, getDocTypes, getDocumentFileBlob,recreateEmbeddings
 } from '../../api/documentApi'; 
 import useUserAuth from '../../hooks/useUserAuth';
 
@@ -79,6 +80,8 @@ const DocumentManagementPage = () => {
     const [viewingChunksDocument, setViewingChunksDocument] = useState(null); 
     const [viewDocumentUrl, setViewDocumentUrl] = useState(null);
     const [isViewLoading, setIsViewLoading] = useState(false); 
+
+    const [isSyncing, setIsSyncing] = useState(false);
 
     useEffect(() => {
         searchKeywordRef.current = searchKeyword;
@@ -367,6 +370,26 @@ const DocumentManagementPage = () => {
         setViewingChunksDocument(doc);
         setIsChunksModalOpen(true);
     };
+
+    const handleSyncVectorDB = async () => {
+        if (!window.confirm("Bạn có chắc chắn muốn đồng bộ lại toàn bộ CSDL Vector? Quá trình này sẽ xóa dữ liệu cũ trong ChromaDB và tạo lại từ đầu, có thể mất vài phút.")) {
+            return;
+        }
+
+        setIsSyncing(true);
+        setError(null);
+        setSuccessMsg(null);
+
+        try {
+            await recreateEmbeddings();
+            setSuccessMsg("Đã đồng bộ CSDL Vector thành công!");
+        } catch (err) {
+            console.error("Sync error:", err);
+            setError(extractError(err, "Đồng bộ CSDL Vector thất bại."));
+        } finally {
+            setIsSyncing(false);
+        }
+    };
     
     const getScopeLabel = (doc) => {
         if (doc.department) return { label: doc.department, icon: <AccountBalanceIcon fontSize="small" color="primary" />, type: 'Phòng Ban' };
@@ -383,16 +406,30 @@ const DocumentManagementPage = () => {
                 <Typography variant="h4" sx={{ fontWeight: 700, color: 'primary.main' }}>
                     Quản lý Tài liệu Hệ thống
                 </Typography>
-                {(isAdmin || isFacultyManager) && (
-                    <Button
-                        variant="contained"
-                        startIcon={<AddIcon />}
-                        onClick={handleAddDocument}
-                        sx={{ borderRadius: 3, fontWeight: 600 }}
-                    >
-                        Thêm Tài liệu
-                    </Button>
-                )}
+                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                    {isAdmin && (
+                        <Button
+                            variant="outlined"
+                            color="warning"
+                            disabled={isSyncing}
+                            onClick={handleSyncVectorDB}
+                            startIcon={isSyncing ? <CircularProgress size={20} /> : <SyncIcon />} // Nhớ import SyncIcon từ @mui/icons-material
+                            sx={{ borderRadius: 3, fontWeight: 600 }}
+                        >
+                            {isSyncing ? "Đang đồng bộ..." : "Đồng bộ CSDL Vector"}
+                        </Button>
+                    )}
+                    {(isAdmin || isFacultyManager) && (
+                        <Button
+                            variant="contained"
+                            startIcon={<AddIcon />}
+                            onClick={handleAddDocument}
+                            sx={{ borderRadius: 3, fontWeight: 600 }}
+                        >
+                            Thêm Tài liệu
+                        </Button>
+                    )}
+                </Box>
             </Box>
             
             <Paper elevation={1} sx={{ p: 2, mb: 3, borderRadius: 3, borderLeft: '5px solid #1976d2' }}>
