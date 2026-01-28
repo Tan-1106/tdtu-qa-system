@@ -98,6 +98,12 @@ async def get_user_question_records(
     return records
 
 
+# Search a question record by question content for current user
+async def search_question_records(keyword: str, current_user: dict):
+    records = await qa_service.search_question_records(keyword, current_user["sub"])
+    return records
+
+
 # Get qa record by ID
 async def get_qa_record_by_id(qa_record_id: str, current_user: dict):
     qa_record = jsonable_encoder(await qa_service.get_qa_record_by_id(qa_record_id))

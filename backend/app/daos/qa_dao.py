@@ -127,6 +127,22 @@ class QADao:
         return records
         
         
+    # Search question records by question content
+    async def search_question_records(self, keyword: str, user_sub: str) -> list[dict]:
+        query = {
+            "user_sub": user_sub,
+            "$or": [
+                {"question": {"$regex": keyword, "$options": "i"}},
+                {"answer": {"$regex": keyword, "$options": "i"}}
+            ]
+        }
+        cursor = self.qa_collection.find(query).sort("created_at", -1)
+        records = []
+        async for record in cursor:
+            records.append(qa_schema.QARecordSchema(**serializer.qa_session_serialize(record)))
+        return records
+    
+        
     # Get QA record by ID
     async def get_qa_record_by_id(self, qa_id: str) -> dict:
         qa_record = await self.qa_collection.find_one({"_id": ObjectId(qa_id)})

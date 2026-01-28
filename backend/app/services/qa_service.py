@@ -166,6 +166,12 @@ async def get_question_records_by_user_id(
     }
     
     
+# Search question records by question content for a user
+async def search_question_records(keyword: str, user_sub: str) -> list[dict]:
+    records = await QADao().search_question_records(keyword, user_sub)
+    return jsonable_encoder(records)
+    
+    
 # Get QA record by ID
 async def get_qa_record_by_id(qa_id: str) -> dict:
     qa_record = await QADao().get_qa_record_by_id(qa_id)

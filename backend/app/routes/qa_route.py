@@ -66,6 +66,20 @@ async def get_user_question_records(
         details=records
     )
     
+# Search a question record by question content for current user
+@router.get("/history/search")
+async def search_question_records(
+    keyword: str = Query(...),
+    current_user = Depends(auth_service.get_current_user)
+):
+    current_user = jsonable_encoder(current_user)
+    records = await qa_controller.search_question_records(keyword, current_user)
+    return api_response(
+        status_code=200,
+        message="Search question records successfully.",
+        details=records
+    )
+    
     
 # Get all question records (Admin/Faculty Manager)
 @router.get("/all")
