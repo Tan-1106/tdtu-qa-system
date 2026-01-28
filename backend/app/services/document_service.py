@@ -30,10 +30,28 @@ async def extract_file_content(file: UploadFile):
         tmp_path = tmp.name
     
     try:
-        # Scanned
-        is_text_pdf = await asyncio.to_thread(text_process.is_text_based_pdf, tmp_path)
+        # Run PDF text extraction in thread pool - check and extract in one pass
+        def extract_text_from_pdf(path):
+            doc = fitz.open(path)
+            content = ""
+            has_text = False
+            
+            for page in doc:
+                page_text = page.get_text().strip()
+                if page_text:
+                    has_text = True
+                    clean_text = re.sub(r'\s+', ' ', page_text)
+                    content += clean_text
+            
+            doc.close()
+            return content, has_text
+        
+        document_content, is_text_pdf = await asyncio.to_thread(extract_text_from_pdf, tmp_path)
+        
+        # If no text found, it's a scanned PDF - use OCR
         if not is_text_pdf:
             try:
+                document_content = ""
                 images = await asyncio.to_thread(convert_from_path, tmp_path)
                 for img in images:
                     page_text = await asyncio.to_thread(pytesseract.image_to_string, img, 'vie+eng')
@@ -41,24 +59,12 @@ async def extract_file_content(file: UploadFile):
                     document_content += clean_text
             except Exception as e:
                 raise Exception("Failed to convert scanned PDF to text.") from e
-            
-        # Text-based
-        else:
-            try:
-                # Run PDF text extraction in thread pool
-                def extract_text_from_pdf(path):
-                    doc = fitz.open(path)
-                    content = ""
-                    for page in doc:
-                        page_text = page.get_text().strip()
-                        clean_text = re.sub(r'\s+', ' ', page_text)
-                        content += clean_text
-                    doc.close()
-                    return content
                 
-                document_content = await asyncio.to_thread(extract_text_from_pdf, tmp_path)
-            except Exception as e:
-                raise Exception("Failed to extract text from PDF.") from e
+    except Exception as e:
+        # Clean up temp file on error
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
+        raise Exception("Failed to extract text from PDF.") from e
     finally:
         # Clean up temp file
         if os.path.exists(tmp_path):
