@@ -13,27 +13,23 @@ body {
   margin: 0;
 }
 
-/* Dành cho Chrome, Edge và Safari (Trình duyệt dựa trên WebKit) */
 body::-webkit-scrollbar {
     width: 8px; 
     height: 8px;
     background: transparent; 
 }
 
-/* Thiết lập thumb (phần kéo của thanh cuộn) */
 body::-webkit-scrollbar-thumb {
     background-color: rgba(0, 0, 0, 0.2); 
     border-radius: 4px;
     visibility: hidden; 
 }
 
-/* Hiển thị thumb khi người dùng di chuột qua (HOẶC CUỘN) */
 body:hover::-webkit-scrollbar-thumb {
     visibility: visible;
 }
 
 
-/* Dành cho Firefox */
 html {
     scrollbar-gutter: stable;
     scrollbar-width: thin;
