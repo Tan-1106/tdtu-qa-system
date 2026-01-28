@@ -97,3 +97,11 @@ async def ban_user(user_id: str):
 async def unban_user(user_id: str):
     response = await UserDAO().unban_user(user_id)
     return jsonable_encoder(response)
+
+
+
+# Update user monthly cost
+async def update_user_monthly_cost(user_id: str, cost: float):
+    """Update user's monthly cost with automatic reset for new month"""
+    updated_user = await UserDAO().update_monthly_cost(user_id, cost)
+    return jsonable_encoder(updated_user)

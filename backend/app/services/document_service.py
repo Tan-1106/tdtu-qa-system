@@ -218,3 +218,13 @@ async def view_document_file(doc_id: str):
     )
     
     return file_name, BytesIO(file_content)
+
+
+# Update document with token information
+async def update_document_token_info(doc_id: str, total_tokens: int, upload_cost: float):
+    """Update document record with token count and upload cost"""
+    update_data = {
+        "total_tokens": total_tokens,
+        "upload_cost": upload_cost
+    }
+    await DocumentDAO().update_document(doc_id, update_data)

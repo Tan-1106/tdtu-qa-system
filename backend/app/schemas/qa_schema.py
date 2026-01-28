@@ -23,6 +23,9 @@ class QARecordSchema(BaseModel):
     answer: Optional[str] = None
     feedback: Optional[str] = None
     manager_answer: Optional[str] = None
+    input_tokens: Optional[int] = None
+    output_tokens: Optional[int] = None
+    total_cost: Optional[float] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
 

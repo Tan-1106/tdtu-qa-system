@@ -62,7 +62,11 @@ async def translate_to_vietnamese(text: str) -> str:
 
 
 # Get answer for the question
-async def get_answer(question: str, question_in_vietnamese: str, user_faculty: str, question_language: str) -> str:
+async def get_answer(question: str, question_in_vietnamese: str, user_faculty: str, question_language: str) -> tuple[str, int, int, float]:
+    """
+    Get answer for question with token tracking.
+    Returns: (answer, input_tokens, output_tokens, total_cost)
+    """
     api_key = await llm_service.get_current_api_key()
     if not api_key:
         raise UserError("No active API key found. Please activate an API key to proceed.")
@@ -84,8 +88,13 @@ async def get_answer(question: str, question_in_vietnamese: str, user_faculty: s
     chunks = list(unique_chunks)
     chunks = rerank_chunks(question_in_vietnamese, chunks, top_k=20)
     
-    answer = await llm_service.generate_answer(api_key, chunks, question, question_language)
-    return answer
+    answer, input_tokens, output_tokens = await llm_service.generate_answer(api_key, chunks, question, question_language)
+    
+    # Calculate cost
+    total_cost = (input_tokens * (api_key.get("input_token_price") or 0) + 
+                 output_tokens * (api_key.get("output_token_price") or 0)) / 1_000_000
+    
+    return answer, input_tokens, output_tokens, total_cost
 
 
 # Rerank chunks using Cross-Encoder
@@ -109,9 +118,12 @@ def rerank_chunks(question: str, chunks: list[str], top_k: int) -> list[str]:
 # Update question record with answer
 async def update_question_record_with_answer(
     question_id: str,
-    answer: str
+    answer: str,
+    input_tokens: int = None,
+    output_tokens: int = None,
+    total_cost: float = None
 ) -> dict:
-    updated_record = await QADao().update_qa_answer(question_id, answer)
+    updated_record = await QADao().update_qa_answer(question_id, answer, input_tokens, output_tokens, total_cost)
     return jsonable_encoder(updated_record)
 
 

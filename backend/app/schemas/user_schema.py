@@ -16,6 +16,8 @@ class UserRecord(BaseModel):
     is_faculty_manager: bool
     system_role_assigned: bool
     banned: bool
+    monthly_cost: Optional[float] = 0.0
+    cost_month_year: Optional[str] = None
     created_at: datetime
     class Config:
         from_attributes = True

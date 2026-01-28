@@ -11,6 +11,8 @@ def user_serialize(user) -> dict:
         "is_faculty_manager": user.get("is_faculty_manager", False),
         "system_role_assigned": user.get("system_role_assigned", False),
         "banned": user.get("banned", False),
+        "monthly_cost": user.get("monthly_cost", 0.0),
+        "cost_month_year": user.get("cost_month_year"),
         "created_at": user.get("created_at").isoformat() if user.get("created_at") else None
     }
     
@@ -36,6 +38,8 @@ def api_key_serialize(api_key) -> dict:
         "provider": api_key.get("provider"),
         "is_using": api_key.get("is_using", False),
         "using_model": api_key.get("using_model"),
+        "input_token_price": api_key.get("input_token_price"),
+        "output_token_price": api_key.get("output_token_price"),
         "created_at": api_key.get("created_at").isoformat() if api_key.get("created_at") else None,
         "updated_at": api_key.get("updated_at").isoformat() if api_key.get("updated_at") else None
     }
@@ -52,6 +56,8 @@ def document_serialize(document) -> dict:
         "file_url": document.get("file_url"),
         "file_path": document.get("file_path"),
         "uploaded_by": document.get("uploaded_by"),
+        "total_tokens": document.get("total_tokens"),
+        "upload_cost": document.get("upload_cost"),
         "uploaded_at": document.get("uploaded_at").isoformat() if document.get("uploaded_at") else None,
         "updated_by": document.get("updated_by"),
         "updated_at": document.get("updated_at").isoformat() if document.get("updated_at") else None
@@ -80,6 +86,9 @@ def qa_session_serialize(qa_session) -> dict:
         "answer": qa_session.get("answer"),
         "feedback": qa_session.get("feedback"),
         "manager_answer": qa_session.get("manager_answer"),
+        "input_tokens": qa_session.get("input_tokens"),
+        "output_tokens": qa_session.get("output_tokens"),
+        "total_cost": qa_session.get("total_cost"),
         "start_date": qa_session.get("start_date").isoformat() if qa_session.get("start_date") else None,
         "end_date": qa_session.get("end_date").isoformat() if qa_session.get("end_date") else None,
         "created_at": qa_session.get("created_at").isoformat() if qa_session.get("created_at") else None,

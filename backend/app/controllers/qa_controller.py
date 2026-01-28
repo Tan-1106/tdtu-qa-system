@@ -20,12 +20,21 @@ async def get_answer(question: str, current_user: dict):
     
     user_faculty = current_user["faculty"] if current_user["faculty"] is not None else ""
     if question_language == "vi":
-        answer = await qa_service.get_answer(question, question, user_faculty, "vi")
+        answer, input_tokens, output_tokens, total_cost = await qa_service.get_answer(question, question, user_faculty, "vi")
     else:
         question_in_vietnamese = await qa_service.translate_to_vietnamese(question)
-        answer = await qa_service.get_answer(question, question_in_vietnamese, user_faculty, "en")
+        answer, input_tokens, output_tokens, total_cost = await qa_service.get_answer(question, question_in_vietnamese, user_faculty, "en")
         
-    question_record = await qa_service.update_question_record_with_answer(question_record["_id"], answer)
+    question_record = await qa_service.update_question_record_with_answer(
+        question_record["_id"], 
+        answer,
+        input_tokens,
+        output_tokens,
+        total_cost
+    )
+    
+    # Update user monthly cost
+    await user_service.update_user_monthly_cost(current_user["_id"], total_cost)
         
     return {
         "question_id": question_record["_id"],

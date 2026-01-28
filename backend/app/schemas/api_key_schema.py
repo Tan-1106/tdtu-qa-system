@@ -14,6 +14,8 @@ class APIKeyRecord(BaseModel):
     provider: str
     is_using: bool
     using_model: Optional[str] = None
+    input_token_price: Optional[float] = None
+    output_token_price: Optional[float] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
     class Config:
@@ -45,6 +47,8 @@ class APIKeyInformationUpdateSchema(BaseModel):
 # API Key Usage Toggle Schema
 class APIKeyAddModelSchema(BaseModel):
     using_model: str
+    input_token_price: Optional[float] = None
+    output_token_price: Optional[float] = None
     class Config:
         from_attributes = True
         extra = "forbid"
