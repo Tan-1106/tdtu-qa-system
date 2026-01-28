@@ -22,32 +22,38 @@ class DocumentDAO:
     
     
     # Count general documents with filters
-    async def count_general_documents(self, doc_type: str, department: str, keyword: str) -> int:
+    async def count_general_documents(self, doc_type: str, department: str, keyword: str, doc_ids_from_chunks: list[str] = None) -> int:
         query = {"faculty": None}
         if doc_type:
             query["doc_type"] = doc_type
         if department:
             query["department"] = department
         if keyword:
-            query["$or"] = [
+            or_conditions = [
                 {"file_name": {"$regex": keyword, "$options": "i"}}
             ]
+            if doc_ids_from_chunks:
+                or_conditions.append({"_id": {"$in": [ObjectId(doc_id) for doc_id in doc_ids_from_chunks]}})
+            query["$or"] = or_conditions
             
         total = await self.documents_collection.count_documents(query)
         return total 
     
     
     # Get general documents with filters and pagination
-    async def get_general_documents(self, skip: int, limit: int, doc_type: str, department: str, keyword: str) -> list[dict]:
+    async def get_general_documents(self, skip: int, limit: int, doc_type: str, department: str, keyword: str, doc_ids_from_chunks: list[str] = None) -> list[dict]:
         query = {"faculty": None}
         if doc_type:
             query["doc_type"] = doc_type
         if department:
             query["department"] = department
         if keyword:
-            query["$or"] = [
+            or_conditions = [
                 {"file_name": {"$regex": keyword, "$options": "i"}}
             ]
+            if doc_ids_from_chunks:
+                or_conditions.append({"_id": {"$in": [ObjectId(doc_id) for doc_id in doc_ids_from_chunks]}})
+            query["$or"] = or_conditions
             
         cursor = self.documents_collection.find(query).skip(skip).limit(limit).sort("uploaded_at", -1)
         documents = []
@@ -57,7 +63,7 @@ class DocumentDAO:
     
     
     # Count faculty documents with filters
-    async def count_faculty_documents(self, faculty: str, doc_type: str, keyword: str) -> int:
+    async def count_faculty_documents(self, faculty: str, doc_type: str, keyword: str, doc_ids_from_chunks: list[str] = None) -> int:
         query = {}
         if faculty:
             query["faculty"] = faculty
@@ -66,16 +72,19 @@ class DocumentDAO:
         if doc_type:
             query["doc_type"] = doc_type
         if keyword:
-            query["$or"] = [
+            or_conditions = [
                 {"file_name": {"$regex": keyword, "$options": "i"}}
             ]
+            if doc_ids_from_chunks:
+                or_conditions.append({"_id": {"$in": [ObjectId(doc_id) for doc_id in doc_ids_from_chunks]}})
+            query["$or"] = or_conditions
             
         total = await self.documents_collection.count_documents(query)
         return total
     
     
     # Get faculty documents with filters and pagination
-    async def get_faculty_documents(self, faculty: str, skip: int, limit: int, doc_type: str, keyword: str) -> list[dict]:
+    async def get_faculty_documents(self, faculty: str, skip: int, limit: int, doc_type: str, keyword: str, doc_ids_from_chunks: list[str] = None) -> list[dict]:
         query = {}
         if faculty:
             query["faculty"] = faculty
@@ -84,9 +93,12 @@ class DocumentDAO:
         if doc_type:
             query["doc_type"] = doc_type
         if keyword:
-            query["$or"] = [
+            or_conditions = [
                 {"file_name": {"$regex": keyword, "$options": "i"}}
             ]
+            if doc_ids_from_chunks:
+                or_conditions.append({"_id": {"$in": [ObjectId(doc_id) for doc_id in doc_ids_from_chunks]}})
+            query["$or"] = or_conditions
             
         cursor = self.documents_collection.find(query).skip(skip).limit(limit).sort("uploaded_at", -1)
         documents = []

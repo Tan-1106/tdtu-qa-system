@@ -14,6 +14,7 @@ from fastapi.encoders import jsonable_encoder
 
 from app.utils import text_process
 from app.daos.document_dao import DocumentDAO
+from app.daos.document_chunk_dao import DocumentChunkDAO
 
 
 # --- CONFIGURATION ---
@@ -138,9 +139,15 @@ async def delete_document_record(doc_id: str):
 # Get general documents with filters and pagination
 async def get_general_documents(page: int, limit: int, doc_type: str, department: str, keyword: str):
     skip = (page - 1) * limit
-    total = await DocumentDAO().count_general_documents(doc_type, department, keyword)
+    
+    # Search in document chunks if keyword is provided
+    doc_ids_from_chunks = []
+    if keyword:
+        doc_ids_from_chunks = await DocumentChunkDAO().search_doc_ids_by_keyword(keyword)
+    
+    total = await DocumentDAO().count_general_documents(doc_type, department, keyword, doc_ids_from_chunks)
     total_pages = (total + limit - 1) // limit
-    documents = await DocumentDAO().get_general_documents(skip, limit, doc_type, department, keyword)
+    documents = await DocumentDAO().get_general_documents(skip, limit, doc_type, department, keyword, doc_ids_from_chunks)
     return {
         "documents": documents,
         "total": total,
@@ -152,9 +159,15 @@ async def get_general_documents(page: int, limit: int, doc_type: str, department
 # Get faculty documents with filters and pagination
 async def get_faculty_documents(page: int, limit: int, doc_type: str, faculty: str, keyword: str):
     skip = (page - 1) * limit
-    total = await DocumentDAO().count_faculty_documents(faculty, doc_type, keyword)
+    
+    # Search in document chunks if keyword is provided
+    doc_ids_from_chunks = []
+    if keyword:
+        doc_ids_from_chunks = await DocumentChunkDAO().search_doc_ids_by_keyword(keyword)
+    
+    total = await DocumentDAO().count_faculty_documents(faculty, doc_type, keyword, doc_ids_from_chunks)
     total_pages = (total + limit - 1) // limit
-    documents = await DocumentDAO().get_faculty_documents(faculty, skip, limit, doc_type, keyword)
+    documents = await DocumentDAO().get_faculty_documents(faculty, skip, limit, doc_type, keyword, doc_ids_from_chunks)
     return {
         "documents": documents,
         "total": total,
