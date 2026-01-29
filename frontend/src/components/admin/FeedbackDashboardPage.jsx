@@ -191,7 +191,7 @@ const FeedbackDashboardPage = () => {
                                 <TableRow key={item.id} hover>
                                     <TableCell>
                                         <Typography variant="body2" fontWeight={600} sx={{ maxWidth: 400 }} noWrap>{item.question}</Typography>
-                                        <Typography variant="caption" color="text.secondary">{new Date(item.createdAt).toLocaleString('vi-VN')}</Typography>
+                                        <Typography variant="caption" color="text.secondary">{new Date(new Date(item.createdAt).getTime() + 7 * 60 * 60 * 1000).toLocaleString('vi-VN')}</Typography>
                                     </TableCell>
                                     <TableCell>
                                         <Typography variant="body2">{item.studentFaculty}</Typography>

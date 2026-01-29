@@ -63,7 +63,7 @@ const UserChatHistoryModal = ({ open, onClose, user }) => {
                                     </Paper>
                                 </Box>
                                 <Typography variant="caption" sx={{ display: 'block', textAlign: 'center', color: 'text.secondary', mb: 2 }}>
-                                    {new Date(item.created_at).toLocaleString('vi-VN')}
+                                    {new Date(new Date(item.created_at).getTime() + 7 * 60 * 60 * 1000).toLocaleString('vi-VN')}
                                 </Typography>
                             </Box>
                         ))}

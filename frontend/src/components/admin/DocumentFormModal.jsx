@@ -396,7 +396,7 @@ const DocumentFormModal = ({ open, onClose, onSave, editingDocument, availableFa
                             }}
                         >
                             <ToggleButton value="NORMAL">Tài liệu thường</ToggleButton>
-                            <ToggleButton value="APPENDIX">Phụ lục (bảng biểu)</ToggleButton>
+                            <ToggleButton value="APPENDIX">Phụ lục</ToggleButton>
                         </ToggleButtonGroup>
                     </Box>
                 )}

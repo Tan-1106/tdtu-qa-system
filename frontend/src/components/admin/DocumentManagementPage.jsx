@@ -440,7 +440,7 @@ const DocumentManagementPage = () => {
                         <Stack direction="row" spacing={1} alignItems="flex-end" sx={{ mt: 1 }}>
                             <TextField
                                 fullWidth
-                                label="Tên Tài liệu"
+                                label="Từ khóa"
                                 variant="outlined"
                                 value={searchKeyword} 
                                 onChange={(e) => setSearchKeyword(e.target.value)} 

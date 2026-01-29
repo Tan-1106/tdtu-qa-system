@@ -37,7 +37,7 @@ const ManagerAnswerModal = ({ open, onClose, qaRecord, onSave }) => {
                         <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>Thông tin User:</Typography>
                         <Typography variant="caption" display="block">MSSV: {qaRecord.studentId}</Typography>
                         <Typography variant="caption" display="block">Khoa: {qaRecord.studentFaculty}</Typography>
-                        <Typography variant="caption" display="block">Thời điểm: {new Date(qaRecord.createdAt).toLocaleString('vi-VN')}</Typography>
+                        <Typography variant="caption" display="block">Thời điểm: {new Date(new Date(qaRecord.createdAt).getTime() + 7 * 60 * 60 * 1000).toLocaleString('vi-VN')}</Typography>
                     </Grid>
                     <Grid item xs={12} md={6}>
                          <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>Trạng thái:</Typography>
