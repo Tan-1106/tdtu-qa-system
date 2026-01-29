@@ -1,15 +1,17 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Box, Button, Typography, IconButton, Avatar, Stack, Divider, useTheme, CircularProgress } from '@mui/material';
+import { Box, Button, Typography, IconButton, Avatar, Stack, Divider, useTheme, CircularProgress, TextField, InputAdornment } from '@mui/material';
 import SchoolIcon from '@mui/icons-material/School';
 import CloseIcon from '@mui/icons-material/Close'; 
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import FolderOpenOutlinedIcon from '@mui/icons-material/FolderOpenOutlined';
 import HelpOutlineOutlinedIcon from '@mui/icons-material/HelpOutlineOutlined';
 import LogoutIcon from '@mui/icons-material/Logout';
-import ForumIcon from '@mui/icons-material/Forum'; 
+import ForumIcon from '@mui/icons-material/Forum';
+import SearchIcon from '@mui/icons-material/Search';
+import ClearIcon from '@mui/icons-material/Clear';
 import { NavLink as RouterNavLink, useNavigate, useLocation } from 'react-router-dom'; 
 import useUserAuth from '../hooks/useUserAuth';
-import { getChatHistory } from '../api/chatApi'; 
+import { getChatHistory, searchChatHistory } from '../api/chatApi'; 
 
 const sidebarWidth = '280px';
 
@@ -22,7 +24,8 @@ const Sidebar = ({ isSidebarOpen, toggleSidebar, activeChatId, setActiveChatId, 
     const [history, setHistory] = useState([]); 
     const [isLoadingHistory, setIsLoadingHistory] = useState(false);
     const [fetchError, setFetchError] = useState(null); 
-    const [isInitialLoad, setIsInitialLoad] = useState(true); 
+    const [isInitialLoad, setIsInitialLoad] = useState(true);
+    const [searchKeyword, setSearchKeyword] = useState(''); 
 
     const loadHistory = useCallback(async () => {
         if (!user || !user._id) {
@@ -55,7 +58,35 @@ const Sidebar = ({ isSidebarOpen, toggleSidebar, activeChatId, setActiveChatId, 
         } finally {
             setIsLoadingHistory(false);
         }
-    }, [user, setActiveChatId, isInitialLoad]); 
+    }, [user, setActiveChatId, isInitialLoad]);
+
+    const handleSearch = useCallback(async (keyword) => {
+        if (!user || !user._id) return;
+        
+        if (!keyword || keyword.trim() === '') {
+            loadHistory();
+            return;
+        }
+
+        setIsLoadingHistory(true);
+        setFetchError(null);
+
+        try {
+            const records = await searchChatHistory(keyword.trim());
+            const formattedHistory = records.map(r => ({
+                id: r._id,
+                title: r.question,
+                date: r.created_at,
+                hasManagerAnswer: !!r.manager_answer && r.manager_answer.trim() !== '',
+            }));
+            setHistory(formattedHistory);
+        } catch (err) {
+            console.error("Failed to search chat history:", err);
+            setFetchError("Không thể tìm kiếm lịch sử.");
+        } finally {
+            setIsLoadingHistory(false);
+        }
+    }, [user, loadHistory]); 
 
     useEffect(() => {
         if (user && user._id) loadHistory(); 
@@ -195,6 +226,60 @@ const Sidebar = ({ isSidebarOpen, toggleSidebar, activeChatId, setActiveChatId, 
                 <Typography variant="subtitle2" sx={{ opacity: 0.7, mb: 1, textTransform: 'uppercase' }}>
                     Lịch sử
                 </Typography>
+                
+                <TextField
+                    fullWidth
+                    size="small"
+                    placeholder="Tìm kiếm lịch sử..."
+                    value={searchKeyword}
+                    onChange={(e) => {
+                        setSearchKeyword(e.target.value);
+                        handleSearch(e.target.value);
+                    }}
+                    sx={{
+                        mb: 2,
+                        '& .MuiOutlinedInput-root': {
+                            color: 'white',
+                            borderRadius: '10px',
+                            backgroundColor: 'rgba(255,255,255,0.1)',
+                            '& fieldset': {
+                                borderColor: 'rgba(255,255,255,0.3)',
+                            },
+                            '&:hover fieldset': {
+                                borderColor: 'rgba(255,255,255,0.5)',
+                            },
+                            '&.Mui-focused fieldset': {
+                                borderColor: 'white',
+                            },
+                        },
+                        '& .MuiInputBase-input::placeholder': {
+                            color: 'rgba(255,255,255,0.6)',
+                            opacity: 1,
+                        },
+                    }}
+                    InputProps={{
+                        startAdornment: (
+                            <InputAdornment position="start">
+                                <SearchIcon sx={{ color: 'rgba(255,255,255,0.6)' }} />
+                            </InputAdornment>
+                        ),
+                        endAdornment: searchKeyword && (
+                            <InputAdornment position="end">
+                                <IconButton
+                                    size="small"
+                                    onClick={() => {
+                                        setSearchKeyword('');
+                                        loadHistory();
+                                    }}
+                                    sx={{ color: 'rgba(255,255,255,0.6)' }}
+                                >
+                                    <ClearIcon fontSize="small" />
+                                </IconButton>
+                            </InputAdornment>
+                        ),
+                    }}
+                />
+                
                 <Box>
                     {fetchError ? ( 
                         <Typography variant="body2" sx={{ color: theme.palette.error.light, p: 1 }}>

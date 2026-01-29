@@ -45,3 +45,17 @@ export const sendFeedback = async (qa_record_id, feedbackType) => {
         throw error;
     }
 };
+
+export const searchChatHistory = async (keyword) => {
+    try {
+        const response = await axiosInstance.get(`${BASE_URL}/history/search`, {
+            params: { keyword }
+        });
+        if (response.data.status_code === 200) {
+            return response.data.details;
+        }
+        throw new Error(response.data.message || 'Failed to search chat history.');
+    } catch (error) {
+        throw error;
+    }
+};
