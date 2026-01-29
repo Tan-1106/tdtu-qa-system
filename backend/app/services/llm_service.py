@@ -2,6 +2,7 @@ import os
 import re
 import asyncio
 import logging
+import tiktoken
 from openai import OpenAI
 import google.generativeai as genai
 from cryptography.fernet import Fernet
@@ -26,6 +27,29 @@ class APIKeyEncryptor:
 
     def decrypt(self, encrypted_api_key: str) -> str:
         return self.fernet.decrypt(encrypted_api_key.encode()).decode()
+
+
+# Count tokens for text
+def count_tokens(text: str, provider: str, model: str) -> int:
+    """Count tokens in text based on provider and model"""
+    try:
+        if provider == APIKeyProvider.OPENAI.value:
+            # Use tiktoken for OpenAI models
+            try:
+                encoding = tiktoken.encoding_for_model(model)
+            except KeyError:
+                # Fallback to cl100k_base for unknown models
+                encoding = tiktoken.get_encoding("cl100k_base")
+            return len(encoding.encode(text))
+        elif provider == APIKeyProvider.GEMINI.value:
+            # Approximate token count for Gemini (roughly 4 chars per token)
+            return len(text) // 4
+        else:
+            # Fallback: approximate 4 chars per token
+            return len(text) // 4
+    except Exception as e:
+        # Fallback on error
+        return len(text) // 4
 
 
 # Create a new API key
@@ -180,7 +204,7 @@ async def get_available_models(request: dict):
         
         
 # Generate potential questions from text chunks
-async def generate_potential_questions(api_key: dict, context: str, num_questions: int) -> list[str]:
+async def generate_potential_questions(api_key: dict, context: str, num_questions: int) -> tuple[list[str], int, int]:
     prompt = f"""
     Bạn là một trợ lý tạo câu hỏi thông minh.
 
@@ -203,18 +227,20 @@ async def generate_potential_questions(api_key: dict, context: str, num_question
     """
 
     output_text = []
+    input_tokens = 0
+    output_tokens = 0
     
     if api_key["provider"] == APIKeyProvider.OPENAI.value:
         def call_openai():
             openai_client = OpenAI(api_key=api_key["api_key"])
-            response = openai_client.responses.create(
+            response = openai_client.chat.completions.create(
                 model=api_key["using_model"],
-                input=prompt,
+                messages=[{"role": "user", "content": prompt}],
                 store=False
             )
-            return response.output_text
+            return response.choices[0].message.content, response.usage.prompt_tokens, response.usage.completion_tokens
         
-        output_text = await asyncio.to_thread(call_openai)
+        output_text, input_tokens, output_tokens = await asyncio.to_thread(call_openai)
         output_text = normalize_text(output_text)
         
     elif api_key["provider"] == APIKeyProvider.GEMINI.value:
@@ -225,16 +251,18 @@ async def generate_potential_questions(api_key: dict, context: str, num_question
                 prompt,
                 generation_config={"max_output_tokens": 1024}
             )
-            return response.text
+            inp_tokens = count_tokens(prompt, api_key["provider"], api_key["using_model"])
+            out_tokens = count_tokens(response.text, api_key["provider"], api_key["using_model"])
+            return response.text, inp_tokens, out_tokens
         
-        output_text = await asyncio.to_thread(call_gemini)
+        output_text, input_tokens, output_tokens = await asyncio.to_thread(call_gemini)
         output_text = normalize_text(output_text)
     
-    return output_text
+    return output_text, input_tokens, output_tokens
 
 
 # Generate potential questions from text chunks
-async def generate_potential_questions_appendix(api_key: dict, context: str, num_questions: int) -> list[str]:
+async def generate_potential_questions_appendix(api_key: dict, context: str, num_questions: int) -> tuple[list[str], int, int]:
     prompt = f"""
     Bạn là một trợ lý tạo câu hỏi tiềm năng dựa trên nội dung phụ lục quy định được cung cấp.
     
@@ -258,18 +286,20 @@ async def generate_potential_questions_appendix(api_key: dict, context: str, num
     """
 
     output_text = []
+    input_tokens = 0
+    output_tokens = 0
     
     if api_key["provider"] == APIKeyProvider.OPENAI.value:
         def call_openai():
             openai_client = OpenAI(api_key=api_key["api_key"])
-            response = openai_client.responses.create(
+            response = openai_client.chat.completions.create(
                 model=api_key["using_model"],
-                input=prompt,
+                messages=[{"role": "user", "content": prompt}],
                 store=False
             )
-            return response.output_text
+            return response.choices[0].message.content, response.usage.prompt_tokens, response.usage.completion_tokens
         
-        output_text = await asyncio.to_thread(call_openai)
+        output_text, input_tokens, output_tokens = await asyncio.to_thread(call_openai)
         output_text = normalize_text(output_text)
         
     elif api_key["provider"] == APIKeyProvider.GEMINI.value:
@@ -280,16 +310,18 @@ async def generate_potential_questions_appendix(api_key: dict, context: str, num
                 prompt,
                 generation_config={"max_output_tokens": 1024}
             )
-            return response.text
+            inp_tokens = count_tokens(prompt, api_key["provider"], api_key["using_model"])
+            out_tokens = count_tokens(response.text, api_key["provider"], api_key["using_model"])
+            return response.text, inp_tokens, out_tokens
         
-        output_text = await asyncio.to_thread(call_gemini)
+        output_text, input_tokens, output_tokens = await asyncio.to_thread(call_gemini)
         output_text = normalize_text(output_text)
     
-    return output_text
+    return output_text, input_tokens, output_tokens
 
 
 # Generate answer
-async def generate_answer(api_key: dict, chunks: list[str], question: str, question_language: str) -> str:
+async def generate_answer(api_key: dict, chunks: list[str], question: str, question_language: str) -> tuple[str, int, int]:
     context = "\n\n".join([f"Đoạn {i+1}: {chunk}" for i, chunk in enumerate(chunks)])
     if question_language == 'vi':
         prompt = f"""
@@ -339,18 +371,21 @@ async def generate_answer(api_key: dict, chunks: list[str], question: str, quest
         - If there is a "References" section, list the documents used as a list, each item including the title, URL, and no duplicates.
         """
 
-    output_text = []
+    output_text = ""
+    input_tokens = 0
+    output_tokens = 0
+    
     if api_key["provider"] == APIKeyProvider.OPENAI.value:
         def call_openai():
             openai_client = OpenAI(api_key=api_key["api_key"])
-            response = openai_client.responses.create(
+            response = openai_client.chat.completions.create(
                 model=api_key["using_model"],
-                input=prompt,
+                messages=[{"role": "user", "content": prompt}],
                 store=False
             )
-            return response.output_text
+            return response.choices[0].message.content, response.usage.prompt_tokens, response.usage.completion_tokens
         
-        output_text = await asyncio.to_thread(call_openai)
+        output_text, input_tokens, output_tokens = await asyncio.to_thread(call_openai)
         output_text = normalize_text(output_text)
         
     elif api_key["provider"] == APIKeyProvider.GEMINI.value:
@@ -361,12 +396,14 @@ async def generate_answer(api_key: dict, chunks: list[str], question: str, quest
                 prompt,
                 generation_config={"max_output_tokens": 1024}
             )
-            return response.text
+            inp_tokens = count_tokens(prompt, api_key["provider"], api_key["using_model"])
+            out_tokens = count_tokens(response.text, api_key["provider"], api_key["using_model"])
+            return response.text, inp_tokens, out_tokens
         
-        output_text = await asyncio.to_thread(call_gemini)
+        output_text, input_tokens, output_tokens = await asyncio.to_thread(call_gemini)
         output_text = normalize_text(output_text)
     
-    return output_text
+    return output_text, input_tokens, output_tokens
 
 
 # Generate general question for a cluster of questions

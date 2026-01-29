@@ -76,21 +76,36 @@ async def upload_document(
         if not api_key:
             raise UserError("No active API key found. Please activate an API key to proceed.")
         
+        # Track tokens for cost calculation
+        total_input_tokens = 0
+        total_output_tokens = 0
+        
         document_chunks_record = {
             "doc_id": new_document["id"],
             "chunks": {}
         }
         for idx, chunk in enumerate(chunks):
-            potential_questions = await llm_service.generate_potential_questions(
+            potential_questions, inp_tokens, out_tokens = await llm_service.generate_potential_questions(
                 api_key=api_key,
                 context=chunk,
                 num_questions=5
             )
+            total_input_tokens += inp_tokens
+            total_output_tokens += out_tokens
+            
             document_chunks_record["chunks"][str(idx)] = {
                 "text": chunk,
                 "potential_questions": potential_questions,
                 "embedding_ids": []
             }
+        
+        # Calculate upload cost
+        total_tokens = total_input_tokens + total_output_tokens
+        upload_cost = (total_input_tokens * (api_key.get("input_token_price") or 0) + 
+                      total_output_tokens * (api_key.get("output_token_price") or 0)) / 1_000_000
+        
+        # Update document with token info
+        await document_service.update_document_token_info(new_document["id"], total_tokens, upload_cost)
                     
         # Convert potential question and store in ChromaDB
         for idx, chunk_data in document_chunks_record["chunks"].items():
@@ -107,6 +122,9 @@ async def upload_document(
                 
         # Store document chunks record in database
         await document_chunk_service.store_document_chunks_record(document_chunks_record)
+        
+        # Get updated document with token info
+        new_document = await document_service.get_document_by_id(new_document["id"])
         return new_document
         
     except Exception as e:
@@ -184,21 +202,36 @@ async def upload_appendix_document(
         if not api_key:
             raise UserError("No active API key found. Please activate an API key to proceed.")
         
+        # Track tokens for cost calculation
+        total_input_tokens = 0
+        total_output_tokens = 0
+        
         document_chunks_record = {
             "doc_id": new_document["id"],
             "chunks": {}
         }
         for idx, chunk in enumerate(chunks):
-            potential_questions = await llm_service.generate_potential_questions_appendix(
+            potential_questions, inp_tokens, out_tokens = await llm_service.generate_potential_questions_appendix(
                 api_key=api_key,
                 context=chunk,
                 num_questions=5
             )
+            total_input_tokens += inp_tokens
+            total_output_tokens += out_tokens
+            
             document_chunks_record["chunks"][str(idx)] = {
                 "text": chunk,
                 "potential_questions": potential_questions,
                 "embedding_ids": []
             }
+        
+        # Calculate upload cost
+        total_tokens = total_input_tokens + total_output_tokens
+        upload_cost = (total_input_tokens * (api_key.get("input_token_price") or 0) + 
+                      total_output_tokens * (api_key.get("output_token_price") or 0)) / 1_000_000
+        
+        # Update document with token info
+        await document_service.update_document_token_info(new_document["id"], total_tokens, upload_cost)
         
         # Convert potential question and store in ChromaDB
         for idx, chunk_data in document_chunks_record["chunks"].items():
@@ -215,6 +248,9 @@ async def upload_appendix_document(
                 
         # Store document chunks record in database
         await document_chunk_service.store_document_chunks_record(document_chunks_record)
+        
+        # Get updated document with token info
+        new_document = await document_service.get_document_by_id(new_document["id"])
         return new_document
         
     except Exception as e:

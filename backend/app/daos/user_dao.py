@@ -271,3 +271,36 @@ class UserDAO:
             raise DatabaseException("User not found")
         updated_user = await self.users_collection.find_one({"_id": ObjectId(user_id)})
         return user_schema.UserRecord(**serializer.user_serialize(updated_user))
+
+    
+    # Update user monthly cost with automatic reset for new month
+    async def update_monthly_cost(self, user_id: str, cost_to_add: float) -> user_schema.UserRecord:
+        """
+        Update user's monthly cost, automatically reset if new month.
+        Args:
+            user_id: User ID
+            cost_to_add: Cost to add to monthly total
+        Returns:
+            Updated user record
+        """
+        current_month_year = datetime.now(timezone.utc).strftime("%Y-%m")
+        user = await self.get_user_by_id(user_id)
+        
+        # Check if need to reset (new month)
+        if user.cost_month_year != current_month_year:
+            new_monthly_cost = cost_to_add
+        else:
+            new_monthly_cost = (user.monthly_cost or 0.0) + cost_to_add
+        
+        result = await self.users_collection.update_one(
+            {"_id": ObjectId(user_id)},
+            {"$set": {
+                "monthly_cost": new_monthly_cost,
+                "cost_month_year": current_month_year
+            }}
+        )
+        
+        if result.matched_count == 0:
+            raise DatabaseException("User not found")
+            
+        return await self.get_user_by_id(user_id)

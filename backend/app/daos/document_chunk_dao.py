@@ -93,6 +93,29 @@ class DocumentChunkDAO:
         return result.modified_count > 0
         
         
+    # Search document IDs by keyword in chunk text
+    async def search_doc_ids_by_keyword(self, keyword: str) -> list[str]:
+        if not keyword:
+            return []
+        
+        cursor = self.document_chunks_collection.find({
+            "chunks": {
+                "$exists": True
+            }
+        })
+        
+        doc_ids = []
+        async for record in cursor:
+            chunks = record.get("chunks", {})
+            for chunk_data in chunks.values():
+                chunk_text = chunk_data.get("text", "")
+                if keyword.lower() in chunk_text.lower():
+                    doc_ids.append(record.get("doc_id"))
+                    break
+        
+        return list(set(doc_ids))
+    
+    
     # Delete document chunks by document ID
     async def delete_document_chunks_by_doc_id(self, doc_id: str):
         await self.document_chunks_collection.delete_many({"doc_id": doc_id})

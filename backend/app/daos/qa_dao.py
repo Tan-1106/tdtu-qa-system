@@ -23,10 +23,28 @@ class QADao:
     
     
     # Update QA record by ID
-    async def update_qa_answer(self, qa_id: str, answer: str) -> dict:
+    async def update_qa_answer(
+        self, 
+        qa_id: str, 
+        answer: str,
+        input_tokens: int = None,
+        output_tokens: int = None,
+        total_cost: float = None
+    ) -> dict:
+        update_data = {
+            "answer": answer,
+            "updated_at": datetime.now(timezone.utc)
+        }
+        if input_tokens is not None:
+            update_data["input_tokens"] = input_tokens
+        if output_tokens is not None:
+            update_data["output_tokens"] = output_tokens
+        if total_cost is not None:
+            update_data["total_cost"] = total_cost
+            
         result = await self.qa_collection.update_one(
             {"_id": ObjectId(qa_id)},
-            {"$set": {"answer": answer, "updated_at": datetime.now(timezone.utc)}}
+            {"$set": update_data}
         )
         if result.matched_count == 0:
             raise DatabaseException(f"QA record with qa_id {qa_id} not found")
@@ -126,6 +144,22 @@ class QADao:
             records.append(qa_schema.QARecordSchema(**serializer.qa_session_serialize(record)))
         return records
         
+        
+    # Search question records by question content
+    async def search_question_records(self, keyword: str, user_sub: str) -> list[dict]:
+        query = {
+            "user_sub": user_sub,
+            "$or": [
+                {"question": {"$regex": keyword, "$options": "i"}},
+                {"answer": {"$regex": keyword, "$options": "i"}}
+            ]
+        }
+        cursor = self.qa_collection.find(query).sort("created_at", -1)
+        records = []
+        async for record in cursor:
+            records.append(qa_schema.QARecordSchema(**serializer.qa_session_serialize(record)))
+        return records
+    
         
     # Get QA record by ID
     async def get_qa_record_by_id(self, qa_id: str) -> dict:

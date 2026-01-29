@@ -14,6 +14,8 @@ class DocumentRecord(BaseModel):
     file_url: HttpUrl
     file_path: str
     uploaded_by: str
+    total_tokens: Optional[int] = None
+    upload_cost: Optional[float] = None
     uploaded_at: datetime
     updated_by: Optional[str] = None
     updated_at: Optional[datetime] = None
