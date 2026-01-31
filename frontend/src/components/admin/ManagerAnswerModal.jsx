@@ -2,19 +2,31 @@ import React, { useState, useEffect } from 'react';
 import { 
     Dialog, DialogTitle, DialogContent, DialogActions, 
     Button, TextField, Typography, Box, Divider, CircularProgress, Grid, Chip,
-    Tabs, Tab, Paper, Stack
+    Paper, Stack
 } from '@mui/material';
-import ReactMarkdown from 'react-markdown';
 import QuestionAnswerIcon from '@mui/icons-material/QuestionAnswer';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import EditNoteIcon from '@mui/icons-material/EditNote';
-import VisibilityIcon from '@mui/icons-material/Visibility';
 import PersonIcon from '@mui/icons-material/Person';
+
+// Function to remove markdown formatting (only bold and italic)
+const cleanMarkdown = (text) => {
+    if (!text) return text;
+    
+    // Remove bold (**text** or __text__)
+    text = text.replace(/\*\*(.+?)\*\*/g, '$1');
+    text = text.replace(/__(.+?)__/g, '$1');
+    
+    // Remove italic (*text* or _text_) - but be careful not to remove single asterisks used for other purposes
+    text = text.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '$1');
+    text = text.replace(/(?<!_)_(?!_)(.+?)(?<!_)_(?!_)/g, '$1');
+    
+    return text;
+};
 
 const ManagerAnswerModal = ({ open, onClose, qaRecord, onSave }) => {
     const [answer, setAnswer] = useState('');
     const [isSaving, setIsSaving] = useState(false);
-    const [previewTab, setPreviewTab] = useState(0); // 0: Edit, 1: Preview
 
     useEffect(() => {
         if (qaRecord) {
@@ -88,115 +100,36 @@ const ManagerAnswerModal = ({ open, onClose, qaRecord, onSave }) => {
                         <SmartToyIcon sx={{ color: '#f57c00' }} />
                         <Typography variant="subtitle1" fontWeight={600}>Câu trả lời của Chatbot (Gốc)</Typography>
                     </Box>
-                    <Box component="div" sx={{ 
-                        '& p': { margin: 0, marginBottom: '12px', lineHeight: 1.7 },
-                        '& p:last-child': { marginBottom: 0 },
-                        '& ul, & ol': { marginLeft: '24px', marginTop: '8px', marginBottom: '12px' },
-                        '& li': { marginBottom: '6px', lineHeight: 1.6 },
-                        '& strong': { fontWeight: 700, color: '#d84315' },
-                        '& a': { color: '#1976d2', textDecoration: 'underline' }
-                    }}>
-                        <ReactMarkdown
-                            components={{
-                                p: ({node, ...props}) => <Typography variant="body2" component="p" {...props} />,
-                                strong: ({node, ...props}) => <strong {...props} />,
-                                a: ({node, ...props}) => <a {...props} target="_blank" rel="noopener noreferrer" />,
-                                ul: ({node, ...props}) => <ul {...props} />,
-                                ol: ({node, ...props}) => <ol {...props} />,
-                                li: ({node, ...props}) => <li {...props} />,
-                            }}
-                        >
-                            {(qaRecord.botAnswer || 'Không có câu trả lời từ BOT.').replace(/\/n/g, '\n')}
-                        </ReactMarkdown>
-                    </Box>
+                    <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+                        {cleanMarkdown((qaRecord.botAnswer || 'Không có câu trả lời từ BOT.').replace(/\/n/g, '\n'))}
+                    </Typography>
                 </Paper>
 
-                {/* Câu trả lời của Quản lý với Tab Preview */}
+                {/* Câu trả lời của Quản lý */}
                 <Paper elevation={2} sx={{ borderLeft: '4px solid #4caf50' }}>
-                    <Box sx={{ bgcolor: '#e8f5e9', px: 2, pt: 2 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                    <Box sx={{ bgcolor: '#e8f5e9', px: 2, py: 2 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                             <EditNoteIcon sx={{ color: '#2e7d32' }} />
                             <Typography variant="subtitle1" fontWeight={600}>Câu trả lời của Quản lý</Typography>
                         </Box>
-                        <Tabs 
-                            value={previewTab} 
-                            onChange={(e, newValue) => setPreviewTab(newValue)}
-                            sx={{ minHeight: 40 }}
-                        >
-                            <Tab 
-                                icon={<EditNoteIcon />} 
-                                iconPosition="start" 
-                                label="Nhập liệu" 
-                                sx={{ minHeight: 40, textTransform: 'none' }}
-                            />
-                            <Tab 
-                                icon={<VisibilityIcon />} 
-                                iconPosition="start" 
-                                label="Xem trước" 
-                                sx={{ minHeight: 40, textTransform: 'none' }}
-                            />
-                        </Tabs>
                     </Box>
                     
                     <Box sx={{ p: 2, bgcolor: 'white' }}>
-                        {previewTab === 0 ? (
-                            <Box>
-                                <TextField
-                                    fullWidth
-                                    multiline
-                                    rows={10}
-                                    placeholder="Nhập câu trả lời của bạn tại đây... (Hỗ trợ Markdown)"
-                                    value={answer}
-                                    onChange={(e) => setAnswer(e.target.value)}
-                                    variant="outlined"
-                                    sx={{ 
-                                        '& .MuiOutlinedInput-root': {
-                                            fontFamily: 'monospace',
-                                            fontSize: '0.9rem'
-                                        }
-                                    }}
-                                />
-                                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
-                                    💡 Hỗ trợ Markdown: **in đậm**, *in nghiêng*, - danh sách, 1. danh sách số
-                                </Typography>
-                            </Box>
-                        ) : (
-                            <Box sx={{ 
-                                minHeight: '280px',
-                                p: 2,
-                                bgcolor: '#f5f5f5',
-                                borderRadius: 1,
-                                border: '1px solid #e0e0e0'
-                            }}>
-                                {answer.trim() ? (
-                                    <Box component="div" sx={{ 
-                                        '& p': { margin: 0, marginBottom: '12px', lineHeight: 1.7 },
-                                        '& p:last-child': { marginBottom: 0 },
-                                        '& ul, & ol': { marginLeft: '24px', marginTop: '8px', marginBottom: '12px' },
-                                        '& li': { marginBottom: '6px', lineHeight: 1.6 },
-                                        '& strong': { fontWeight: 700 },
-                                        '& a': { color: '#1976d2', textDecoration: 'underline' }
-                                    }}>
-                                        <ReactMarkdown
-                                            components={{
-                                                p: ({node, ...props}) => <Typography variant="body2" component="p" {...props} />,
-                                                strong: ({node, ...props}) => <strong {...props} />,
-                                                a: ({node, ...props}) => <a {...props} target="_blank" rel="noopener noreferrer" />,
-                                                ul: ({node, ...props}) => <ul {...props} />,
-                                                ol: ({node, ...props}) => <ol {...props} />,
-                                                li: ({node, ...props}) => <li {...props} />,
-                                            }}
-                                        >
-                                            {answer.replace(/\/n/g, '\n')}
-                                        </ReactMarkdown>
-                                    </Box>
-                                ) : (
-                                    <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-                                        Chưa có nội dung để xem trước. Hãy nhập câu trả lời ở tab "Nhập liệu".
-                                    </Typography>
-                                )}
-                            </Box>
-                        )}
+                        <TextField
+                            fullWidth
+                            multiline
+                            rows={10}
+                            placeholder="Nhập câu trả lời của bạn tại đây..."
+                            value={answer}
+                            onChange={(e) => setAnswer(e.target.value)}
+                            variant="outlined"
+                            sx={{ 
+                                '& .MuiOutlinedInput-root': {
+                                    fontFamily: 'monospace',
+                                    fontSize: '0.9rem'
+                                }
+                            }}
+                        />
                     </Box>
                 </Paper>
             </DialogContent>

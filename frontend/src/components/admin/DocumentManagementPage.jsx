@@ -3,7 +3,7 @@ import {
     Box, Button, Typography, Table, TableBody, TableCell, TableContainer,
     TableHead, TableRow, Paper, IconButton, Chip, TablePagination, 
     CircularProgress, Alert, TextField, FormControl, InputLabel, 
-    Select, MenuItem, Grid, Stack 
+    Select, MenuItem, Grid, Stack, Tooltip 
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -410,12 +410,19 @@ const DocumentManagementPage = () => {
                 <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
                     {isAdmin && (
                         <Button
-                            variant="outlined"
+                            variant="contained"
                             color="warning"
                             disabled={isSyncing}
                             onClick={handleSyncVectorDB}
-                            startIcon={isSyncing ? <CircularProgress size={20} /> : <SyncIcon />} // Nhớ import SyncIcon từ @mui/icons-material
-                            sx={{ borderRadius: 3, fontWeight: 600 }}
+                            startIcon={isSyncing ? <CircularProgress size={20} color="inherit" /> : <SyncIcon />}
+                            sx={{ 
+                                borderRadius: 3, 
+                                fontWeight: 600,
+                                boxShadow: 2,
+                                '&:hover': {
+                                    boxShadow: 4
+                                }
+                            }}
                         >
                             {isSyncing ? "Đang đồng bộ..." : "Đồng bộ CSDL Vector"}
                         </Button>
@@ -581,7 +588,9 @@ const DocumentManagementPage = () => {
                             return (
                                 <TableRow key={doc.id} hover>
                                     <TableCell>
-                                        <Typography fontWeight={600} noWrap sx={{ maxWidth: 300 }}>{doc.file_name}</Typography>
+                                        <Tooltip title={doc.file_name} arrow placement="top">
+                                            <Typography fontWeight={600} noWrap sx={{ maxWidth: 200 }}>{doc.file_name}</Typography>
+                                        </Tooltip>
                                         <Typography variant="caption" color="text.secondary">
                                             {doc.file_url ? <a href={doc.file_url} target="_blank" rel="noopener noreferrer">Xem link gốc</a> : 'N/A'}
                                         </Typography>

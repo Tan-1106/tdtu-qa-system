@@ -101,20 +101,35 @@ const AssignFacultyDialog = ({ open, onClose, question, onSave, faculties }) => 
 };
 
 const EditQuestionDialog = ({ open, onClose, question, onSave }) => {
-    const [editedQuestion, setEditedQuestion] = useState(question?.question || '');
-    const [editedAnswer, setEditedAnswer] = useState(question?.answer || '');
+    const [editedQuestion, setEditedQuestion] = useState('');
+    const [editedAnswer, setEditedAnswer] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
     useEffect(() => {
-        setEditedQuestion(question?.question || '');
-        setEditedAnswer(question?.answer || '');
+        console.log('EditQuestionDialog - question data:', question);
+        
+        // Handle question text
+        const questionText = typeof question?.question === 'string' ? question.question : '';
+        
+        // Handle answer - it could be a string or an array (due to backend returning tuple)
+        let answerText = '';
+        if (typeof question?.answer === 'string') {
+            answerText = question.answer;
+        } else if (Array.isArray(question?.answer) && question.answer.length > 0) {
+            answerText = question.answer[0]; // Take first element if it's an array
+        }
+        
+        console.log('EditQuestionDialog - questionText:', questionText);
+        console.log('EditQuestionDialog - answerText:', answerText);
+        setEditedQuestion(questionText);
+        setEditedAnswer(answerText);
         setError(null);
     }, [question, open]);
     
     const isSaveDisabled = loading || (
-        editedQuestion.trim() === (question?.question || '').trim() && 
-        editedAnswer.trim() === (question?.answer || '').trim()
+        editedQuestion.trim() === (typeof question?.question === 'string' ? question.question.trim() : '') && 
+        editedAnswer.trim() === (typeof question?.answer === 'string' ? question.answer.trim() : '')
     );
 
     const handleSave = async () => {
@@ -122,11 +137,14 @@ const EditQuestionDialog = ({ open, onClose, question, onSave }) => {
         setLoading(true);
         setError(null);
         
+        const originalQuestion = typeof question.question === 'string' ? question.question.trim() : '';
+        const originalAnswer = typeof question.answer === 'string' ? question.answer.trim() : '';
+        
         const updateData = {};
-        if (editedQuestion.trim() !== (question.question || '').trim()) {
+        if (editedQuestion.trim() !== originalQuestion) {
             updateData.question = editedQuestion.trim();
         }
-        if (editedAnswer.trim() !== (question.answer || '').trim()) {
+        if (editedAnswer.trim() !== originalAnswer) {
             updateData.answer = editedAnswer.trim();
         }
         
@@ -363,13 +381,26 @@ const PopularQuestionManagementPage = () => {
         try {
             const data = await getPopularQuestions(params);
             
-            setQuestions(data.popular_questions.map(q => ({
-                ...q,
-                id: q._id || q.id || 'temp-' + Math.random(),                
-                faculty_scope: q.summary?.faculty_scope,
-                created_at: q.created_at,
-                updated_at: q.updated_at
-            })));
+            console.log('Fetched popular questions data:', data.popular_questions);
+            
+            setQuestions(data.popular_questions.map(q => {
+                // Normalize answer field - if it's an array, take the first element (the actual answer string)
+                let normalizedAnswer = q.answer;
+                if (Array.isArray(q.answer) && q.answer.length > 0) {
+                    normalizedAnswer = q.answer[0];
+                }
+                
+                const mappedQuestion = {
+                    ...q,
+                    id: q._id || q.id || 'temp-' + Math.random(),                
+                    answer: normalizedAnswer,
+                    faculty_scope: q.summary?.faculty_scope,
+                    created_at: q.created_at,
+                    updated_at: q.updated_at
+                };
+                console.log('Mapped question:', mappedQuestion);
+                return mappedQuestion;
+            }));
             setTotalQuestions(data.total);
         } catch (err) {
             console.error("Error fetching popular questions:", err);

@@ -9,7 +9,6 @@ import SchoolIcon from '@mui/icons-material/School';
 import MenuIcon from '@mui/icons-material/Menu';
 import CloseIcon from '@mui/icons-material/Close'; 
 import { useOutletContext } from 'react-router-dom'; 
-import ReactMarkdown from 'react-markdown';
 
 import useUserAuth from '../hooks/useUserAuth';
 import { sendQuery, sendFeedback } from '../api/chatApi'; 
@@ -17,6 +16,21 @@ import axiosInstance from '../api/axiosInstance';
 
 
 const BOT_WELCOME_MESSAGE = { id: 1, text: 'Chào bạn, tôi là trợ lý ảo của TDTU. Tôi có thể giúp gì cho bạn?', sender: 'bot' };
+
+// Function to remove markdown formatting (only bold and italic)
+const cleanMarkdown = (text) => {
+    if (!text) return text;
+    
+    // Remove bold (**text** or __text__)
+    text = text.replace(/\*\*(.+?)\*\*/g, '$1');
+    text = text.replace(/__(.+?)__/g, '$1');
+    
+    // Remove italic (*text* or _text_) - but be careful not to remove single asterisks used for other purposes
+    text = text.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '$1');
+    text = text.replace(/(?<!_)_(?!_)(.+?)(?<!_)_(?!_)/g, '$1');
+    
+    return text;
+};
 
 const TypingText = ({ text, speed = 20, onType, onDone }) => {
         const [displayed, setDisplayed] = useState('');
@@ -36,8 +50,8 @@ const TypingText = ({ text, speed = 20, onType, onDone }) => {
             return () => clearInterval(interval);
         }, [text]);
 
-        return <>{displayed}</>;
-        };
+        return <span style={{ whiteSpace: 'pre-wrap' }}>{cleanMarkdown(displayed)}</span>;
+};
 
 
 const ChatPage = () => {
@@ -338,7 +352,7 @@ const ChatPage = () => {
                                 </Typography>
                             )}
                             
-                            <Typography variant="body1" component="div">
+                            <Typography variant="body1" component="div" sx={{ whiteSpace: 'pre-wrap' }}>
                                 {msg.sender === 'bot' && msg.isTyping ? (
                                     <TypingText
                                         text={msg.text}
@@ -359,19 +373,7 @@ const ChatPage = () => {
                                         />
 
                                 ) : (
-                                    <ReactMarkdown
-                                        components={{
-                                            p: ({node, ...props}) => <Typography variant="body1" component="span" {...props} />,
-                                            strong: ({node, ...props}) => <strong style={{ fontWeight: 700 }} {...props} />,
-                                            em: ({node, ...props}) => <em {...props} />,
-                                            a: ({node, ...props}) => <a style={{ color: isUser ? 'white' : '#1976d2', textDecoration: 'underline' }} {...props} target="_blank" rel="noopener noreferrer" />,
-                                            ul: ({node, ...props}) => <ul style={{ marginLeft: '20px', marginTop: '8px', marginBottom: '8px' }} {...props} />,
-                                            ol: ({node, ...props}) => <ol style={{ marginLeft: '20px', marginTop: '8px', marginBottom: '8px' }} {...props} />,
-                                            li: ({node, ...props}) => <li style={{ marginBottom: '4px' }} {...props} />,
-                                        }}
-                                    >
-                                        {msg.text.replace(/\/n/g, '\n')}
-                                    </ReactMarkdown>
+                                    cleanMarkdown(msg.text)
                                 )}
                             </Typography>
 
