@@ -110,6 +110,7 @@ const DocumentManagementPage = () => {
 
     const fetchFilterOptions = async () => {
         try {
+            // Gọi API để lấy danh sách loại tài liệu đã có trong hệ thống
             const docTypes = await getDocTypes();
             if (docTypes && Array.isArray(docTypes)) {
                 setAvailableDocTypes(docTypes.filter(t => t.trim()));

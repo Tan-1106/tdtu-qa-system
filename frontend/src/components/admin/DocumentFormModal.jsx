@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { 
     Modal, Box, Typography, Button, IconButton, TextField, 
     FormControl, InputLabel, Select, MenuItem, Grid, Alert, 
-    CircularProgress, FormHelperText, ToggleButtonGroup, ToggleButton, Stack 
+    CircularProgress, FormHelperText, ToggleButtonGroup, ToggleButton, Stack, Autocomplete 
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
@@ -256,17 +256,67 @@ const DocumentFormModal = ({ open, onClose, onSave, editingDocument, availableFa
                                     onChange={handleFileChange}
                                     disabled={isEditMode || isLoading} 
                                 />
-                                <label htmlFor="file-upload">
-                                    <Button
-                                        variant="contained"
-                                        component="span"
-                                        startIcon={<UploadFileIcon />}
-                                        disabled={isEditMode || isLoading}
-                                        color={fileDisplayName && !isEditMode ? 'success' : 'primary'}
-                                    >
-                                        {isEditMode ? "Tệp đã tải lên" : (fileDisplayName ? "Đã chọn file" : "Chọn PDF")}
-                                    </Button>
-                                </label>
+                                
+                                <Box
+                                    onDragOver={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        if (!isEditMode && !isLoading) {
+                                            e.currentTarget.style.borderColor = '#1976d2';
+                                            e.currentTarget.style.backgroundColor = '#f0f7ff';
+                                        }
+                                    }}
+                                    onDragLeave={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        e.currentTarget.style.borderColor = '#e0e0e0';
+                                        e.currentTarget.style.backgroundColor = 'transparent';
+                                    }}
+                                    onDrop={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        e.currentTarget.style.borderColor = '#e0e0e0';
+                                        e.currentTarget.style.backgroundColor = 'transparent';
+                                        
+                                        if (isEditMode || isLoading) return;
+                                        
+                                        const files = e.dataTransfer.files;
+                                        if (files && files[0] && files[0].type === 'application/pdf') {
+                                            setFormData(prev => ({ ...prev, file: files[0], file_name: files[0].name.replace(/\.pdf$/i, '') }));
+                                            setFileDisplayName(files[0].name);
+                                        } else {
+                                            setError('Vui lòng chỉ kéo thả file PDF.');
+                                        }
+                                    }}
+                                    sx={{
+                                        border: '2px dashed #e0e0e0',
+                                        borderRadius: 2,
+                                        p: 3,
+                                        textAlign: 'center',
+                                        cursor: isEditMode || isLoading ? 'not-allowed' : 'pointer',
+                                        transition: 'all 0.3s',
+                                        backgroundColor: isEditMode || isLoading ? '#f5f5f5' : 'transparent',
+                                        '&:hover': {
+                                            borderColor: isEditMode || isLoading ? '#e0e0e0' : '#1976d2',
+                                            backgroundColor: isEditMode || isLoading ? '#f5f5f5' : '#f0f7ff',
+                                        }
+                                    }}
+                                >
+                                    <label htmlFor="file-upload" style={{ cursor: isEditMode || isLoading ? 'not-allowed' : 'pointer', display: 'block' }}>
+                                        <Button
+                                            variant="contained"
+                                            component="span"
+                                            startIcon={<UploadFileIcon />}
+                                            disabled={isEditMode || isLoading}
+                                            color={fileDisplayName && !isEditMode ? 'success' : 'primary'}
+                                        >
+                                            {isEditMode ? "Tệp đã tải lên" : (fileDisplayName ? "Đã chọn file" : "Chọn PDF")}
+                                        </Button>
+                                        <Typography variant="body2" sx={{ mt: 2, color: 'text.secondary' }}>
+                                            {isEditMode ? '' : 'hoặc kéo thả file PDF vào đây'}
+                                        </Typography>
+                                    </label>
+                                </Box>
 
                                 {fileDisplayName && !isEditMode && (
                                     <FormHelperText sx={{ color: 'text.primary', mt: 1 }}>
@@ -313,20 +363,27 @@ const DocumentFormModal = ({ open, onClose, onSave, editingDocument, availableFa
                             helperText="Link gốc của tài liệu (ví dụ: link trên Website trường)."
                         />
 
-                        <FormControl fullWidth required disabled={isLoading}>
-                            <InputLabel>Loại tài liệu</InputLabel>
-                            <Select
-                                name="doc_type"
-                                label="Loại tài liệu"
-                                value={formData.doc_type}
-                                onChange={handleChange}
-                            >
-                                {documentTypes.map(type => (
-                                    <MenuItem key={type} value={type}>{type}</MenuItem>
-                                ))}
-                            </Select>
-                            <FormHelperText>Chọn loại tài liệu phù hợp.</FormHelperText>
-                        </FormControl>
+                        <Autocomplete
+                            fullWidth
+                            freeSolo
+                            options={documentTypes || []}
+                            value={formData.doc_type}
+                            onChange={(event, newValue) => {
+                                setFormData(prev => ({ ...prev, doc_type: newValue || '' }));
+                            }}
+                            onInputChange={(event, newInputValue) => {
+                                setFormData(prev => ({ ...prev, doc_type: newInputValue }));
+                            }}
+                            disabled={isLoading}
+                            renderInput={(params) => (
+                                <TextField
+                                    {...params}
+                                    required
+                                    label="Loại tài liệu"
+                                    helperText="Chọn từ danh sách hoặc nhập mới (VD: Quy định, Hướng dẫn, Quy chế, Thông báo, Khác)"
+                                />
+                            )}
+                        />
                     </Stack>
                 </Box>
 
@@ -349,25 +406,38 @@ const DocumentFormModal = ({ open, onClose, onSave, editingDocument, availableFa
                                         </ToggleButtonGroup>
 
                                         {scopeSelection && (
-                                            <FormControl sx={{ flex: 1 }} required disabled={isLoading}>
-                                                <InputLabel>
-                                                    {scopeSelection === 'department' ? 'Chọn phòng ban' : 'Chọn khoa'}
-                                                </InputLabel>
-                                                <Select
-                                                    value={scopeSelection === 'department' ? formData.department : formData.faculty}
-                                                    label={scopeSelection === 'department' ? 'Chọn phòng ban' : 'Chọn khoa'}
-                                                    onChange={handleScopeValueChange}
-                                                >
-                                                    <MenuItem value="">-- Chọn --</MenuItem>
-                                                    {scopeSelection === 'department'
-                                                        ? departmentOptions.map(d => <MenuItem key={d} value={d}>{d}</MenuItem>)
-                                                        : facultyOptions.map(f => <MenuItem key={f} value={f}>{f}</MenuItem>)
+                                            <Autocomplete
+                                                sx={{ flex: 1 }}
+                                                freeSolo
+                                                options={scopeSelection === 'department' ? departmentOptions : facultyOptions}
+                                                value={scopeSelection === 'department' ? formData.department : formData.faculty}
+                                                onChange={(event, newValue) => {
+                                                    if (scopeSelection === 'department') {
+                                                        setFormData(prev => ({ ...prev, department: newValue || '', faculty: '' }));
+                                                    } else {
+                                                        setFormData(prev => ({ ...prev, faculty: newValue || '', department: '' }));
                                                     }
-                                                </Select>
-                                            </FormControl>
+                                                }}
+                                                onInputChange={(event, newInputValue) => {
+                                                    if (scopeSelection === 'department') {
+                                                        setFormData(prev => ({ ...prev, department: newInputValue, faculty: '' }));
+                                                    } else {
+                                                        setFormData(prev => ({ ...prev, faculty: newInputValue, department: '' }));
+                                                    }
+                                                }}
+                                                disabled={isLoading}
+                                                renderInput={(params) => (
+                                                    <TextField
+                                                        {...params}
+                                                        required
+                                                        label={scopeSelection === 'department' ? 'Phòng ban' : 'Khoa'}
+                                                        placeholder={scopeSelection === 'department' ? 'VD: Phòng Đào tạo' : 'VD: Khoa Công nghệ thông tin'}
+                                                    />
+                                                )}
+                                            />
                                         )}
                                     </Stack>
-                                    <FormHelperText>Chọn Phòng Ban cho tài liệu chung, hoặc Khoa cho tài liệu chuyên môn.</FormHelperText>
+                                    <FormHelperText>Nhập Phòng Ban cho tài liệu chung, hoặc Khoa cho tài liệu chuyên môn.</FormHelperText>
                                 </Stack>
                             ) : (
                                 <Alert severity="info">

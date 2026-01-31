@@ -380,6 +380,7 @@ const ModelManagementPage = () => {
                             <TableCell><b>API Key</b></TableCell>
                             <TableCell><b>Nhà cung cấp</b></TableCell>
                             <TableCell><b>Model</b></TableCell>
+                            <TableCell><b>Giá Token ($/1M)</b></TableCell>
                             <TableCell><b>Trạng thái</b></TableCell>
                             <TableCell align="right"><b>Hành động</b></TableCell>
                         </TableRow>
@@ -409,6 +410,14 @@ const ModelManagementPage = () => {
                                         color={key.is_using ? 'success' : 'default'}
                                         sx={{ fontWeight: 500, borderRadius: 1 }}
                                     />
+                                </TableCell>
+                                <TableCell>
+                                    <Typography variant="caption" display="block" sx={{ color: 'text.secondary' }}>
+                                        In: ${key.input_token_price?.toFixed(2) || '0.00'}
+                                    </Typography>
+                                    <Typography variant="caption" display="block" sx={{ color: 'text.secondary' }}>
+                                        Out: ${key.output_token_price?.toFixed(2) || '0.00'}
+                                    </Typography>
                                 </TableCell>
                                 <TableCell>
                                     <Chip

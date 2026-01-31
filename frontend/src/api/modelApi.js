@@ -49,8 +49,12 @@ export const toggleApiKeyUsage = async (keyId) => {
     throw new Error(response.data.message || 'Failed to toggle API key usage status.');
 };
 
-export const addModelToApiKey = async (keyId, usingModel) => {
-    const response = await axiosInstance.post(`${BASE_URL}/${keyId}/add-model`, { using_model: usingModel });
+export const addModelToApiKey = async (keyId, usingModel, inputTokenPrice, outputTokenPrice) => {
+    const response = await axiosInstance.post(`${BASE_URL}/${keyId}/add-model`, { 
+        using_model: usingModel,
+        input_token_price: inputTokenPrice,
+        output_token_price: outputTokenPrice
+    });
     if (response.data.status_code === 200) {
         return response.data.details;
     }

@@ -1,22 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { 
-    Modal, Box, Typography, TextField, Button, Select, MenuItem, 
-    FormControl, InputLabel, CircularProgress, Alert, Stepper, Step, StepLabel, Stack, Divider 
+    Modal, Box, Typography, TextField, Button, Select, MenuItem, 
+    FormControl, InputLabel, CircularProgress, Alert, Stepper, Step, StepLabel, Stack, Divider 
 } from '@mui/material';
 import { createApiKey, getAvailableModels, addModelToApiKey, updateApiKeyInfo } from '../../api/modelApi';
 
 const API_PROVIDERS = ['OpenAI', 'Google'];
 
 const style = {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    transform: 'translate(-50%, -50%)',
-    width: { xs: '90%', sm: 500 },
-    bgcolor: 'background.paper',
-    boxShadow: 24,
-    p: 4,
-    borderRadius: 3,
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
+    width: { xs: '90%', sm: 500 },
+    maxHeight: '90vh',
+    bgcolor: 'background.paper',
+    boxShadow: 24,
+    borderRadius: 3,
+    display: 'flex',
+    flexDirection: 'column',
 };
 
 const extractError = (error, defaultMessage) => {
@@ -27,20 +29,22 @@ const extractError = (error, defaultMessage) => {
 };
 
 const APIKeyFormModal = ({ open, onClose, onSave, editingKey = null }) => {
-    const isEditMode = !!editingKey;
-    const [activeStep, setActiveStep] = useState(0);
+    const isEditMode = !!editingKey;
+    const [activeStep, setActiveStep] = useState(0);
 
-    const [name, setName] = useState(editingKey?.name || '');
-    const [description, setDescription] = useState(editingKey?.description || '');
-    const [apiKey, setApiKey] = useState(editingKey?.api_key || '');
-    const [provider, setProvider] = useState(editingKey?.provider || '');
-    
-    const [availableModels, setAvailableModels] = useState([]);
-    const [selectedModel, setSelectedModel] = useState(editingKey?.using_model || '');
+    const [name, setName] = useState(editingKey?.name || '');
+    const [description, setDescription] = useState(editingKey?.description || '');
+    const [apiKey, setApiKey] = useState(editingKey?.api_key || '');
+    const [provider, setProvider] = useState(editingKey?.provider || '');
+    
+    const [availableModels, setAvailableModels] = useState([]);
+    const [selectedModel, setSelectedModel] = useState(editingKey?.using_model || '');
+    const [inputTokenPrice, setInputTokenPrice] = useState(editingKey?.input_token_price || 0);
+    const [outputTokenPrice, setOutputTokenPrice] = useState(editingKey?.output_token_price || 0);
 
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState(null);
-    const [newlyCreatedKeyId, setNewlyCreatedKeyId] = useState(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState(null);
+    const [newlyCreatedKeyId, setNewlyCreatedKeyId] = useState(null);
     
     const currentKeyForFetch = newlyCreatedKeyId ? apiKey : editingKey?.api_key;
     const currentProviderForFetch = newlyCreatedKeyId ? provider : editingKey?.provider;
@@ -50,17 +54,20 @@ const APIKeyFormModal = ({ open, onClose, onSave, editingKey = null }) => {
     const activeDisplayStep = isEditMode ? 0 : activeStep;
 
 
-    useEffect(() => {
-        if (open) {
-            if (!isEditMode) {
-                setName(''); setDescription(''); setApiKey('');
-                setProvider(''); setSelectedModel(''); setNewlyCreatedKeyId(null);
-                setActiveStep(0);
-            } else {
+    useEffect(() => {
+        if (open) {
+            if (!isEditMode) {
+                setName(''); setDescription(''); setApiKey('');
+                setProvider(''); setSelectedModel(''); setNewlyCreatedKeyId(null);
+                setInputTokenPrice(0); setOutputTokenPrice(0);
+                setActiveStep(0);
+            } else {
                 setName(editingKey?.name || '');
                 setDescription(editingKey?.description || '');
                 setApiKey(editingKey?.api_key || '');
                 setProvider(editingKey?.provider || '');
+                setInputTokenPrice(editingKey?.input_token_price || 0);
+                setOutputTokenPrice(editingKey?.output_token_price || 0);
                 setNewlyCreatedKeyId(editingKey?._id || null); 
 
                  if (editingKey?.api_key && editingKey?.provider) {
@@ -68,9 +75,9 @@ const APIKeyFormModal = ({ open, onClose, onSave, editingKey = null }) => {
                  }
                  setActiveStep(1); 
             }
-            setError(null);
-        }
-    }, [open, isEditMode, editingKey]);
+            setError(null);
+        }
+    }, [open, isEditMode, editingKey]);
 
 
     // --- HÀM LẤY MODELS ---
@@ -91,8 +98,8 @@ const APIKeyFormModal = ({ open, onClose, onSave, editingKey = null }) => {
             }
         } catch (err) {
             console.error("Error fetching models:", err);
-            const backendError = extractError(err);
-            setError(`Lỗi: ${backendError}. Vẫn có thể lưu Key.`);
+            const backendError = extractError(err);
+            setError(`Lỗi: ${backendError}. Vẫn có thể lưu Key.`);
             setAvailableModels([]);
         } finally {
             setIsLoading(false);
@@ -138,6 +145,12 @@ const APIKeyFormModal = ({ open, onClose, onSave, editingKey = null }) => {
             return;
         }
         
+        // Validate prices
+        if (inputTokenPrice < 0 || outputTokenPrice < 0) {
+            setError('Giá token không được âm.');
+            return;
+        }
+        
         setIsLoading(true);
         setError(null);
         
@@ -148,14 +161,14 @@ const APIKeyFormModal = ({ open, onClose, onSave, editingKey = null }) => {
             if (isEditMode) {
                 await updateApiKeyInfo(keyId, { name, description });
             }
-            // 2. Lưu Model sử dụng
-            await addModelToApiKey(keyId, selectedModel);
+            // 2. Lưu Model sử dụng và giá token
+            await addModelToApiKey(keyId, selectedModel, inputTokenPrice, outputTokenPrice);
             
             onSave(); // Tải lại bảng và đóng modal
 
         } catch (err) {
             console.error("Error saving model:", err);
-            setError(extractError(err, "Không thể lưu Model sử dụng."));
+            setError(extractError(err, "Không thể lưu Model sử dụng."));
         } finally {
             setIsLoading(false);
         }
@@ -217,6 +230,34 @@ const APIKeyFormModal = ({ open, onClose, onSave, editingKey = null }) => {
                     )}
                     
                     <Divider sx={{ my: 1 }} />
+                    
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'primary.main' }}>
+                        Giá Token ($/1M tokens)
+                    </Typography>
+                    
+                    <TextField 
+                        fullWidth 
+                        label="Input Token Price ($/1M tokens)" 
+                        type="number"
+                        value={inputTokenPrice} 
+                        onChange={(e) => setInputTokenPrice(parseFloat(e.target.value) || 0)} 
+                        disabled={isLoading}
+                        inputProps={{ min: 0, step: 0.01 }}
+                        helperText="Giá cho mỗi 1 triệu input tokens"
+                    />
+                    
+                    <TextField 
+                        fullWidth 
+                        label="Output Token Price ($/1M tokens)" 
+                        type="number"
+                        value={outputTokenPrice} 
+                        onChange={(e) => setOutputTokenPrice(parseFloat(e.target.value) || 0)} 
+                        disabled={isLoading}
+                        inputProps={{ min: 0, step: 0.01 }}
+                        helperText="Giá cho mỗi 1 triệu output tokens"
+                    />
+                    
+                    <Divider sx={{ my: 1 }} />
                      <Typography variant="caption" sx={{ opacity: 0.7 }}>
                         Provider: {currentProviderForFetch || 'N/A'}
                     </Typography>
@@ -230,25 +271,29 @@ const APIKeyFormModal = ({ open, onClose, onSave, editingKey = null }) => {
     return (
         <Modal open={open} onClose={onClose}>
             <Box sx={style}>
-                <Typography variant="h5" sx={{ mb: 3, fontWeight: 600 }}>
-                    {isEditMode ? "Chỉnh sửa Model & Thông tin" : "Thêm Khóa API mới"}
-                </Typography>
+                <Box sx={{ p: 3, pb: 2 }}>
+                    <Typography variant="h5" sx={{ mb: 3, fontWeight: 600 }}>
+                        {isEditMode ? "Chỉnh sửa Model & Thông tin" : "Thêm Khóa API mới"}
+                    </Typography>
+                    
+                    {!isEditMode && (
+                        <Stepper activeStep={activeStep} alternativeLabel sx={{ mb: 3 }}>
+                            {steps.map((label) => (
+                                <Step key={label}>
+                                    <StepLabel>{label}</StepLabel>
+                                </Step>
+                            ))}
+                        </Stepper>
+                    )}
+                    
+                    {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+                </Box>
                 
-                {!isEditMode && (
-                    <Stepper activeStep={activeStep} alternativeLabel sx={{ mb: 3 }}>
-                        {steps.map((label) => (
-                            <Step key={label}>
-                                <StepLabel>{label}</StepLabel>
-                            </Step>
-                        ))}
-                    </Stepper>
-                )}
+                <Box sx={{ px: 3, pb: 2, overflowY: 'auto', flex: 1 }}>
+                    {getStepContent(activeStep)}
+                </Box>
                 
-                {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-                
-                {getStepContent(activeStep)}
-                
-                <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 4 }}>
+                <Box sx={{ p: 3, pt: 2, display: 'flex', justifyContent: 'flex-end', gap: 1, borderTop: '1px solid', borderColor: 'divider' }}>
                     <Button onClick={onClose} variant="outlined" disabled={isLoading}>Hủy</Button>
                     
                     {activeStep === 0 && !isEditMode && (

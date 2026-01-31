@@ -351,7 +351,7 @@ const DocumentListPage = () => {
                             <Stack direction="row" spacing={1} alignItems="flex-end" sx={{ mt: 1 }}>
                                 <TextField
                                     fullWidth
-                                    label="Tìm kiếm theo Tên Tài liệu"
+                                    label="Tìm kiếm theo từ khóa"
                                     variant="outlined"
                                     value={searchKeyword} 
                                     onChange={(e) => setSearchKeyword(e.target.value)} 

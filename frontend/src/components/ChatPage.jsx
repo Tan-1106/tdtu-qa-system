@@ -9,6 +9,7 @@ import SchoolIcon from '@mui/icons-material/School';
 import MenuIcon from '@mui/icons-material/Menu';
 import CloseIcon from '@mui/icons-material/Close'; 
 import { useOutletContext } from 'react-router-dom'; 
+import ReactMarkdown from 'react-markdown';
 
 import useUserAuth from '../hooks/useUserAuth';
 import { sendQuery, sendFeedback } from '../api/chatApi'; 
@@ -337,7 +338,7 @@ const ChatPage = () => {
                                 </Typography>
                             )}
                             
-                            <Typography variant="body1">
+                            <Typography variant="body1" component="div">
                                 {msg.sender === 'bot' && msg.isTyping ? (
                                     <TypingText
                                         text={msg.text}
@@ -358,9 +359,21 @@ const ChatPage = () => {
                                         />
 
                                 ) : (
-                                    msg.text
+                                    <ReactMarkdown
+                                        components={{
+                                            p: ({node, ...props}) => <Typography variant="body1" component="span" {...props} />,
+                                            strong: ({node, ...props}) => <strong style={{ fontWeight: 700 }} {...props} />,
+                                            em: ({node, ...props}) => <em {...props} />,
+                                            a: ({node, ...props}) => <a style={{ color: isUser ? 'white' : '#1976d2', textDecoration: 'underline' }} {...props} target="_blank" rel="noopener noreferrer" />,
+                                            ul: ({node, ...props}) => <ul style={{ marginLeft: '20px', marginTop: '8px', marginBottom: '8px' }} {...props} />,
+                                            ol: ({node, ...props}) => <ol style={{ marginLeft: '20px', marginTop: '8px', marginBottom: '8px' }} {...props} />,
+                                            li: ({node, ...props}) => <li style={{ marginBottom: '4px' }} {...props} />,
+                                        }}
+                                    >
+                                        {msg.text.replace(/\/n/g, '\n')}
+                                    </ReactMarkdown>
                                 )}
-                                </Typography>
+                            </Typography>
 
 
                             {isBot && msg.qa_record_id && (
